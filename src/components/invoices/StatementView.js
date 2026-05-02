@@ -25,8 +25,8 @@ export const StatementView = ({
         
         <div className="header-box">
           <div style={{ width: '180px' }}>
-            <h1 style={{ margin: 0, fontSize: '32px', fontWeight: 900, color: '#0f172a' }}>KALAM MAWZOON</h1>
-            <div style={{ fontSize: '12px', fontWeight: 700, color: '#64748b' }}>مكتب كلام موزون الهندسي</div>
+            <h1 style={{ margin: 0, fontSize: '32px', fontWeight: 900, color: '#0f172a' }}>FRAME</h1>
+            <div style={{ fontSize: '12px', fontWeight: 700, color: '#64748b' }}>فريم للاستشارات الهندسية</div>
           </div>
           <div style={{ textAlign: 'center' }}>
             <h2 style={{ fontSize: '20px', fontWeight: 900, textDecoration: 'underline', color: '#0f172a' }}>{currentTitle}</h2>

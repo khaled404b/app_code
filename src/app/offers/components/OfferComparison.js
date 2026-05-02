@@ -173,7 +173,7 @@ export function OfferComparison({ state, actions }) {
       {/* Hidden PDF Template */}
       <div id="comparison-report" style={{ display: 'none', background: 'white', padding: '30px', direction: 'rtl', width: '1000px', margin: '0 auto' }}>
          <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '2px solid #000', paddingBottom: '10px', marginBottom: '20px' }}>
-            <div><h1 style={{ margin: 0, fontSize: '28px', fontWeight: 900 }}>KALAM MAWZOON</h1><div style={{ fontSize: '11px' }}>مكتب كلام موزون الهندسي</div></div>
+            <div><h1 style={{ margin: 0, fontSize: '28px', fontWeight: 900 }}>FRAME</h1><div style={{ fontSize: '11px' }}>فريم للاستشارات الهندسية</div></div>
             <div style={{ textAlign: 'center' }}>
                <h2 style={{ textDecoration: 'underline', margin: 0, fontSize: '18px' }}>مقارنة عروض الأسعار</h2>
                <div style={{ fontSize: '12px', marginTop: '5px' }}>العميل: {getClientName(compClient)} | نوع العمل: {compWorkType}</div>

@@ -56,10 +56,10 @@ export function DeliveryPrint({ data }) {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div style={{ width: '80px', textAlign: 'center' }}>
             <img src="/favicon.ico" style={{ width: '30px' }} />
-            <div style={{ fontSize: '8px', fontWeight: 'bold' }}>KALAM MAWZOON</div>
+            <div style={{ fontSize: '8px', fontWeight: 'bold' }}>FRAME</div>
           </div>
           <div style={{ textAlign: 'center', flex: 1 }}>
-            <h1 style={{ margin: 0, fontSize: '16px', fontWeight: 'bold' }}>كلام موزون للإستشارات الهندسية</h1>
+            <h1 style={{ margin: 0, fontSize: '16px', fontWeight: 'bold' }}>فريم للاستشارات الهندسية</h1>
             <div style={{ borderTop: '1.5px solid #000', marginTop: '4px', paddingTop: '4px', fontWeight: 'bold', fontSize: '13px' }}>نموذج إرسال المستندات</div>
           </div>
           <div style={{ width: '80px' }}></div>
