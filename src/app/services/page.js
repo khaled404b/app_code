@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Card } from '@/components/ui';
 import { 
   FileType, 
@@ -19,7 +19,12 @@ import {
   X,
   PlusCircle,
   Play,
-  Settings2
+  Settings2,
+  CheckCircle2,
+  Circle,
+  ArrowUp,
+  ArrowDown,
+  Trash2
 } from 'lucide-react';
 import { PDFDocument, degrees } from 'pdf-lib';
 
@@ -29,234 +34,265 @@ export default function ServicesPage() {
   const [status, setStatus] = useState(null);
   const [selectedTool, setSelectedTool] = useState(null);
   const [selectedFiles, setSelectedFiles] = useState([]);
-  const [splitRange, setSplitRange] = useState('1'); // for split tool
+  
+  // Visual Page Manager State
+  const [pdfPages, setPdfPages] = useState([]); // Array of { fileIndex, pageIndex, rotation, isSelected, id }
   const fileInputRef = useRef(null);
+
+  const pdfTools = [
+    { id: 'visual-editor', title: 'محرر الصفحات الذكي', icon: Settings2, desc: 'دمج، تقسيم، تدوير، وإعادة ترتيب الصفحات بصرياً', color: '#8b5cf6', multiple: true },
+    { id: 'quick-merge', title: 'دمج سريع', icon: Files, desc: 'دمج عدة ملفات فوراً', color: '#6366f1', multiple: true },
+  ];
 
   const conversionTools = [
     { id: 'dwg-pdf', title: 'DWG إلى PDF', icon: FileCode, from: 'DWG', to: 'PDF', color: '#ef4444' },
-    { id: 'dwg-dwf', title: 'DWG إلى DWF', icon: FileCode, from: 'DWG', to: 'DWF', color: '#f43f5e' },
-    { id: 'dwf-pdf', title: 'DWF إلى PDF', icon: FileCode, from: 'DWF', to: 'PDF', color: '#f59e0b' },
-    { id: 'pdf-dwf', title: 'PDF إلى DWF', icon: FileType, from: 'PDF', to: 'DWF', color: '#ea580c' },
     { id: 'word-pdf', title: 'Word إلى PDF', icon: FileText, from: 'DOCX', to: 'PDF', color: '#3b82f6' },
     { id: 'excel-pdf', title: 'Excel إلى PDF', icon: FileSpreadsheet, from: 'XLSX', to: 'PDF', color: '#10b981' },
   ];
 
-  const pdfTools = [
-    { id: 'merge', title: 'دمج ملفات PDF', icon: Files, desc: 'جمع عدة ملفات في ملف واحد', color: '#8b5cf6', multiple: true },
-    { id: 'split', title: 'تقسيم PDF', icon: Scissors, desc: 'استخراج صفحات محددة (مثال: 1,2,5)', color: '#ec4899' },
-    { id: 'rotate', title: 'تدوير PDF', icon: RotateCw, desc: 'تدوير الصفحات 90 درجة يميناً', color: '#06b6d4' },
-    { id: 'reorder', title: 'عكس ترتيب الصفحات', icon: ArrowRightLeft, desc: 'عكس تسلسل جميع صفحات الملف', color: '#6366f1' },
-  ];
+  const handleFileSelect = async (e) => {
+    const files = Array.from(e.target.files);
+    if (files.length === 0) return;
 
-  const handleFileSelect = (e) => {
-    const newFiles = Array.from(e.target.files);
-    if (selectedTool?.multiple) {
-      setSelectedFiles([...selectedFiles, ...newFiles]);
+    if (selectedTool?.id === 'visual-editor' || selectedTool?.id === 'quick-merge') {
+      setIsProcessing(true);
+      setStatus('جاري تحميل الصفحات...');
+      
+      try {
+        const newPages = [];
+        for (let i = 0; i < files.length; i++) {
+          const file = files[i];
+          const arrayBuffer = await file.arrayBuffer();
+          const pdfDoc = await PDFDocument.load(arrayBuffer, { ignoreEncryption: true });
+          const count = pdfDoc.getPageCount();
+          
+          for (let j = 0; j < count; j++) {
+            newPages.push({
+              id: Math.random().toString(36).substr(2, 9),
+              fileName: file.name,
+              fileData: arrayBuffer,
+              pageIndex: j,
+              rotation: 0,
+              isSelected: true
+            });
+          }
+        }
+        setPdfPages([...pdfPages, ...newPages]);
+        setSelectedFiles([...selectedFiles, ...files]);
+      } catch (err) {
+        setStatus(`خطأ في تحميل الملف: ${err.message}`);
+      } finally {
+        setIsProcessing(false);
+        setStatus(null);
+      }
     } else {
-      setSelectedFiles(newFiles);
+      setSelectedFiles(files);
     }
   };
 
-  const removeFile = (index) => {
-    setSelectedFiles(selectedFiles.filter((_, i) => i !== index));
+  const togglePageSelection = (id) => {
+    setPdfPages(pdfPages.map(p => p.id === id ? { ...p, isSelected: !p.isSelected } : p));
   };
 
-  const processFiles = async () => {
-    if (selectedFiles.length === 0) return;
+  const rotatePage = (id) => {
+    setPdfPages(pdfPages.map(p => p.id === id ? { ...p, rotation: (p.rotation + 90) % 360 } : p));
+  };
+
+  const movePage = (index, direction) => {
+    const newPages = [...pdfPages];
+    const targetIndex = index + direction;
+    if (targetIndex < 0 || targetIndex >= newPages.length) return;
+    
+    const [movedItem] = newPages.splice(index, 1);
+    newPages.splice(targetIndex, 0, movedItem);
+    setPdfPages(newPages);
+  };
+
+  const removePage = (id) => {
+    setPdfPages(pdfPages.filter(p => p.id !== id));
+  };
+
+  const processFinalPdf = async () => {
+    const activePages = pdfPages.filter(p => p.isSelected);
+    if (activePages.length === 0) {
+      alert('يرجى اختيار صفحة واحدة على الأقل');
+      return;
+    }
+
     setIsProcessing(true);
-    setStatus(`جاري المعالجة...`);
+    setStatus('جاري إنتاج الملف النهائي...');
 
     try {
-      if (activeTab === 'convert') {
-        // Mock Conversion with realistic delay
-        setTimeout(() => finish(`تم تحويل الملف بنجاح! (نسخة تجريبية)`), 3000);
-      } else {
-        // REAL PDF LOGIC
-        if (selectedTool?.id === 'merge') {
-          const mergedPdf = await PDFDocument.create();
-          for (const file of selectedFiles) {
-            const arrayBuffer = await file.arrayBuffer();
-            const pdfDoc = await PDFDocument.load(arrayBuffer, { ignoreEncryption: true });
-            const copiedPages = await mergedPdf.copyPages(pdfDoc, pdfDoc.getPageIndices());
-            copiedPages.forEach((page) => mergedPdf.addPage(page));
-          }
-          const pdfBytes = await mergedPdf.save();
-          downloadBlob(pdfBytes, `merged_document.pdf`, 'application/pdf');
-          finish('تم دمج الملفات بنجاح!');
-        } 
-        else if (selectedTool?.id === 'rotate') {
-          const file = selectedFiles[0];
-          const arrayBuffer = await file.arrayBuffer();
-          const pdfDoc = await PDFDocument.load(arrayBuffer, { ignoreEncryption: true });
-          const pages = pdfDoc.getPages();
-          pages.forEach(page => {
-            const currentRotation = page.getRotation().angle;
-            page.setRotation(degrees((currentRotation + 90) % 360));
-          });
-          const pdfBytes = await pdfDoc.save();
-          downloadBlob(pdfBytes, `rotated_${file.name}`, 'application/pdf');
-          finish('تم التدوير بنجاح!');
+      const finalPdf = await PDFDocument.create();
+      
+      // Cache loaded documents to avoid re-parsing same file data multiple times
+      const docCache = new Map();
+
+      for (const pageInfo of activePages) {
+        let sourceDoc;
+        if (docCache.has(pageInfo.fileData)) {
+          sourceDoc = docCache.get(pageInfo.fileData);
+        } else {
+          sourceDoc = await PDFDocument.load(pageInfo.fileData, { ignoreEncryption: true });
+          docCache.set(pageInfo.fileData, sourceDoc);
         }
-        else if (selectedTool?.id === 'split') {
-          const file = selectedFiles[0];
-          const arrayBuffer = await file.arrayBuffer();
-          const pdfDoc = await PDFDocument.load(arrayBuffer, { ignoreEncryption: true });
-          const splitPdf = await PDFDocument.create();
-          
-          // Parse range like "1,2,5" or "1-3"
-          const pageNumbers = splitRange.split(',').map(n => parseInt(n.trim()) - 1).filter(n => !isNaN(n) && n >= 0 && n < pdfDoc.getPageCount());
-          
-          if (pageNumbers.length === 0) throw new Error('يرجى إدخال أرقام صفحات صحيحة');
-          
-          const copiedPages = await splitPdf.copyPages(pdfDoc, pageNumbers);
-          copiedPages.forEach(page => splitPdf.addPage(page));
-          
-          const pdfBytes = await splitPdf.save();
-          downloadBlob(pdfBytes, `split_${file.name}`, 'application/pdf');
-          finish(`تم استخراج ${pageNumbers.length} صفحات بنجاح!`);
-        }
-        else if (selectedTool?.id === 'reorder') {
-          const file = selectedFiles[0];
-          const arrayBuffer = await file.arrayBuffer();
-          const pdfDoc = await PDFDocument.load(arrayBuffer, { ignoreEncryption: true });
-          const reversedPdf = await PDFDocument.create();
-          
-          const indices = pdfDoc.getPageIndices().reverse();
-          const copiedPages = await reversedPdf.copyPages(pdfDoc, indices);
-          copiedPages.forEach(page => reversedPdf.addPage(page));
-          
-          const pdfBytes = await reversedPdf.save();
-          downloadBlob(pdfBytes, `reversed_${file.name}`, 'application/pdf');
-          finish('تم عكس ترتيب الصفحات بنجاح!');
-        }
+
+        const [copiedPage] = await finalPdf.copyPages(sourceDoc, [pageInfo.pageIndex]);
+        copiedPage.setRotation(degrees(pageInfo.rotation));
+        finalPdf.addPage(copiedPage);
       }
+
+      const pdfBytes = await finalPdf.save();
+      const blob = new Blob([pdfBytes], { type: 'application/pdf' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `frame_edited_${Date.now()}.pdf`;
+      link.click();
+      
+      finish('تم إنتاج الملف وتحميله بنجاح!');
     } catch (err) {
       setIsProcessing(false);
       setStatus(`خطأ: ${err.message}`);
-      setTimeout(() => setStatus(null), 5000);
     }
-  };
-
-  const downloadBlob = (bytes, name, type) => {
-    const blob = new Blob([bytes], { type });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = name;
-    link.click();
-    URL.revokeObjectURL(url);
   };
 
   const finish = (msg) => {
     setIsProcessing(false);
     setStatus(msg);
+    setPdfPages([]);
     setSelectedFiles([]);
     setSelectedTool(null);
-    setTimeout(() => setStatus(null), 3000);
-  };
-
-  const startTool = (tool) => {
-    setSelectedTool(tool);
-    setSelectedFiles([]);
-    fileInputRef.current.click();
+    setTimeout(() => setStatus(null), 4000);
   };
 
   return (
-    <div className="page" style={{ background: 'var(--bg)', color: 'var(--text)', transition: 'background 0.3s' }}>
+    <div className="page" style={{ background: 'var(--bg)', color: 'var(--text)', minHeight: '100vh', transition: 'all 0.3s' }}>
       
       {/* Header */}
-      <div style={{ marginBottom: '32px', textAlign: 'center' }}>
-        <h1 style={{ fontSize: '28px', fontWeight: 900, marginBottom: '8px' }}>مركز الخدمات والتحويلات</h1>
-        <p style={{ color: 'var(--text-3)', fontSize: '14px' }}>أدوات معالجة الملفات الاحترافية</p>
+      <div style={{ marginBottom: '24px', textAlign: 'center' }}>
+        <h1 style={{ fontSize: '24px', fontWeight: 900, marginBottom: '4px' }}>مركز الخدمات الذكي</h1>
+        <p style={{ color: 'var(--text-3)', fontSize: '13px' }}>تحكم كامل ومباشر في ملفاتك الهندسية</p>
       </div>
 
-      {/* Tabs */}
-      {!selectedTool && (
-        <div style={{ display: 'flex', gap: '12px', marginBottom: '24px', background: 'var(--surface-2)', padding: '6px', borderRadius: '16px', border: '1px solid var(--border)' }}>
-          <button onClick={() => setActiveTab('convert')} style={{ flex: 1, padding: '12px', borderRadius: '12px', border: 'none', cursor: 'pointer', background: activeTab === 'convert' ? 'var(--surface)' : 'transparent', color: activeTab === 'convert' ? 'var(--text)' : 'var(--text-3)', fontWeight: 700, boxShadow: activeTab === 'convert' ? 'var(--shadow)' : 'none' }}>تحويل الملفات</button>
-          <button onClick={() => setActiveTab('pdf-tools')} style={{ flex: 1, padding: '12px', borderRadius: '12px', border: 'none', cursor: 'pointer', background: activeTab === 'pdf-tools' ? 'var(--surface)' : 'transparent', color: activeTab === 'pdf-tools' ? 'var(--text)' : 'var(--text-3)', fontWeight: 700, boxShadow: activeTab === 'pdf-tools' ? 'var(--shadow)' : 'none' }}>أدوات PDF</button>
-        </div>
-      )}
+      {!selectedTool ? (
+        <>
+          {/* Tabs */}
+          <div style={{ display: 'flex', gap: '8px', marginBottom: '20px', background: 'var(--surface-2)', padding: '4px', borderRadius: '12px' }}>
+            <button onClick={() => setActiveTab('convert')} style={{ flex: 1, padding: '10px', borderRadius: '10px', border: 'none', cursor: 'pointer', background: activeTab === 'convert' ? 'var(--surface)' : 'transparent', color: activeTab === 'convert' ? 'var(--text)' : 'var(--text-3)', fontWeight: 700 }}>تحويل الملفات</button>
+            <button onClick={() => setActiveTab('pdf-tools')} style={{ flex: 1, padding: '10px', borderRadius: '10px', border: 'none', cursor: 'pointer', background: activeTab === 'pdf-tools' ? 'var(--surface)' : 'transparent', color: activeTab === 'pdf-tools' ? 'var(--text)' : 'var(--text-3)', fontWeight: 700 }}>أدوات PDF</button>
+          </div>
 
-      {/* Grid */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '16px' }}>
-        {!selectedTool ? (
-          <>
+          <div style={{ display: 'grid', gap: '12px' }}>
             {(activeTab === 'convert' ? conversionTools : pdfTools).map(tool => (
-              <Card key={tool.id} padded style={{ background: 'var(--surface)', cursor: 'pointer' }} onClick={() => startTool(tool)}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-                  <div style={{ width: '48px', height: '48px', borderRadius: '14px', background: `${tool.color}15`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <tool.icon size={24} color={tool.color} />
+              <Card key={tool.id} padded style={{ background: 'var(--surface)', cursor: 'pointer', border: '1px solid var(--border)' }} onClick={() => { setSelectedTool(tool); if (tool.multiple) fileInputRef.current.click(); }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <div style={{ width: '42px', height: '42px', borderRadius: '10px', background: `${tool.color}15`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <tool.icon size={20} color={tool.color} />
                   </div>
                   <div style={{ flex: 1 }}>
-                    <div style={{ fontWeight: 800, fontSize: '16px' }}>{tool.title}</div>
-                    <div style={{ fontSize: '12px', color: 'var(--text-3)', marginTop: '2px' }}>{tool.desc || 'تحويل سريع ودقيق'}</div>
+                    <div style={{ fontWeight: 800, fontSize: '15px' }}>{tool.title}</div>
+                    <div style={{ fontSize: '11px', color: 'var(--text-3)' }}>{tool.desc}</div>
                   </div>
-                  <ChevronRight size={20} color="var(--text-3)" />
+                  <ChevronRight size={18} color="var(--text-3)" />
                 </div>
               </Card>
             ))}
-          </>
-        ) : (
-          <Card padded style={{ background: 'var(--surface)' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '20px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <selectedTool.icon color={selectedTool.color} size={24} />
-                <h2 style={{ fontWeight: 800, fontSize: '18px' }}>{selectedTool.title}</h2>
+          </div>
+        </>
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          
+          {/* Tool Header */}
+          <Card padded style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <selectedTool.icon color={selectedTool.color} size={20} />
+                <h2 style={{ fontWeight: 800, fontSize: '16px' }}>{selectedTool.title}</h2>
               </div>
-              <button onClick={() => setSelectedTool(null)} style={{ background: 'var(--surface-2)', border: 'none', borderRadius: '50%', width: '32px', height: '32px', cursor: 'pointer', color: 'var(--text)' }}>
-                <X size={18} />
+              <button onClick={() => { setSelectedTool(null); setPdfPages([]); }} style={{ background: 'var(--surface-2)', border: 'none', borderRadius: '50%', width: '28px', height: '28px', cursor: 'pointer', color: 'var(--text)' }}>
+                <X size={16} />
               </button>
             </div>
-
-            {selectedFiles.length > 0 ? (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                {selectedFiles.map((f, i) => (
-                  <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '10px', background: 'var(--surface-2)', padding: '12px', borderRadius: '12px', border: '1px solid var(--border)' }}>
-                    <FileText size={16} color="var(--text-3)" />
-                    <span style={{ flex: 1, fontSize: '13px', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{f.name}</span>
-                    <button onClick={() => removeFile(i)} style={{ border: 'none', background: 'transparent', color: 'var(--red)', cursor: 'pointer' }}><X size={16} /></button>
-                  </div>
-                ))}
-                
-                {selectedTool.id === 'split' && (
-                  <div style={{ marginTop: '10px' }}>
-                    <label style={{ fontSize: '12px', fontWeight: 700, marginBottom: '6px', display: 'block' }}>أدخل أرقام الصفحات (مثال: 1,3,5):</label>
-                    <input className="form-input" value={splitRange} onChange={e => setSplitRange(e.target.value)} placeholder="1,2,3..." />
-                  </div>
-                )}
-
-                {selectedTool.multiple && (
-                  <button onClick={() => fileInputRef.current.click()} style={{ padding: '12px', border: '2px dashed var(--border)', borderRadius: '12px', background: 'transparent', color: 'var(--text-3)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
-                    <PlusCircle size={18} /> <span style={{ fontWeight: 700 }}>إضافة ملف آخر</span>
-                  </button>
-                )}
-                
-                <button className="btn" onClick={processFiles} style={{ background: selectedTool.color, marginTop: '10px' }}>
-                  <Play size={18} /> تنفيذ العملية
-                </button>
-              </div>
-            ) : (
-              <div onClick={() => fileInputRef.current.click()} style={{ border: '2px dashed var(--border)', borderRadius: '20px', padding: '40px 20px', textAlign: 'center', cursor: 'pointer' }}>
-                <Upload size={32} color="var(--text-3)" style={{ marginBottom: '12px' }} />
-                <div style={{ fontWeight: 700 }}>اضغط لرفع ملف PDF</div>
-              </div>
-            )}
           </Card>
-        )}
-      </div>
+
+          {/* Visual Page Grid */}
+          {pdfPages.length > 0 && (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: '12px' }}>
+              {pdfPages.map((page, index) => (
+                <div key={page.id} style={{ 
+                  background: page.isSelected ? 'var(--surface)' : 'var(--surface-2)', 
+                  borderRadius: '12px', border: page.isSelected ? `2px solid ${selectedTool.color}` : '1px solid var(--border)',
+                  overflow: 'hidden', position: 'relative', opacity: page.isSelected ? 1 : 0.6, transition: '0.2s'
+                }}>
+                  {/* Page Preview Placeholder */}
+                  <div style={{ height: '120px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: 'var(--surface-2)', transform: `rotate(${page.rotation}deg)`, transition: '0.3s' }}>
+                    <FileText size={40} color={page.isSelected ? selectedTool.color : 'var(--text-3)'} />
+                    <span style={{ fontSize: '10px', marginTop: '8px', color: 'var(--text-3)', fontWeight: 700 }}>صفحة {page.pageIndex + 1}</span>
+                  </div>
+
+                  {/* Page Controls */}
+                  <div style={{ padding: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--surface)', borderTop: '1px solid var(--border)' }}>
+                    <div style={{ display: 'flex', gap: '4px' }}>
+                      <button onClick={() => movePage(index, -1)} disabled={index === 0} className="icon-btn" style={{ width: '24px', height: '24px' }}><ArrowUp size={12} /></button>
+                      <button onClick={() => movePage(index, 1)} disabled={index === pdfPages.length - 1} className="icon-btn" style={{ width: '24px', height: '24px' }}><ArrowDown size={12} /></button>
+                    </div>
+                    <div style={{ display: 'flex', gap: '4px' }}>
+                      <button onClick={() => rotatePage(page.id)} className="icon-btn" style={{ width: '24px', height: '24px', color: 'var(--blue)' }}><RotateCw size={12} /></button>
+                      <button onClick={() => togglePageSelection(page.id)} className="icon-btn" style={{ width: '24px', height: '24px', color: page.isSelected ? 'var(--green)' : 'var(--text-3)' }}>
+                        {page.isSelected ? <CheckCircle2 size={12} /> : <Circle size={12} />}
+                      </button>
+                    </div>
+                  </div>
+                  
+                  {/* Floating Remove */}
+                  <button onClick={() => removePage(page.id)} style={{ position: 'absolute', top: '5px', left: '5px', background: 'rgba(239, 68, 68, 0.9)', border: 'none', borderRadius: '50%', width: '20px', height: '20px', color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <Trash2 size={10} />
+                  </button>
+                </div>
+              ))}
+
+              {/* Add More Button */}
+              <div onClick={() => fileInputRef.current.click()} style={{ 
+                height: '165px', border: '2px dashed var(--border)', borderRadius: '12px', 
+                display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', 
+                cursor: 'pointer', color: 'var(--text-3)'
+              }}>
+                <PlusCircle size={24} />
+                <span style={{ fontSize: '11px', fontWeight: 700, marginTop: '8px' }}>إضافة ملف</span>
+              </div>
+            </div>
+          )}
+
+          {/* Action Button */}
+          {pdfPages.length > 0 && (
+            <button className="btn" onClick={processFinalPdf} style={{ background: selectedTool.color, position: 'sticky', bottom: '110px', boxShadow: 'var(--shadow-md)' }}>
+              <Play size={18} /> حفظ الملف المعدل ({pdfPages.filter(p => p.isSelected).length} صفحة)
+            </button>
+          )}
+
+          {/* Initial Upload State */}
+          {pdfPages.length === 0 && (
+            <Card padded style={{ background: 'var(--surface)', border: '2px dashed var(--border)', textAlign: 'center', cursor: 'pointer' }} onClick={() => fileInputRef.current.click()}>
+              <Upload size={32} color="var(--text-3)" style={{ marginBottom: '12px' }} />
+              <div style={{ fontWeight: 800 }}>ارفع ملفات الـ PDF للبدء</div>
+              <p style={{ fontSize: '12px', color: 'var(--text-3)', marginTop: '4px' }}>سيتم عرض الصفحات لتتمكن من دمجها، ترتيبها وتدويرها</p>
+            </Card>
+          )}
+        </div>
+      )}
 
       <input type="file" ref={fileInputRef} style={{ display: 'none' }} multiple={selectedTool?.multiple} onChange={handleFileSelect} accept=".pdf,.dwg,.dwf,.docx,.xlsx" />
 
       {isProcessing && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', zIndex: 2000, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(8px)' }}>
-          <Loader2 size={48} className="animate-spin" color="#fff" />
-          <div style={{ marginTop: '20px', fontWeight: 700, fontSize: '18px', color: '#fff' }}>{status}</div>
+          <Loader2 size={40} className="animate-spin" color="#fff" />
+          <div style={{ marginTop: '16px', fontWeight: 700, fontSize: '16px', color: '#fff' }}>{status}</div>
         </div>
       )}
 
       {status && !isProcessing && (
-        <div style={{ position: 'fixed', bottom: '110px', left: '20px', right: '20px', background: status.startsWith('خطأ') ? 'var(--red)' : '#059669', color: '#fff', padding: '16px', borderRadius: '16px', textAlign: 'center', fontWeight: 700, boxShadow: 'var(--shadow-md)', zIndex: 1500 }}>
+        <div style={{ position: 'fixed', bottom: '110px', left: '20px', right: '20px', background: status.startsWith('خطأ') ? 'var(--red)' : '#059669', color: '#fff', padding: '12px', borderRadius: '12px', textAlign: 'center', fontWeight: 700, boxShadow: 'var(--shadow-md)', zIndex: 1500 }}>
           {status}
         </div>
       )}
