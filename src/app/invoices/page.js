@@ -92,9 +92,10 @@ function InvoicesContent() {
     if (!confirm('هل أنت متأكد من حذف هذه الفاتورة؟ لا يمكن التراجع عن هذا الإجراء.')) return;
     try {
       const cleanInvoices = invoices.filter(i => i.id !== id).map(stripAttachment);
-      await update(ref(db), { invoices: cleanInvoices });
+      update(ref(db), { invoices: cleanInvoices });
       set(ref(db, `attachments/${id}`), null);
-      setSelected(null); setView('list');
+      setSelected(null); 
+      setView('list');
     } catch (err) { alert('فشل الحذف'); }
   };
 

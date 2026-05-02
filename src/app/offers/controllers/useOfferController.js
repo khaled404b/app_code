@@ -163,7 +163,7 @@ export function useOfferController() {
 
   const handleDelete = async () => {
     if (!window.confirm('حذف هذا العرض نهائياً؟')) return;
-    await updateData('offers', 'delete', null, selected.id);
+    updateData('offers', 'delete', null, selected.id);
     setView('list'); 
     setSelected(null);
   };

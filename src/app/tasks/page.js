@@ -64,9 +64,10 @@ function TasksContent() {
   const handleDelete = async (id) => {
     if (!confirm('هل أنت متأكد من حذف هذا العمل؟')) return;
     try {
-      await updateData('tasks', 'delete', null, id);
+      updateData('tasks', 'delete', null, id);
       fSet(fRef(fDb, `attachments/${id}`), null);
-      setSelected(null); setView('list');
+      setSelected(null); 
+      setView('list');
     } catch (err) { alert('فشل الحذف'); }
   };
 
@@ -75,7 +76,7 @@ function TasksContent() {
     const confirmText = prompt('اكتب "حذف الكل" للتأكيد:');
     if (confirmText !== 'حذف الكل') return;
     try {
-      await fSet(fRef(fDb, 'tasks'), []);
+      fSet(fRef(fDb, 'tasks'), []);
       alert('تم الحذف بنجاح');
       setView('list');
     } catch (err) { alert('فشل المسح الشامل'); }
@@ -86,8 +87,10 @@ function TasksContent() {
     if (!updateText.trim()) return;
     const newUpdate = { id: uuidv4(), text: updateText, user: (user && user.name) || '—', date: new Date().toISOString() };
     const updatedTask = { ...selected, updates: [newUpdate, ...(selected.updates || [])] };
-    await updateData('tasks', 'update', updatedTask, selected.id);
-    setSelected(updatedTask); setUpdateText(''); setView('detail');
+    updateData('tasks', 'update', updatedTask, selected.id);
+    setSelected(updatedTask); 
+    setUpdateText(''); 
+    setView('detail');
   };
 
   const handleExportPDF = async () => {

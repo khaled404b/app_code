@@ -69,7 +69,7 @@ export function useClientController() {
 
   const handleDelete = async () => {
     if (!window.confirm('حذف هذا العميل؟')) return;
-    await updateData('clients', 'delete', null, selected.id);
+    updateData('clients', 'delete', null, selected.id);
     setView('list'); 
     setSelected(null);
   };

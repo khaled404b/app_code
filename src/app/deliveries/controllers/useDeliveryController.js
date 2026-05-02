@@ -138,7 +138,7 @@ export function useDeliveryController() {
 
   const handleDelete = async () => {
     if (!window.confirm('حذف هذا الإرسال نهائياً؟')) return;
-    await updateData('deliveries', 'delete', null, selected.id);
+    updateData('deliveries', 'delete', null, selected.id);
     setView('list'); 
     setSelected(null);
   };
