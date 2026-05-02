@@ -19,6 +19,7 @@ function BottomNavContent() {
     { href: '/supervision', icon: Eye, label: 'الإشراف' },
     { href: '/offers', icon: ClipboardList, label: 'العروض' },
     { href: '/deliveries', icon: Send, label: 'التسليم' },
+    { href: '/services', icon: ClipboardList, label: 'مركز الخدمات' },
     { href: '/settings', icon: Settings, label: 'الإعدادات' },
   ];
 
