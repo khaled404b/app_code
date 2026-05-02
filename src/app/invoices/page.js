@@ -175,9 +175,12 @@ function InvoicesContent() {
     try {
       const html2pdf = (await import('html2pdf.js')).default;
       const element = document.getElementById('printable-statement');
+      const userFileName = prompt('أدخل اسم الملف:', `كشف-حساب-${Date.now()}`);
+      if (!userFileName) { setIsExporting(false); return; }
+
       const opt = { 
         margin: 10, 
-        filename: `Statement-${Date.now()}.pdf`, 
+        filename: `${userFileName}.pdf`, 
         image: { type: 'jpeg', quality: 0.98 },
         html2canvas: { scale: 2, useCORS: true, logging: false },
         jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } 

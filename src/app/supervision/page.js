@@ -79,9 +79,12 @@ function SupervisionContent() {
       const html2pdf = (await import('html2pdf.js')).default;
       const element = document.getElementById('supervision-report-template');
       element.style.display = 'block';
+      const userFileName = prompt('أدخل اسم الملف:', `تقرير-إشراف-${Date.now()}`);
+      if (!userFileName) { setIsExporting(false); return; }
+
       await html2pdf().from(element).set({
         margin: [5, 5, 5, 5],
-        filename: `Supervision-Report-${Date.now()}.pdf`,
+        filename: `${userFileName}.pdf`,
         html2canvas: { scale: 2, useCORS: true, letterRendering: true },
         jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' }
       }).save();

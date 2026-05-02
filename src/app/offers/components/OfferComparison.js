@@ -34,9 +34,12 @@ export function OfferComparison({ state, actions }) {
         element.style.display = 'block';
         
         // 1. Generate main HTML to PDF as ArrayBuffer
+        const userFileName = prompt('أدخل اسم الملف:', `مقارنة-عروض-${getClientName(compClient)}-${Date.now()}`);
+        if (!userFileName) { setIsExporting(false); return; }
+
         const pdfWorker = html2pdf().from(element).set({ 
           margin: 10, 
-          filename: `Offers-Comparison-${Date.now()}.pdf`, 
+          filename: `${userFileName}.pdf`, 
           html2canvas: { scale: 2, useCORS: true, logging: false },
           jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' } 
         });

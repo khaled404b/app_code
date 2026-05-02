@@ -89,9 +89,12 @@ export function DeliveryDetail({ state, actions }) {
       const element = document.getElementById('delivery-print-template');
       element.style.display = 'block';
       
+      const userFileName = prompt('أدخل اسم الملف:', `سند-تسليم-${selected.transmittal_no}`);
+      if (!userFileName) { setIsExporting(false); return; }
+
       const opt = {
         margin: 0,
-        filename: `Transmittal-${selected.transmittal_no}.pdf`,
+        filename: `${userFileName}.pdf`,
         image: { type: 'jpeg', quality: 0.98 },
         html2canvas: { scale: 2, useCORS: true },
         jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
@@ -110,7 +113,7 @@ export function DeliveryDetail({ state, actions }) {
           const url = URL.createObjectURL(blob);
           const a = document.createElement('a');
           a.href = url;
-          a.download = `Transmittal-${selected.transmittal_no}.pdf`;
+          a.download = `${userFileName}.pdf`;
           a.click();
           URL.revokeObjectURL(url);
         } else {
