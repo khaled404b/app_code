@@ -51,15 +51,6 @@ export function ClientDetail({ state, actions }) {
             </a>
           </div>
         )}
-        {selected.maps_link && (
-          <div className="detail-row">
-            <MapPin size={16} color="#10b981" />
-            <span className="detail-label">الموقع الفعلي</span>
-            <a href={(selected.maps_link.includes('google.com') || selected.maps_link.includes('goo.gl')) ? (selected.maps_link.trim().startsWith('http') ? selected.maps_link.trim() : `https://${selected.maps_link.trim()}`) : `https://maps.google.com/?q=${encodeURIComponent(selected.maps_link.trim())}`} target="_blank" rel="noopener noreferrer" style={{ color: '#10b981', fontWeight: 600, textDecoration: 'underline', fontSize: '13px', direction: 'ltr' }}>
-              فتح الخريطة
-            </a>
-          </div>
-        )}
         <div className="detail-row" style={{ border: 0 }}>
           <Percent size={16} color="#94a3b8" />
           <span className="detail-label">نسبة المكتب</span>

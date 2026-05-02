@@ -43,16 +43,6 @@ export function ClientForm({ state, actions }) {
             />
           </div>
 
-          <div className="form-group">
-            <label className="form-label">رابط الموقع الفعلي (Google Maps)</label>
-            <input 
-              className="form-input" 
-              placeholder="مثال: https://maps.google.com/..." 
-              value={form.maps_link || ''} 
-              onChange={e => setForm(p => ({ ...p, maps_link: e.target.value }))} 
-              style={{ direction: 'ltr', textAlign: 'left' }}
-            />
-          </div>
           
           <div className="section-label" style={{ marginTop: '20px', marginBottom: '10px' }}>إدارة القسايم والمواقع</div>
           <div style={{ background: '#f8fafc', padding: '16px', borderRadius: '16px', border: '1px solid #e2e8f0', marginBottom: '16px' }}>

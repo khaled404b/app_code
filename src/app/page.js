@@ -100,17 +100,18 @@ export default function Dashboard() {
               <span style={{ fontSize: '13px', fontWeight: 900, color: '#1e40af' }}>ملفات جوجل درايف</span>
             </a>
           )}
-          {selectedClient?.maps_link && (
+          {selectedClient?.plots?.filter(p => p.maps_link).map((pl, idx) => (
             <a 
-              href={(selectedClient.maps_link.includes('google.com') || selectedClient.maps_link.includes('goo.gl')) ? (selectedClient.maps_link.trim().startsWith('http') ? selectedClient.maps_link.trim() : `https://${selectedClient.maps_link.trim()}`) : `https://maps.google.com/?q=${encodeURIComponent(selectedClient.maps_link.trim())}`} 
+              key={idx}
+              href={pl.maps_link.trim().startsWith('http') ? pl.maps_link.trim() : `https://${pl.maps_link.trim()}`} 
               target="_blank" 
               rel="noopener noreferrer" 
               style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', marginTop: '12px', background: '#ecfdf5', borderRadius: '12px', padding: '6px 12px', border: '1px solid #a7f3d0', textDecoration: 'none' }}
             >
               <MapPin size={14} color="#10b981" />
-              <span style={{ fontSize: '13px', fontWeight: 900, color: '#065f46' }}>الموقع الفعلي</span>
+              <span style={{ fontSize: '13px', fontWeight: 900, color: '#065f46' }}>موقع قسيمة {pl.number}</span>
             </a>
-          )}
+          ))}
         </div>
       </div>
 
