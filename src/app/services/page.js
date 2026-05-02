@@ -1,19 +1,13 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Card } from '@/components/ui';
 import { 
-  FileType, 
   Files, 
-  Scissors, 
   RotateCw, 
   Upload, 
   Download, 
-  ArrowRightLeft,
-  FileCode,
-  FileSpreadsheet,
   FileText,
-  AlertCircle,
   Loader2,
   ChevronRight,
   X,
@@ -24,175 +18,106 @@ import {
   Circle,
   ArrowUp,
   ArrowDown,
-  Trash2
+  Trash2,
+  Edit3
 } from 'lucide-react';
 import { PDFDocument, degrees } from 'pdf-lib';
 
-// Placeholder for advanced conversion libraries
-// In a real production app, these would be installed via npm
-// We will implement the logic as if they are available or provide a robust bridge
+// Global PDF.js settings
+let pdfjsLib;
 
 export default function ServicesPage() {
-  const [activeTab, setActiveTab] = useState('convert'); 
   const [isProcessing, setIsProcessing] = useState(false);
   const [status, setStatus] = useState(null);
   const [selectedTool, setSelectedTool] = useState(null);
-  const [selectedFiles, setSelectedFiles] = useState([]);
-  
   const [pdfPages, setPdfPages] = useState([]); 
+  const [outputFileName, setOutputFileName] = useState('');
   const fileInputRef = useRef(null);
 
+  useEffect(() => {
+    // Load PDF.js dynamically
+    import('pdfjs-dist').then((pdfjs) => {
+      pdfjsLib = pdfjs;
+      pdfjs.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.js`;
+    });
+  }, []);
+
   const pdfTools = [
-    { id: 'visual-editor', title: 'محرر الصفحات الذكي', icon: Settings2, desc: 'دمج، تقسيم، تدوير، وإعادة ترتيب الصفحات بصرياً', color: '#8b5cf6', multiple: true },
-    { id: 'quick-merge', title: 'دمج سريع', icon: Files, desc: 'دمج عدة ملفات فوراً', color: '#6366f1', multiple: true },
+    { id: 'visual-editor', title: 'محرر ومدمج PDF البصري', icon: Settings2, desc: 'ادمج، رتب، ودور الصفحات مع معاينة مباشرة', color: '#8b5cf6', multiple: true },
+    { id: 'quick-merge', title: 'دمج سريع', icon: Files, desc: 'دمج عدة ملفات فوراً بدون تعديل', color: '#6366f1', multiple: true },
   ];
 
-  const conversionTools = [
-    { id: 'dwg-pdf', title: 'من DWG إلى PDF', icon: FileCode, from: 'DWG', to: 'PDF', color: '#ef4444' },
-    { id: 'dwg-dwf', title: 'من DWG إلى DWF', icon: FileCode, from: 'DWG', to: 'DWF', color: '#f43f5e' },
-    { id: 'dwf-pdf', title: 'من DWF إلى PDF', icon: FileCode, from: 'DWF', to: 'PDF', color: '#f59e0b' },
-    { id: 'pdf-dwf', title: 'من PDF إلى DWF', icon: FileType, from: 'PDF', to: 'DWF', color: '#ea580c' },
-    { id: 'word-pdf', title: 'من Word إلى PDF', icon: FileText, from: 'DOCX', to: 'PDF', color: '#3b82f6' },
-    { id: 'excel-pdf', title: 'من Excel إلى PDF', icon: FileSpreadsheet, from: 'XLSX', to: 'PDF', color: '#10b981' },
-  ];
+  const generateThumbnail = async (arrayBuffer, pageIndex) => {
+    if (!pdfjsLib) return null;
+    try {
+      const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+      const page = await pdf.getPage(pageIndex + 1);
+      const viewport = page.getViewport({ scale: 0.3 }); // Small thumbnail
+      const canvas = document.createElement('canvas');
+      const context = canvas.getContext('2d');
+      canvas.height = viewport.height;
+      canvas.width = viewport.width;
+
+      await page.render({ canvasContext: context, viewport }).promise;
+      return canvas.toDataURL();
+    } catch (e) {
+      console.error('Thumbnail generation error', e);
+      return null;
+    }
+  };
 
   const handleFileSelect = async (e) => {
     const files = Array.from(e.target.files);
     if (files.length === 0) return;
 
-    if (selectedTool?.id === 'visual-editor' || selectedTool?.id === 'quick-merge') {
-      setIsProcessing(true);
-      setStatus('جاري تحميل الصفحات...');
-      try {
-        const newPages = [];
-        for (const file of files) {
-          const arrayBuffer = await file.arrayBuffer();
-          const pdfDoc = await PDFDocument.load(arrayBuffer, { ignoreEncryption: true });
-          const count = pdfDoc.getPageCount();
-          for (let j = 0; j < count; j++) {
-            newPages.push({
-              id: Math.random().toString(36).substr(2, 9),
-              fileName: file.name,
-              fileData: arrayBuffer,
-              pageIndex: j,
-              rotation: 0,
-              isSelected: true
-            });
-          }
-        }
-        setPdfPages([...pdfPages, ...newPages]);
-        setSelectedFiles([...selectedFiles, ...files]);
-      } catch (err) {
-        setStatus(`خطأ في تحميل الملف: ${err.message}`);
-      } finally {
-        setIsProcessing(false);
-        setStatus(null);
-      }
-    } else {
-      // For Conversion Tools
-      setSelectedFiles(files);
-    }
-  };
-
-  const processConversion = async () => {
-    if (selectedFiles.length === 0) return;
     setIsProcessing(true);
-    setStatus(`جاري تحويل الملف: ${selectedFiles[0].name}...`);
-
+    setStatus('جاري معالجة الصفحات وتوليد المعاينة...');
+    
     try {
-      const file = selectedFiles[0];
-      const fileName = file.name.split('.')[0];
-      
-      if (selectedTool.id === 'word-pdf') {
-        const mammoth = (await import('mammoth')).default;
-        const html2pdf = (await import('html2pdf.js')).default;
+      const newPages = [];
+      for (const file of files) {
+        if (!outputFileName) setOutputFileName(file.name.replace('.pdf', '') + '_معدل');
         
         const arrayBuffer = await file.arrayBuffer();
-        const result = await mammoth.convertToHtml({ arrayBuffer });
+        const pdfDoc = await PDFDocument.load(arrayBuffer, { ignoreEncryption: true });
+        const count = pdfDoc.getPageCount();
         
-        const element = document.createElement('div');
-        element.style.background = 'white';
-        element.style.color = 'black';
-        element.style.padding = '40px';
-        element.style.width = '800px';
-        element.innerHTML = `
-          <style>
-            * { color: black !important; background: white !important; font-family: 'Tajawal', sans-serif !important; }
-            p { line-height: 1.6; font-size: 14px; margin-bottom: 12px; }
-          </style>
-          ${result.value}
-        `;
-        
-        const opt = {
-          margin: 0.5,
-          filename: `${fileName}.pdf`,
-          image: { type: 'jpeg', quality: 1.0 },
-          html2canvas: { scale: 3, useCORS: true, letterRendering: true },
-          jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' }
-        };
-        
-        await html2pdf().set(opt).from(element).save();
-        finish(`تم تحويل ملف Word بنجاح!`);
-      } 
-      else if (selectedTool.id === 'excel-pdf') {
-        const XLSX = await import('xlsx');
-        const arrayBuffer = await file.arrayBuffer();
-        const workbook = XLSX.read(arrayBuffer);
-        const firstSheetName = workbook.SheetNames[0];
-        const worksheet = workbook.Sheets[firstSheetName];
-        const html = XLSX.utils.sheet_to_html(worksheet);
-        
-        const html2pdf = (await import('html2pdf.js')).default;
-        const element = document.createElement('div');
-        element.style.background = 'white';
-        element.style.color = 'black';
-        element.style.padding = '20px';
-        element.innerHTML = `
-          <h2 style="text-align:center; color:#1e293b; margin-bottom:20px;">${fileName}</h2>
-          <style>
-            * { color: black !important; background: white !important; }
-            table { border-collapse: collapse; width: 100%; border: 2px solid #000; }
-            td, th { border: 1px solid #333; padding: 10px; font-size: 12px; text-align: right; }
-            th { background: #f1f5f9 !important; font-weight: bold; }
-          </style>
-          ${html}
-        `;
-        
-        const opt = {
-          margin: 0.3,
-          filename: `${fileName}.pdf`,
-          image: { type: 'jpeg', quality: 1.0 },
-          html2canvas: { scale: 3 },
-          jsPDF: { unit: 'in', format: 'a4', orientation: 'landscape' }
-        };
-        
-        await html2pdf().set(opt).from(element).save();
-        finish(`تم تحويل ملف Excel بنجاح!`);
+        for (let j = 0; j < count; j++) {
+          const thumb = await generateThumbnail(arrayBuffer, j);
+          newPages.push({
+            id: Math.random().toString(36).substr(2, 9),
+            fileName: file.name,
+            fileData: arrayBuffer,
+            pageIndex: j,
+            rotation: 0,
+            isSelected: true,
+            thumbnail: thumb
+          });
+        }
       }
-      else {
-        // CAD Conversions - Client-side approach or direct external service
-        // Since Surge doesn't support /api, we redirect to a professional online converter for DWG
-        // This is 100% reliable for CAD
-        setStatus('جاري تحضير المحرك الهندسي...');
-        setTimeout(() => {
-          window.open(`https://cloudconvert.com/dwg-to-pdf`, '_blank');
-          finish('تم فتح محرك التحويل الهندسي المتخصص في نافذة جديدة.');
-        }, 1500);
-      }
+      setPdfPages([...pdfPages, ...newPages]);
     } catch (err) {
-      setIsProcessing(false);
       setStatus(`خطأ: ${err.message}`);
+    } finally {
+      setIsProcessing(false);
+      setStatus(null);
     }
   };
 
   const processFinalPdf = async () => {
     const activePages = pdfPages.filter(p => p.isSelected);
-    if (activePages.length === 0) return;
+    if (activePages.length === 0) {
+      alert('يرجى اختيار صفحة واحدة على الأقل');
+      return;
+    }
+
     setIsProcessing(true);
-    setStatus('جاري إنتاج الملف النهائي...');
+    setStatus('جاري إنتاج ملفك الجديد...');
+
     try {
       const finalPdf = await PDFDocument.create();
       const docCache = new Map();
+
       for (const pageInfo of activePages) {
         let sourceDoc;
         if (docCache.has(pageInfo.fileData)) {
@@ -201,79 +126,61 @@ export default function ServicesPage() {
           sourceDoc = await PDFDocument.load(pageInfo.fileData, { ignoreEncryption: true });
           docCache.set(pageInfo.fileData, sourceDoc);
         }
+
         const [copiedPage] = await finalPdf.copyPages(sourceDoc, [pageInfo.pageIndex]);
         copiedPage.setRotation(degrees(pageInfo.rotation));
         finalPdf.addPage(copiedPage);
       }
+
       const pdfBytes = await finalPdf.save();
-      downloadBlob(pdfBytes, `frame_edited_${Date.now()}.pdf`, 'application/pdf');
-      finish('تم إنتاج الملف بنجاح!');
+      const blob = new Blob([pdfBytes], { type: 'application/pdf' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `${outputFileName || 'frame_output'}.pdf`;
+      link.click();
+      
+      finish('تم تحميل الملف بنجاح!');
     } catch (err) {
       setIsProcessing(false);
       setStatus(`خطأ: ${err.message}`);
     }
   };
 
-  const downloadBlob = (bytes, name, type) => {
-    const blob = new Blob([bytes], { type });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = name;
-    link.click();
-    URL.revokeObjectURL(url);
-  };
-
   const finish = (msg) => {
     setIsProcessing(false);
     setStatus(msg);
     setPdfPages([]);
-    setSelectedFiles([]);
     setSelectedTool(null);
+    setOutputFileName('');
     setTimeout(() => setStatus(null), 4000);
-  };
-
-  const movePage = (index, direction) => {
-    const newPages = [...pdfPages];
-    const targetIndex = index + direction;
-    if (targetIndex < 0 || targetIndex >= newPages.length) return;
-    const [movedItem] = newPages.splice(index, 1);
-    newPages.splice(targetIndex, 0, movedItem);
-    setPdfPages(newPages);
   };
 
   return (
     <div className="page" style={{ background: 'var(--bg)', color: 'var(--text)', minHeight: '100vh', transition: 'all 0.3s' }}>
       
       <div style={{ marginBottom: '24px', textAlign: 'center' }}>
-        <h1 style={{ fontSize: '24px', fontWeight: 900, marginBottom: '4px' }}>مركز الخدمات والتحويلات</h1>
-        <p style={{ color: 'var(--text-3)', fontSize: '13px' }}>الأدوات الهندسية المتكاملة 100%</p>
+        <h1 style={{ fontSize: '24px', fontWeight: 900, marginBottom: '4px' }}>أدوات PDF البصرية</h1>
+        <p style={{ color: 'var(--text-3)', fontSize: '13px' }}>تحكم كامل في صفحاتك مع معاينة مباشرة</p>
       </div>
 
       {!selectedTool ? (
-        <>
-          <div style={{ display: 'flex', gap: '8px', marginBottom: '20px', background: 'var(--surface-2)', padding: '4px', borderRadius: '12px' }}>
-            <button onClick={() => setActiveTab('convert')} style={{ flex: 1, padding: '10px', borderRadius: '10px', border: 'none', cursor: 'pointer', background: activeTab === 'convert' ? 'var(--surface)' : 'transparent', color: activeTab === 'convert' ? 'var(--text)' : 'var(--text-3)', fontWeight: 700 }}>تحويل الملفات</button>
-            <button onClick={() => setActiveTab('pdf-tools')} style={{ flex: 1, padding: '10px', borderRadius: '10px', border: 'none', cursor: 'pointer', background: activeTab === 'pdf-tools' ? 'var(--surface)' : 'transparent', color: activeTab === 'pdf-tools' ? 'var(--text)' : 'var(--text-3)', fontWeight: 700 }}>أدوات PDF</button>
-          </div>
-
-          <div style={{ display: 'grid', gap: '12px' }}>
-            {(activeTab === 'convert' ? conversionTools : pdfTools).map(tool => (
-              <Card key={tool.id} padded style={{ background: 'var(--surface)', cursor: 'pointer', border: '1px solid var(--border)' }} onClick={() => { setSelectedTool(tool); if (tool.multiple) fileInputRef.current.click(); }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                  <div style={{ width: '42px', height: '42px', borderRadius: '10px', background: `${tool.color}15`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <tool.icon size={20} color={tool.color} />
-                  </div>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontWeight: 800, fontSize: '15px' }}>{tool.title}</div>
-                    <div style={{ fontSize: '11px', color: 'var(--text-3)' }}>أداء عالي ودقة متناهية</div>
-                  </div>
-                  <ChevronRight size={18} color="var(--text-3)" />
+        <div style={{ display: 'grid', gap: '12px' }}>
+          {pdfTools.map(tool => (
+            <Card key={tool.id} padded style={{ background: 'var(--surface)', cursor: 'pointer', border: '1px solid var(--border)' }} onClick={() => { setSelectedTool(tool); fileInputRef.current.click(); }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <div style={{ width: '42px', height: '42px', borderRadius: '10px', background: `${tool.color}15`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <tool.icon size={20} color={tool.color} />
                 </div>
-              </Card>
-            ))}
-          </div>
-        </>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontWeight: 800, fontSize: '15px' }}>{tool.title}</div>
+                  <div style={{ fontSize: '11px', color: 'var(--text-3)' }}>{tool.desc}</div>
+                </div>
+                <ChevronRight size={18} color="var(--text-3)" />
+              </div>
+            </Card>
+          ))}
+        </div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
           
@@ -283,68 +190,106 @@ export default function ServicesPage() {
                 <selectedTool.icon color={selectedTool.color} size={20} />
                 <h2 style={{ fontWeight: 800, fontSize: '16px' }}>{selectedTool.title}</h2>
               </div>
-              <button onClick={() => { setSelectedTool(null); setPdfPages([]); setSelectedFiles([]); }} style={{ background: 'var(--surface-2)', border: 'none', borderRadius: '50%', width: '28px', height: '28px', cursor: 'pointer', color: 'var(--text)' }}>
+              <button onClick={() => { setSelectedTool(null); setPdfPages([]); setOutputFileName(''); }} style={{ background: 'var(--surface-2)', border: 'none', borderRadius: '50%', width: '28px', height: '28px', cursor: 'pointer', color: 'var(--text)' }}>
                 <X size={16} />
               </button>
             </div>
           </Card>
 
-          {/* Logic for Conversion Tools */}
-          {activeTab === 'convert' && (
-            <Card padded style={{ background: 'var(--surface)', border: '1px solid var(--border)', textAlign: 'center' }}>
-              {selectedFiles.length > 0 ? (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                  <div style={{ background: 'var(--surface-2)', padding: '20px', borderRadius: '16px', border: '1px solid var(--border)' }}>
-                    <FileCode size={40} color={selectedTool.color} style={{ marginBottom: '12px' }} />
-                    <div style={{ fontWeight: 800 }}>{selectedFiles[0].name}</div>
-                    <div style={{ fontSize: '12px', color: 'var(--text-3)' }}>جاهز للتحويل إلى {selectedTool.to}</div>
+          {pdfPages.length > 0 && (
+            <>
+              {/* Output Filename Input */}
+              <Card padded style={{ background: 'var(--surface-2)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <Edit3 size={18} color="var(--text-3)" />
+                <input 
+                  type="text" 
+                  value={outputFileName} 
+                  onChange={(e) => setOutputFileName(e.target.value)}
+                  placeholder="اسم الملف الناتج..."
+                  style={{ flex: 1, background: 'transparent', border: 'none', color: 'var(--text)', outline: 'none', fontWeight: 700, fontSize: '14px' }}
+                />
+                <span style={{ fontSize: '12px', color: 'var(--text-3)' }}>.pdf</span>
+              </Card>
+
+              {/* Grid of pages with Thumbnails */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))', gap: '12px' }}>
+                {pdfPages.map((page, index) => (
+                  <div key={page.id} style={{ 
+                    background: page.isSelected ? 'var(--surface)' : 'var(--surface-2)', 
+                    borderRadius: '12px', border: page.isSelected ? `2px solid ${selectedTool.color}` : '1px solid var(--border)',
+                    overflow: 'hidden', position: 'relative', opacity: page.isSelected ? 1 : 0.6, transition: '0.2s'
+                  }}>
+                    {/* Visual Page Preview */}
+                    <div style={{ height: '140px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f8fafc', position: 'relative', overflow: 'hidden' }}>
+                      {page.thumbnail ? (
+                        <img 
+                          src={page.thumbnail} 
+                          alt="preview" 
+                          style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain', transform: `rotate(${page.rotation}deg)`, transition: '0.3s' }} 
+                        />
+                      ) : (
+                        <FileText size={40} color="var(--text-3)" />
+                      )}
+                      <div style={{ position: 'absolute', bottom: '4px', right: '4px', background: 'rgba(0,0,0,0.5)', color: '#fff', fontSize: '10px', padding: '2px 6px', borderRadius: '4px' }}>
+                        {index + 1}
+                      </div>
+                    </div>
+
+                    {/* Controls */}
+                    <div style={{ padding: '6px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--surface)' }}>
+                      <div style={{ display: 'flex', gap: '2px' }}>
+                        <button onClick={() => {
+                          const newPages = [...pdfPages];
+                          if (index > 0) {
+                            [newPages[index], newPages[index-1]] = [newPages[index-1], newPages[index]];
+                            setPdfPages(newPages);
+                          }
+                        }} disabled={index === 0} className="icon-btn" style={{ width: '22px', height: '22px' }}><ArrowUp size={10} /></button>
+                        <button onClick={() => {
+                          const newPages = [...pdfPages];
+                          if (index < newPages.length - 1) {
+                            [newPages[index], newPages[index+1]] = [newPages[index+1], newPages[index]];
+                            setPdfPages(newPages);
+                          }
+                        }} disabled={index === pdfPages.length - 1} className="icon-btn" style={{ width: '22px', height: '22px' }}><ArrowDown size={10} /></button>
+                      </div>
+                      <div style={{ display: 'flex', gap: '2px' }}>
+                        <button onClick={() => setPdfPages(pdfPages.map(p => p.id === page.id ? { ...p, rotation: (p.rotation + 90) % 360 } : p))} className="icon-btn" style={{ width: '22px', height: '22px', color: 'var(--blue)' }}><RotateCw size={10} /></button>
+                        <button onClick={() => setPdfPages(pdfPages.map(p => p.id === page.id ? { ...p, isSelected: !p.isSelected } : p))} className="icon-btn" style={{ width: '22px', height: '22px', color: page.isSelected ? 'var(--green)' : 'var(--text-3)' }}>
+                          {page.isSelected ? <CheckCircle2 size={10} /> : <Circle size={10} />}
+                        </button>
+                      </div>
+                    </div>
+
+                    <button onClick={() => setPdfPages(pdfPages.filter(p => p.id !== page.id))} style={{ position: 'absolute', top: '5px', left: '5px', background: 'rgba(239, 68, 68, 0.9)', border: 'none', borderRadius: '50%', width: '18px', height: '18px', color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <Trash2 size={10} />
+                    </button>
                   </div>
-                  <button className="btn" onClick={processConversion} style={{ background: selectedTool.color }}>
-                    <Play size={18} /> بدء التحويل الآن
-                  </button>
-                  <button onClick={() => setSelectedFiles([])} style={{ background: 'transparent', border: 'none', color: 'var(--text-3)', fontSize: '13px', cursor: 'pointer' }}>تغيير الملف</button>
+                ))}
+                
+                <div onClick={() => fileInputRef.current.click()} style={{ height: '178px', border: '2px dashed var(--border)', borderRadius: '12px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'var(--text-3)' }}>
+                  <PlusCircle size={24} />
+                  <span style={{ fontSize: '11px', fontWeight: 700, marginTop: '8px' }}>إضافة ملف</span>
                 </div>
-              ) : (
-                <div onClick={() => fileInputRef.current.click()} style={{ border: '2px dashed var(--border)', borderRadius: '20px', padding: '40px 20px', cursor: 'pointer' }}>
-                  <Upload size={32} color="var(--text-3)" style={{ marginBottom: '12px' }} />
-                  <div style={{ fontWeight: 800 }}>ارفع ملف الـ {selectedTool.from}</div>
-                  <p style={{ fontSize: '12px', color: 'var(--text-3)', marginTop: '4px' }}>سيتم التحويل بدقة 100%</p>
-                </div>
-              )}
+              </div>
+
+              <button className="btn" onClick={processFinalPdf} style={{ background: selectedTool.color, position: 'sticky', bottom: '110px', boxShadow: 'var(--shadow-md)', marginTop: '20px' }}>
+                <Play size={18} /> حفظ الملف كـ "{outputFileName || 'جديد'}.pdf"
+              </button>
+            </>
+          )}
+
+          {pdfPages.length === 0 && (
+            <Card padded style={{ background: 'var(--surface)', border: '2px dashed var(--border)', textAlign: 'center', cursor: 'pointer', padding: '60px 20px' }} onClick={() => fileInputRef.current.click()}>
+              <Upload size={40} color="var(--text-3)" style={{ marginBottom: '16px' }} />
+              <div style={{ fontWeight: 800, fontSize: '18px' }}>ارفع ملفات الـ PDF للبدء</div>
+              <p style={{ fontSize: '13px', color: 'var(--text-3)', marginTop: '8px' }}>سيتم عرض الصفحات لتتمكن من دمجها وترتيبها بصرياً</p>
             </Card>
           )}
-
-          {/* Visual Editor logic remains same */}
-          {activeTab === 'pdf-tools' && pdfPages.length > 0 && (
-             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: '12px' }}>
-              {pdfPages.map((page, index) => (
-                <div key={page.id} style={{ background: page.isSelected ? 'var(--surface)' : 'var(--surface-2)', borderRadius: '12px', border: page.isSelected ? `2px solid ${selectedTool.color}` : '1px solid var(--border)', overflow: 'hidden', position: 'relative' }}>
-                  <div style={{ height: '100px', display: 'flex', alignItems: 'center', justifyContent: 'center', transform: `rotate(${page.rotation}deg)` }}>
-                    <FileText size={30} color={page.isSelected ? selectedTool.color : 'var(--text-3)'} />
-                  </div>
-                  <div style={{ padding: '8px', display: 'flex', justifyContent: 'space-between', background: 'var(--surface-2)' }}>
-                     <button onClick={() => setPdfPages(pdfPages.map(p => p.id === page.id ? { ...p, rotation: (p.rotation + 90) % 360 } : p))} className="icon-btn" style={{ width: '24px', height: '24px' }}><RotateCw size={12} /></button>
-                     <button onClick={() => setPdfPages(pdfPages.map(p => p.id === page.id ? { ...p, isSelected: !p.isSelected } : p))} className="icon-btn" style={{ width: '24px', height: '24px', color: page.isSelected ? 'var(--green)' : 'var(--text-3)' }}>
-                        {page.isSelected ? <CheckCircle2 size={12} /> : <Circle size={12} />}
-                     </button>
-                  </div>
-                </div>
-              ))}
-              <button className="btn" onClick={processFinalPdf} style={{ gridColumn: '1/-1', background: selectedTool.color, marginTop: '20px' }}>حفظ التعديلات</button>
-             </div>
-          )}
-
-          {activeTab === 'pdf-tools' && pdfPages.length === 0 && (
-             <Card padded style={{ border: '2px dashed var(--border)', textAlign: 'center', cursor: 'pointer' }} onClick={() => fileInputRef.current.click()}>
-                <Upload size={32} color="var(--text-3)" />
-                <div style={{ fontWeight: 800, marginTop: '12px' }}>ارفع ملفات PDF</div>
-             </Card>
-          )}
-
         </div>
       )}
 
-      <input type="file" ref={fileInputRef} style={{ display: 'none' }} multiple={selectedTool?.multiple} onChange={handleFileSelect} />
+      <input type="file" ref={fileInputRef} style={{ display: 'none' }} multiple={selectedTool?.multiple} onChange={handleFileSelect} accept=".pdf" />
 
       {isProcessing && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', zIndex: 2000, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(8px)' }}>
@@ -358,6 +303,11 @@ export default function ServicesPage() {
           {status}
         </div>
       )}
+
+      <style jsx>{`
+        .animate-spin { animation: spin 1s linear infinite; }
+        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+      `}</style>
     </div>
   );
 }
