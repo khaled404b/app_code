@@ -1,0 +1,27 @@
+{
+  "name": "app_code",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev -H 0.0.0.0",
+    "build": "next build",
+    "start": "next start",
+    "fast": "next build && powershell -Command \"Copy-Item out/index.html out/200.html -Force; Copy-Item out/index.html out/404.html -Force\" && npx surge out frame-office-app.surge.sh"
+  },
+  "dependencies": {
+    "browser-image-compression": "^2.0.2",
+    "date-fns": "^4.1.0",
+    "firebase": "^12.12.1",
+    "html2pdf.js": "^0.14.0",
+    "jspdf": "^4.2.1",
+    "jspdf-autotable": "^5.0.7",
+    "lucide-react": "^1.11.0",
+    "next": "latest",
+    "pdf-lib": "^1.17.1",
+    "react": "latest",
+    "react-dom": "latest",
+    "swr": "^2.4.1",
+    "uuid": "^14.0.0",
+    "xlsx": "^0.18.5"
+  }
+}
