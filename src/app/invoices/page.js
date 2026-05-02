@@ -77,7 +77,7 @@ function InvoicesContent() {
         ? cleanInvoices.map(i => i.id === selected.id ? cleanCurrent : i)
         : [...cleanInvoices, cleanCurrent];
 
-      await update(ref(db), { invoices: finalList });
+      update(ref(db), { invoices: finalList });
       
       // Write attachment separately as an isolated write
       if (tempFiles.length > 0) {

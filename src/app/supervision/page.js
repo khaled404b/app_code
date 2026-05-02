@@ -62,8 +62,8 @@ function SupervisionContent() {
     };
 
     try {
-      if (selected) await updateData('supervision', 'update', payload, selected.id);
-      else await updateData('supervision', 'add', payload);
+      if (selected) updateData('supervision', 'update', payload, selected.id);
+      else updateData('supervision', 'add', payload);
 
       if (tempFiles.length > 0) {
         set(ref(db, `attachments/${payload.id}`), JSON.stringify(tempFiles));

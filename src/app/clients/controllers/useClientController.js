@@ -54,9 +54,9 @@ export function useClientController() {
       const sanitized = { ...form, commission_rate: form.commission_rate || '0' };
       
       if (selected) {
-        await updateData('clients', 'update', sanitized, selected.id);
+        updateData('clients', 'update', sanitized, selected.id);
       } else {
-        await updateData('clients', 'add', { ...sanitized, id: uuidv4() });
+        updateData('clients', 'add', { ...sanitized, id: uuidv4() });
       }
       
       setView('list'); 

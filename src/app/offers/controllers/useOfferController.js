@@ -145,7 +145,7 @@ export function useOfferController() {
       : [...cleanOffers, offerForList];
       
     try {
-      await update(dbRef(db), { offers: finalOffers });
+      update(dbRef(db), { offers: finalOffers });
       
       if (tempFiles.length > 0) {
         await fSet(dbRef(db, `attachments/${finalId}`), JSON.stringify(tempFiles));

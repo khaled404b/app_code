@@ -45,8 +45,8 @@ function TasksContent() {
     };
     
     try {
-      if (selected) await updateData('tasks', 'update', finalTask, selected.id);
-      else await updateData('tasks', 'add', finalTask);
+      if (selected) updateData('tasks', 'update', finalTask, selected.id);
+      else updateData('tasks', 'add', finalTask);
       
       if (tempFiles.length > 0) {
         fSet(fRef(fDb, `attachments/${finalTask.id}`), JSON.stringify(tempFiles));
