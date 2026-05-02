@@ -19,12 +19,10 @@ import {
   ArrowUp,
   ArrowDown,
   Trash2,
-  Edit3
+  Edit3,
+  Image as ImageIcon
 } from 'lucide-react';
 import { PDFDocument, degrees } from 'pdf-lib';
-
-// Global PDF.js settings
-let pdfjsLib;
 
 export default function ServicesPage() {
   const [isProcessing, setIsProcessing] = useState(false);
@@ -33,35 +31,48 @@ export default function ServicesPage() {
   const [pdfPages, setPdfPages] = useState([]); 
   const [outputFileName, setOutputFileName] = useState('');
   const fileInputRef = useRef(null);
+  const [pdfjs, setPdfjs] = useState(null);
 
   useEffect(() => {
-    // Load PDF.js dynamically
-    import('pdfjs-dist').then((pdfjs) => {
-      pdfjsLib = pdfjs;
-      pdfjs.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.js`;
-    });
+    // Robust PDF.js loading
+    const loadPdfjs = async () => {
+      try {
+        const pdfjsLib = await import('pdfjs-dist');
+        pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.mjs`;
+        setPdfjs(pdfjsLib);
+      } catch (e) {
+        console.error('Failed to load PDF.js', e);
+      }
+    };
+    loadPdfjs();
   }, []);
 
-  const pdfTools = [
-    { id: 'visual-editor', title: 'محرر ومدمج PDF البصري', icon: Settings2, desc: 'ادمج، رتب، ودور الصفحات مع معاينة مباشرة', color: '#8b5cf6', multiple: true },
-    { id: 'quick-merge', title: 'دمج سريع', icon: Files, desc: 'دمج عدة ملفات فوراً بدون تعديل', color: '#6366f1', multiple: true },
-  ];
-
-  const generateThumbnail = async (arrayBuffer, pageIndex) => {
-    if (!pdfjsLib) return null;
+  const generateThumbnail = async (file, pageIndex = 0) => {
+    if (file.type.startsWith('image/')) {
+      return URL.createObjectURL(file);
+    }
+    
+    if (!pdfjs) return null;
     try {
-      const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+      const arrayBuffer = await file.arrayBuffer();
+      const loadingTask = pdfjs.getDocument({ data: arrayBuffer });
+      const pdf = await loadingTask.promise;
       const page = await pdf.getPage(pageIndex + 1);
-      const viewport = page.getViewport({ scale: 0.3 }); // Small thumbnail
+      
+      const viewport = page.getViewport({ scale: 0.5 });
       const canvas = document.createElement('canvas');
       const context = canvas.getContext('2d');
       canvas.height = viewport.height;
       canvas.width = viewport.width;
 
       await page.render({ canvasContext: context, viewport }).promise;
-      return canvas.toDataURL();
+      const url = canvas.toDataURL('image/jpeg', 0.8);
+      
+      // Clean up PDF resources
+      await pdf.destroy();
+      return url;
     } catch (e) {
-      console.error('Thumbnail generation error', e);
+      console.error('Thumbnail error:', e);
       return null;
     }
   };
@@ -71,28 +82,44 @@ export default function ServicesPage() {
     if (files.length === 0) return;
 
     setIsProcessing(true);
-    setStatus('جاري معالجة الصفحات وتوليد المعاينة...');
+    setStatus('جاري توليد المعاينة (PDF وصور)...');
     
     try {
       const newPages = [];
       for (const file of files) {
-        if (!outputFileName) setOutputFileName(file.name.replace('.pdf', '') + '_معدل');
-        
-        const arrayBuffer = await file.arrayBuffer();
-        const pdfDoc = await PDFDocument.load(arrayBuffer, { ignoreEncryption: true });
-        const count = pdfDoc.getPageCount();
-        
-        for (let j = 0; j < count; j++) {
-          const thumb = await generateThumbnail(arrayBuffer, j);
+        if (!outputFileName) setOutputFileName(file.name.split('.')[0] + '_معدل');
+
+        if (file.type.startsWith('image/')) {
+          const thumb = await generateThumbnail(file);
           newPages.push({
             id: Math.random().toString(36).substr(2, 9),
             fileName: file.name,
-            fileData: arrayBuffer,
-            pageIndex: j,
+            fileData: await file.arrayBuffer(),
+            pageIndex: 0,
             rotation: 0,
             isSelected: true,
-            thumbnail: thumb
+            thumbnail: thumb,
+            isImage: true,
+            mimeType: file.type
           });
+        } else if (file.type === 'application/pdf') {
+          const arrayBuffer = await file.arrayBuffer();
+          const pdfDoc = await PDFDocument.load(arrayBuffer, { ignoreEncryption: true });
+          const count = pdfDoc.getPageCount();
+          
+          for (let j = 0; j < count; j++) {
+            const thumb = await generateThumbnail(file, j);
+            newPages.push({
+              id: Math.random().toString(36).substr(2, 9),
+              fileName: file.name,
+              fileData: arrayBuffer,
+              pageIndex: j,
+              rotation: 0,
+              isSelected: true,
+              thumbnail: thumb,
+              isImage: false
+            });
+          }
         }
       }
       setPdfPages([...pdfPages, ...newPages]);
@@ -106,30 +133,46 @@ export default function ServicesPage() {
 
   const processFinalPdf = async () => {
     const activePages = pdfPages.filter(p => p.isSelected);
-    if (activePages.length === 0) {
-      alert('يرجى اختيار صفحة واحدة على الأقل');
-      return;
-    }
+    if (activePages.length === 0) return;
 
     setIsProcessing(true);
-    setStatus('جاري إنتاج ملفك الجديد...');
+    setStatus('جاري دمج الملفات والتحويل...');
 
     try {
       const finalPdf = await PDFDocument.create();
       const docCache = new Map();
 
       for (const pageInfo of activePages) {
-        let sourceDoc;
-        if (docCache.has(pageInfo.fileData)) {
-          sourceDoc = docCache.get(pageInfo.fileData);
+        if (pageInfo.isImage) {
+          const imageBytes = pageInfo.fileData;
+          let embeddedImage;
+          if (pageInfo.mimeType === 'image/jpeg' || pageInfo.mimeType === 'image/jpg') {
+            embeddedImage = await finalPdf.embedJpg(imageBytes);
+          } else {
+            embeddedImage = await finalPdf.embedPng(imageBytes);
+          }
+          
+          const page = finalPdf.addPage([embeddedImage.width, embeddedImage.height]);
+          page.drawImage(embeddedImage, {
+            x: 0,
+            y: 0,
+            width: embeddedImage.width,
+            height: embeddedImage.height,
+          });
+          page.setRotation(degrees(pageInfo.rotation));
         } else {
-          sourceDoc = await PDFDocument.load(pageInfo.fileData, { ignoreEncryption: true });
-          docCache.set(pageInfo.fileData, sourceDoc);
-        }
+          let sourceDoc;
+          if (docCache.has(pageInfo.fileData)) {
+            sourceDoc = docCache.get(pageInfo.fileData);
+          } else {
+            sourceDoc = await PDFDocument.load(pageInfo.fileData, { ignoreEncryption: true });
+            docCache.set(pageInfo.fileData, sourceDoc);
+          }
 
-        const [copiedPage] = await finalPdf.copyPages(sourceDoc, [pageInfo.pageIndex]);
-        copiedPage.setRotation(degrees(pageInfo.rotation));
-        finalPdf.addPage(copiedPage);
+          const [copiedPage] = await finalPdf.copyPages(sourceDoc, [pageInfo.pageIndex]);
+          copiedPage.setRotation(degrees(pageInfo.rotation));
+          finalPdf.addPage(copiedPage);
+        }
       }
 
       const pdfBytes = await finalPdf.save();
@@ -137,10 +180,10 @@ export default function ServicesPage() {
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      link.download = `${outputFileName || 'frame_output'}.pdf`;
+      link.download = `${outputFileName || 'frame_document'}.pdf`;
       link.click();
       
-      finish('تم تحميل الملف بنجاح!');
+      finish('تم دمج وتحميل الملف بنجاح!');
     } catch (err) {
       setIsProcessing(false);
       setStatus(`خطأ: ${err.message}`);
@@ -160,36 +203,31 @@ export default function ServicesPage() {
     <div className="page" style={{ background: 'var(--bg)', color: 'var(--text)', minHeight: '100vh', transition: 'all 0.3s' }}>
       
       <div style={{ marginBottom: '24px', textAlign: 'center' }}>
-        <h1 style={{ fontSize: '24px', fontWeight: 900, marginBottom: '4px' }}>أدوات PDF البصرية</h1>
-        <p style={{ color: 'var(--text-3)', fontSize: '13px' }}>تحكم كامل في صفحاتك مع معاينة مباشرة</p>
+        <h1 style={{ fontSize: '24px', fontWeight: 900, marginBottom: '4px' }}>المحرر البصري المتكامل</h1>
+        <p style={{ color: 'var(--text-3)', fontSize: '13px' }}>دمج الصور والـ PDF مع معاينة فورية</p>
       </div>
 
       {!selectedTool ? (
         <div style={{ display: 'grid', gap: '12px' }}>
-          {pdfTools.map(tool => (
-            <Card key={tool.id} padded style={{ background: 'var(--surface)', cursor: 'pointer', border: '1px solid var(--border)' }} onClick={() => { setSelectedTool(tool); fileInputRef.current.click(); }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <div style={{ width: '42px', height: '42px', borderRadius: '10px', background: `${tool.color}15`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <tool.icon size={20} color={tool.color} />
-                </div>
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontWeight: 800, fontSize: '15px' }}>{tool.title}</div>
-                  <div style={{ fontSize: '11px', color: 'var(--text-3)' }}>{tool.desc}</div>
-                </div>
-                <ChevronRight size={18} color="var(--text-3)" />
+          <Card padded style={{ background: 'var(--surface)', cursor: 'pointer', border: '1px solid var(--border)' }} onClick={() => { setSelectedTool({ color: '#8b5cf6' }); fileInputRef.current.click(); }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <div style={{ width: '42px', height: '42px', borderRadius: '10px', background: `#8b5cf615`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <Settings2 size={20} color="#8b5cf6" />
               </div>
-            </Card>
-          ))}
+              <div style={{ flex: 1 }}>
+                <div style={{ fontWeight: 800, fontSize: '15px' }}>ابدأ الدمج والتعديل البصري</div>
+                <div style={{ fontSize: '11px', color: 'var(--text-3)' }}>ارفع صور أو ملفات PDF وادمجها معاً</div>
+              </div>
+              <ChevronRight size={18} color="var(--text-3)" />
+            </div>
+          </Card>
         </div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
           
           <Card padded style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <selectedTool.icon color={selectedTool.color} size={20} />
-                <h2 style={{ fontWeight: 800, fontSize: '16px' }}>{selectedTool.title}</h2>
-              </div>
+              <h2 style={{ fontWeight: 800, fontSize: '16px' }}>مساحة العمل البصرية</h2>
               <button onClick={() => { setSelectedTool(null); setPdfPages([]); setOutputFileName(''); }} style={{ background: 'var(--surface-2)', border: 'none', borderRadius: '50%', width: '28px', height: '28px', cursor: 'pointer', color: 'var(--text)' }}>
                 <X size={16} />
               </button>
@@ -198,7 +236,6 @@ export default function ServicesPage() {
 
           {pdfPages.length > 0 && (
             <>
-              {/* Output Filename Input */}
               <Card padded style={{ background: 'var(--surface-2)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: '12px' }}>
                 <Edit3 size={18} color="var(--text-3)" />
                 <input 
@@ -211,32 +248,29 @@ export default function ServicesPage() {
                 <span style={{ fontSize: '12px', color: 'var(--text-3)' }}>.pdf</span>
               </Card>
 
-              {/* Grid of pages with Thumbnails */}
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))', gap: '12px' }}>
                 {pdfPages.map((page, index) => (
                   <div key={page.id} style={{ 
                     background: page.isSelected ? 'var(--surface)' : 'var(--surface-2)', 
                     borderRadius: '12px', border: page.isSelected ? `2px solid ${selectedTool.color}` : '1px solid var(--border)',
-                    overflow: 'hidden', position: 'relative', opacity: page.isSelected ? 1 : 0.6, transition: '0.2s'
+                    overflow: 'hidden', position: 'relative'
                   }}>
-                    {/* Visual Page Preview */}
-                    <div style={{ height: '140px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f8fafc', position: 'relative', overflow: 'hidden' }}>
+                    <div style={{ height: '140px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f8fafc', position: 'relative' }}>
                       {page.thumbnail ? (
-                        <img 
-                          src={page.thumbnail} 
-                          alt="preview" 
-                          style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain', transform: `rotate(${page.rotation}deg)`, transition: '0.3s' }} 
-                        />
+                        <img src={page.thumbnail} alt="preview" style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain', transform: `rotate(${page.rotation}deg)`, transition: '0.3s' }} />
                       ) : (
-                        <FileText size={40} color="var(--text-3)" />
+                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
+                          <Loader2 size={24} className="animate-spin" color="var(--text-3)" />
+                          <span style={{ fontSize: '10px', color: 'var(--text-3)' }}>تحميل المعاينة...</span>
+                        </div>
                       )}
                       <div style={{ position: 'absolute', bottom: '4px', right: '4px', background: 'rgba(0,0,0,0.5)', color: '#fff', fontSize: '10px', padding: '2px 6px', borderRadius: '4px' }}>
-                        {index + 1}
+                        {page.isImage ? <ImageIcon size={10} style={{ display: 'inline', marginLeft: '4px' }} /> : null}
+                        صفحة {index + 1}
                       </div>
                     </div>
 
-                    {/* Controls */}
-                    <div style={{ padding: '6px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--surface)' }}>
+                    <div style={{ padding: '6px', display: 'flex', justifyContent: 'space-between', background: 'var(--surface)' }}>
                       <div style={{ display: 'flex', gap: '2px' }}>
                         <button onClick={() => {
                           const newPages = [...pdfPages];
@@ -254,7 +288,7 @@ export default function ServicesPage() {
                         }} disabled={index === pdfPages.length - 1} className="icon-btn" style={{ width: '22px', height: '22px' }}><ArrowDown size={10} /></button>
                       </div>
                       <div style={{ display: 'flex', gap: '2px' }}>
-                        <button onClick={() => setPdfPages(pdfPages.map(p => p.id === page.id ? { ...p, rotation: (p.rotation + 90) % 360 } : p))} className="icon-btn" style={{ width: '22px', height: '22px', color: 'var(--blue)' }}><RotateCw size={10} /></button>
+                        <button onClick={() => setPdfPages(pdfPages.map(p => p.id === page.id ? { ...p, rotation: (p.rotation + 90) % 360 } : p))} className="icon-btn" style={{ width: '22px', height: '22px' }}><RotateCw size={10} /></button>
                         <button onClick={() => setPdfPages(pdfPages.map(p => p.id === page.id ? { ...p, isSelected: !p.isSelected } : p))} className="icon-btn" style={{ width: '22px', height: '22px', color: page.isSelected ? 'var(--green)' : 'var(--text-3)' }}>
                           {page.isSelected ? <CheckCircle2 size={10} /> : <Circle size={10} />}
                         </button>
@@ -269,12 +303,12 @@ export default function ServicesPage() {
                 
                 <div onClick={() => fileInputRef.current.click()} style={{ height: '178px', border: '2px dashed var(--border)', borderRadius: '12px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'var(--text-3)' }}>
                   <PlusCircle size={24} />
-                  <span style={{ fontSize: '11px', fontWeight: 700, marginTop: '8px' }}>إضافة ملف</span>
+                  <span style={{ fontSize: '11px', fontWeight: 700, marginTop: '8px' }}>إضافة ملف/صورة</span>
                 </div>
               </div>
 
               <button className="btn" onClick={processFinalPdf} style={{ background: selectedTool.color, position: 'sticky', bottom: '110px', boxShadow: 'var(--shadow-md)', marginTop: '20px' }}>
-                <Play size={18} /> حفظ الملف كـ "{outputFileName || 'جديد'}.pdf"
+                <Play size={18} /> دمج وحفظ باسم "{outputFileName || 'frame'}.pdf"
               </button>
             </>
           )}
@@ -282,14 +316,14 @@ export default function ServicesPage() {
           {pdfPages.length === 0 && (
             <Card padded style={{ background: 'var(--surface)', border: '2px dashed var(--border)', textAlign: 'center', cursor: 'pointer', padding: '60px 20px' }} onClick={() => fileInputRef.current.click()}>
               <Upload size={40} color="var(--text-3)" style={{ marginBottom: '16px' }} />
-              <div style={{ fontWeight: 800, fontSize: '18px' }}>ارفع ملفات الـ PDF للبدء</div>
-              <p style={{ fontSize: '13px', color: 'var(--text-3)', marginTop: '8px' }}>سيتم عرض الصفحات لتتمكن من دمجها وترتيبها بصرياً</p>
+              <div style={{ fontWeight: 800 }}>ارفع ملفات PDF أو صور (JPG, PNG)</div>
+              <p style={{ fontSize: '13px', color: 'var(--text-3)', marginTop: '8px' }}>سيتم دمجها جميعاً في ملف واحد مع معاينة فورية</p>
             </Card>
           )}
         </div>
       )}
 
-      <input type="file" ref={fileInputRef} style={{ display: 'none' }} multiple={selectedTool?.multiple} onChange={handleFileSelect} accept=".pdf" />
+      <input type="file" ref={fileInputRef} style={{ display: 'none' }} multiple onChange={handleFileSelect} accept=".pdf,image/*" />
 
       {isProcessing && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', zIndex: 2000, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(8px)' }}>
