@@ -3,12 +3,14 @@
 import { useState, memo } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Home, Users, Briefcase, FileText, Settings, LogOut, Eye, ClipboardList, Send, Plus } from 'lucide-react';
+import { Home, Users, Briefcase, FileText, Settings, LogOut, Eye, ClipboardList, Send, Plus, Sun, Moon } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
+import { useTheme } from './AppWrapper';
 
 function BottomNavContent() {
   const pathname = usePathname();
   const { user, logout, canEdit } = useAuth();
+  const { theme, toggleTheme } = useTheme();
   const [isOpen, setIsOpen] = useState(false);
 
   const navItems = [
@@ -29,16 +31,16 @@ function BottomNavContent() {
   return (
     <>
       {/* Top Bar - Always Visible */}
-      <div className="top-bar" style={{ zIndex: 1002 }}>
+      <div className="top-bar" style={{ zIndex: 1002, background: 'var(--surface)', borderBottom: '1px solid var(--border)' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
           <div className="avatar" style={{ background: user?.color || '#2563eb', width: '34px', height: '34px', fontSize: '13px' }}>
             {user?.name?.[0]}
           </div>
           <div>
-            <div style={{ fontSize: '14px', fontWeight: 700, lineHeight: 1.2 }}>{user?.name}</div>
+            <div style={{ fontSize: '14px', fontWeight: 700, lineHeight: 1.2, color: 'var(--text)' }}>{user?.name}</div>
             <div style={{
               fontSize: '11px', fontWeight: 700, lineHeight: 1,
-              color: canEdit ? '#059669' : '#d97706',
+              color: canEdit ? '#10b981' : '#f59e0b',
             }}>
               {canEdit ? '● متصل' : '● مشاهد'}
             </div>
@@ -46,14 +48,17 @@ function BottomNavContent() {
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <button onClick={logout} className="icon-btn" style={{ width: '34px', height: '34px', background: 'rgba(220, 38, 38, 0.1)' }}>
-            <LogOut size={15} color="#dc2626" />
+          <button onClick={toggleTheme} className="icon-btn" style={{ width: '34px', height: '34px', background: 'var(--surface-2)', border: '1px solid var(--border)' }}>
+            {theme === 'dark' ? <Sun size={15} color="#f59e0b" /> : <Moon size={15} color="#3b82f6" />}
+          </button>
+          <button onClick={logout} className="icon-btn" style={{ width: '34px', height: '34px', background: 'var(--red-light)' }}>
+            <LogOut size={15} color="var(--red)" />
           </button>
         </div>
       </div>
 
       {/* FAB Button */}
-      <button className={`fab-btn ${isOpen ? 'active' : ''}`} onClick={toggleMenu}>
+      <button className={`fab-btn ${isOpen ? 'active' : ''}`} onClick={toggleMenu} style={{ background: 'var(--blue)', boxShadow: 'var(--shadow-md)' }}>
         <Plus size={32} strokeWidth={3} />
       </button>
 

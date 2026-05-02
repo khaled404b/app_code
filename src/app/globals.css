@@ -1,38 +1,68 @@
 @import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;800;900&display=swap');
 
 :root {
-  --bg: #f0f4f8;
-  --surface: #ffffff;
-  --surface-2: #f8fafc;
-  --border: #e2e8f0;
-  --border-light: #f1f5f9;
+  /* Light Theme Variables */
+  --bg-light: #f0f4f8;
+  --surface-light: #ffffff;
+  --surface-2-light: #f8fafc;
+  --border-light-theme: #e2e8f0;
+  --text-light: #0f172a;
+  --text-2-light: #475569;
+  --text-3-light: #94a3b8;
 
-  --blue: #2563eb;
-  --blue-light: #eff6ff;
-  --blue-dark: #1d4ed8;
+  /* Dark Theme Variables (Default) */
+  --bg-dark: #0f172a;
+  --surface-dark: #1e293b;
+  --surface-2-dark: #0f172a;
+  --border-dark-theme: #334155;
+  --text-dark: #f8fafc;
+  --text-2-dark: #cbd5e1;
+  --text-3-dark: #94a3b8;
 
-  --green: #059669;
-  --green-light: #ecfdf5;
-  --orange: #d97706;
-  --orange-light: #fffbeb;
-  --red: #dc2626;
-  --red-light: #fef2f2;
-  --purple: #7c3aed;
-  --purple-light: #f5f3ff;
-
-  --text: #0f172a;
-  --text-2: #475569;
-  --text-3: #94a3b8;
+  /* Active Variables - Default to Dark */
+  --bg: var(--bg-dark);
+  --surface: var(--surface-dark);
+  --surface-2: var(--surface-2-dark);
+  --border: var(--border-dark-theme);
+  --border-light: var(--border-dark-theme);
+  --text: var(--text-dark);
+  --text-2: var(--text-2-dark);
+  --text-3: var(--text-3-dark);
   --text-inv: #ffffff;
+
+  --blue: #3b82f6;
+  --blue-light: rgba(59, 130, 246, 0.1);
+  --blue-dark: #2563eb;
+
+  --green: #10b981;
+  --green-light: rgba(16, 185, 129, 0.1);
+  --orange: #f59e0b;
+  --orange-light: rgba(245, 158, 11, 0.1);
+  --red: #ef4444;
+  --red-light: rgba(239, 68, 68, 0.1);
+  --purple: #8b5cf6;
+  --purple-light: rgba(139, 92, 246, 0.1);
 
   --nav-h: 72px;
   --top-h: 58px;
   --radius: 16px;
-  --radius-sm: 10px;
+  --radius-sm: 12px;
   --radius-xs: 8px;
-  --shadow: 0 1px 3px rgba(0, 0, 0, 0.07), 0 4px 12px rgba(0, 0, 0, 0.04);
-  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.1), 0 1px 4px rgba(0, 0, 0, 0.06);
+  --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+  --shadow-md: 0 10px 15px -3px rgba(0, 0, 0, 0.3), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
   --safe-b: env(safe-area-inset-bottom, 16px);
+}
+
+[data-theme='light'] {
+  --bg: var(--bg-light);
+  --surface: var(--surface-light);
+  --surface-2: var(--surface-2-light);
+  --border: var(--border-light-theme);
+  --border-light: #f1f5f9;
+  --text: var(--text-light);
+  --text-2: var(--text-2-light);
+  --text-3: var(--text-3-light);
+  --shadow: 0 1px 3px rgba(0, 0, 0, 0.07), 0 4px 12px rgba(0, 0, 0, 0.04);
 }
 
 * {
