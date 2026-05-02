@@ -62,7 +62,7 @@ export function ClientForm({ state, actions }) {
                 <input 
                   className="form-input" 
                   placeholder="مثال: 14" 
-                  value={newPlot.number} 
+                  value={newPlot.number || ''} 
                   onChange={e => setNewPlot(p => ({ ...p, number: e.target.value }))} 
                 />
               </div>
@@ -71,10 +71,20 @@ export function ClientForm({ state, actions }) {
                 <input 
                   className="form-input" 
                   placeholder="مثال: المطلاع" 
-                  value={newPlot.location} 
+                  value={newPlot.location || ''} 
                   onChange={e => setNewPlot(p => ({ ...p, location: e.target.value }))} 
                 />
               </div>
+            </div>
+            <div className="form-group" style={{ marginBottom: '10px' }}>
+              <label className="form-label" style={{ fontSize: '11px' }}>رابط خرائط جوجل لهذه القسيمة</label>
+              <input 
+                className="form-input" 
+                placeholder="أدخل رابط Google Maps هنا..." 
+                value={newPlot.maps_link || ''} 
+                onChange={e => setNewPlot(p => ({ ...p, maps_link: e.target.value }))} 
+                style={{ direction: 'ltr', textAlign: 'left' }}
+              />
             </div>
             <button type="button" className="btn btn-sm" onClick={addPlot} disabled={!newPlot.number}>
               + إضافة القسيمة للقائمة

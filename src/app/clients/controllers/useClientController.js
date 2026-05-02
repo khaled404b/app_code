@@ -11,7 +11,7 @@ export function useClientController() {
   const [view, setView] = useState('list'); // 'list', 'detail', 'form'
   const [selected, setSelected] = useState(null);
   const [form, setForm] = useState({});
-  const [newPlot, setNewPlot] = useState({ number: '', location: '' });
+  const [newPlot, setNewPlot] = useState({ number: '', location: '', maps_link: '' });
 
   const clients = data?.clients || [];
 
@@ -34,13 +34,13 @@ export function useClientController() {
   const openNew = () => { 
     setSelected(null); 
     setForm({ name: '', phone: '', location: '', notes: '', drive_link: '', maps_link: '', type: 'طبيعي', commission_rate: '8', plots: [] }); 
-    setNewPlot({ number: '', location: '' });
+    setNewPlot({ number: '', location: '', maps_link: '' });
     setView('form'); 
   };
   
   const openEdit = (client) => { 
     setForm({ ...client, plots: client.plots || [] }); 
-    setNewPlot({ number: '', location: '' });
+    setNewPlot({ number: '', location: '', maps_link: '' });
     setView('form'); 
   };
 
@@ -72,7 +72,7 @@ export function useClientController() {
   const addPlot = () => {
     if (!newPlot.number) return;
     setForm(p => ({ ...p, plots: [...(p.plots || []), { ...newPlot, id: uuidv4() }] }));
-    setNewPlot({ number: '', location: '' });
+    setNewPlot({ number: '', location: '', maps_link: '' });
   };
 
   const removePlot = (index) => {

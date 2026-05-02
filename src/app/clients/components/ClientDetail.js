@@ -72,7 +72,7 @@ export function ClientDetail({ state, actions }) {
         {(selected.plots || []).filter(Boolean).map((pl, i) => (
           <Card key={i} padded style={{ borderRight: '4px solid #2563eb' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <div>
+              <div style={{ flex: 1 }}>
                 <div style={{ fontSize: '14px', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '6px' }}>
                   <Hash size={14} color="#2563eb" /> قسيمة: {typeof pl === 'object' ? pl.number : pl}
                 </div>
@@ -82,6 +82,17 @@ export function ClientDetail({ state, actions }) {
                   </div>
                 )}
               </div>
+              {typeof pl === 'object' && pl.maps_link && (
+                <a 
+                  href={pl.maps_link.trim().startsWith('http') ? pl.maps_link.trim() : `https://${pl.maps_link.trim()}`} 
+                  target="_blank" 
+                  rel="noopener noreferrer" 
+                  className="icon-btn" 
+                  style={{ background: '#ecfdf5', border: '1px solid #10b981', width: '32px', height: '32px' }}
+                >
+                  <MapPin size={16} color="#059669" />
+                </a>
+              )}
             </div>
           </Card>
         ))}
