@@ -330,7 +330,7 @@ function SupervisionContent() {
          `}</style>
 
         <div className="rep-header">
-          <div><h1 style={{ margin: 0, fontSize: '28px', fontWeight: 900 }}>FRAME</h1><div style={{ fontSize: '11px' }}>مكتب فريم الهندسي</div></div>
+          <div><h1 style={{ margin: 0, fontSize: '28px', fontWeight: 900 }}>KALAM MAWZOON</h1><div style={{ fontSize: '11px' }}>مكتب كلام موزون الهندسي</div></div>
           <div style={{ textAlign: 'center' }}>
             <h2 style={{ textDecoration: 'underline', margin: 0, fontSize: '18px' }}>كشف متابعة عقود الإشراف</h2>
             <div style={{ fontSize: '11px', marginTop: '3px' }}>تاريخ التقرير: {new Date().toLocaleDateString('ar-EG')}</div>

@@ -39,9 +39,9 @@ export default function Login() {
           overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center',
           border: `2px solid ${activeColor}44`, transition: 'border-color 0.4s, box-shadow 0.4s',
         }}>
-          <img src="/icon.png" alt="FRAME" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+          <img src="/icon.png" alt="KALAM MAWZOON" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
         </div>
-        <h1 style={{ color: 'white', fontSize: '32px', fontWeight: 900, letterSpacing: '2px' }}>فرييم</h1>
+        <h1 style={{ color: 'white', fontSize: '32px', fontWeight: 900, letterSpacing: '2px' }}>كلام موزون</h1>
         <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '14px', marginTop: '6px' }}>نظام الإدارة الداخلي</p>
       </div>
 
@@ -127,7 +127,7 @@ export default function Login() {
       </div>
 
       <p style={{ color: 'rgba(255,255,255,0.2)', fontSize: '12px', marginTop: '32px', textAlign: 'center' }}>
-        فرييم © 2025
+        كلام موزون © 2025
       </p>
     </div>
   );
