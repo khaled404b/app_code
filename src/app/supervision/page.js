@@ -61,14 +61,21 @@ function SupervisionContent() {
       has_file: tempFiles.length > 0 || form.has_file,
     };
 
-    if (selected) await updateData('supervision', 'update', payload, selected.id);
-    else await updateData('supervision', 'add', payload);
+    try {
+      if (selected) await updateData('supervision', 'update', payload, selected.id);
+      else await updateData('supervision', 'add', payload);
 
-    if (tempFiles.length > 0) {
-      set(ref(db, `attachments/${payload.id}`), JSON.stringify(tempFiles));
+      if (tempFiles.length > 0) {
+        set(ref(db, `attachments/${payload.id}`), JSON.stringify(tempFiles));
+      }
+
+      setView('list'); 
+      setSelected(null); 
+      setTempFiles([]);
+    } catch (err) {
+      console.error(err);
+      alert('فشل الحفظ: ' + err.message);
     }
-
-    setView('list'); setSelected(null); setTempFiles([]);
   };
 
   const getClient = (id) => clients.find(c => c.id === id) || {};

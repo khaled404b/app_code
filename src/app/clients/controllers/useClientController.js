@@ -50,16 +50,21 @@ export function useClientController() {
 
   const handleSave = async (e) => {
     e.preventDefault();
-    const sanitized = { ...form, commission_rate: form.commission_rate || '0' };
-    
-    if (selected) {
-      await updateData('clients', 'update', sanitized, selected.id);
-    } else {
-      await updateData('clients', 'add', { ...sanitized, id: uuidv4() });
+    try {
+      const sanitized = { ...form, commission_rate: form.commission_rate || '0' };
+      
+      if (selected) {
+        await updateData('clients', 'update', sanitized, selected.id);
+      } else {
+        await updateData('clients', 'add', { ...sanitized, id: uuidv4() });
+      }
+      
+      setView('list'); 
+      setSelected(null);
+    } catch (err) {
+      console.error(err);
+      alert('فشل الحفظ: ' + err.message);
     }
-    
-    setView('list'); 
-    setSelected(null);
   };
 
   const handleDelete = async () => {

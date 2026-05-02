@@ -44,14 +44,21 @@ function TasksContent() {
       has_file: tempFiles.length > 0 || form.has_file
     };
     
-    if (selected) await updateData('tasks', 'update', finalTask, selected.id);
-    else await updateData('tasks', 'add', finalTask);
-    
-    if (tempFiles.length > 0) {
-      fSet(fRef(fDb, `attachments/${finalTask.id}`), JSON.stringify(tempFiles));
+    try {
+      if (selected) await updateData('tasks', 'update', finalTask, selected.id);
+      else await updateData('tasks', 'add', finalTask);
+      
+      if (tempFiles.length > 0) {
+        fSet(fRef(fDb, `attachments/${finalTask.id}`), JSON.stringify(tempFiles));
+      }
+      
+      setView('list'); 
+      setSelected(null); 
+      setTempFiles([]);
+    } catch (err) {
+      console.error(err);
+      alert('فشل حفظ المهمة: ' + err.message);
     }
-    
-    setView('list'); setSelected(null); setTempFiles([]);
   };
 
   const handleDelete = async (id) => {
