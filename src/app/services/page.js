@@ -103,29 +103,82 @@ export default function ServicesPage() {
       const file = selectedFiles[0];
       const fileName = file.name.split('.')[0];
       
-      // REAL CONVERSION LOGIC
-      if (selectedTool.id === 'dwg-pdf' || selectedTool.id === 'dwg-dwf' || selectedTool.id === 'dwf-pdf' || selectedTool.id === 'pdf-dwf') {
-        // CAD Conversions
-        // We simulate a high-fidelity conversion process
-        // In a real environment, this would call a WASM module or a dedicated API
-        await new Promise(r => setTimeout(r, 4000));
+      if (selectedTool.id === 'word-pdf') {
+        const mammoth = (await import('mammoth')).default;
+        const html2pdf = (await import('html2pdf.js')).default;
         
-        // Generate a valid blob based on the target type
-        let blobType = selectedTool.to === 'PDF' ? 'application/pdf' : 'application/octet-stream';
-        let dummyContent = new Uint8Array([0x25, 0x50, 0x44, 0x46, 0x2d, 0x31, 0x2e, 0x34, 0x0a]); // Basic PDF header
-        downloadBlob(dummyContent, `${fileName}.${selectedTool.to.toLowerCase()}`, blobType);
-        finish(`تم تحويل الملف ${file.name} بنجاح!`);
+        const arrayBuffer = await file.arrayBuffer();
+        const result = await mammoth.convertToHtml({ arrayBuffer });
+        const html = result.value;
+        
+        const element = document.createElement('div');
+        element.innerHTML = html;
+        element.style.padding = '40px';
+        element.style.fontFamily = 'Tajawal, sans-serif';
+        
+        const opt = {
+          margin: 1,
+          filename: `${fileName}.pdf`,
+          image: { type: 'jpeg', quality: 0.98 },
+          html2canvas: { scale: 2 },
+          jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
+        };
+        
+        await html2pdf().set(opt).from(element).save();
+        finish(`تم تحويل ملف Word بنجاح!`);
       } 
-      else if (selectedTool.id === 'word-pdf' || selectedTool.id === 'excel-pdf') {
-        // Office Conversions
-        await new Promise(r => setTimeout(r, 3000));
-        let dummyContent = new Uint8Array([0x25, 0x50, 0x44, 0x46]);
-        downloadBlob(dummyContent, `${fileName}.pdf`, 'application/pdf');
-        finish(`تم تحويل الملف بنجاح!`);
+      else if (selectedTool.id === 'excel-pdf') {
+        const XLSX = await import('xlsx');
+        const arrayBuffer = await file.arrayBuffer();
+        const workbook = XLSX.read(arrayBuffer);
+        const firstSheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[firstSheetName];
+        const html = XLSX.utils.sheet_to_html(worksheet);
+        
+        const html2pdf = (await import('html2pdf.js')).default;
+        const element = document.createElement('div');
+        element.innerHTML = `
+          <h2 style="text-align:center; color:#2563eb;">${fileName}</h2>
+          <style>table { border-collapse: collapse; width: 100%; } td, th { border: 1px solid #ddd; padding: 8px; font-size: 10px; }</style>
+          ${html}
+        `;
+        
+        const opt = {
+          margin: 0.5,
+          filename: `${fileName}.pdf`,
+          jsPDF: { unit: 'in', format: 'a4', orientation: 'landscape' }
+        };
+        
+        await html2pdf().set(opt).from(element).save();
+        finish(`تم تحويل ملف Excel بنجاح!`);
+      }
+      else {
+        // CAD Conversions - Call our internal API
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('to', selectedTool.to);
+        
+        setStatus('جاري معالجة الرسم الهندسي (قد يستغرق دقيقة)...');
+        
+        const response = await fetch('/api/convert', {
+          method: 'POST',
+          body: formData
+        });
+        
+        if (!response.ok) throw new Error('فشل الاتصال بمحرك التحويل');
+        
+        const blob = await response.blob();
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `${fileName}.${selectedTool.to.toLowerCase()}`;
+        link.click();
+        
+        finish(`تم تحويل الملف الهندسي بنجاح!`);
       }
     } catch (err) {
       setIsProcessing(false);
-      setStatus(`خطأ أثناء التحويل: ${err.message}`);
+      setStatus(`خطأ: ${err.message}`);
     }
   };
 
