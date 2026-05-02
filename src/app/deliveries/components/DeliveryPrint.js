@@ -22,15 +22,15 @@ export function DeliveryPrint({ data }) {
   };
 
   return (
-    <div id="delivery-print-template" style={{ 
+    <div id="delivery-print-template" style={{
       display: 'none',
-      width: '210mm', 
-      height: '297mm', 
-      padding: '5mm', 
-      background: 'white', 
-      direction: 'rtl', 
+      width: '210mm',
+      height: '297mm',
+      padding: '5mm',
+      background: 'white',
+      direction: 'rtl',
       fontFamily: 'Arial, sans-serif',
-      fontSize: '9.5px', 
+      fontSize: '9.5px',
       color: '#000',
       lineHeight: '1.2',
       boxSizing: 'border-box',
@@ -119,8 +119,8 @@ export function DeliveryPrint({ data }) {
             </thead>
             <tbody>
               {[
-                'وثائق / سندات', 'رسومات / مخططات', 'تقارير', 
-                'أمر تغيير', 'خطاب', 'فاتورة', 
+                'وثائق / سندات', 'رسومات / مخططات', 'تقارير',
+                'أمر تغيير', 'خطاب', 'فاتورة',
                 'جدول كميات / مواصفات', 'نسخة إلكترونية (CD/DVD)'
               ].map(key => (
                 <tr key={key} style={{ height: '17px' }}>
@@ -133,14 +133,14 @@ export function DeliveryPrint({ data }) {
               <tr style={{ height: '40px' }}>
                 <td className="p-bold p-small" style={{ background: '#efefef', verticalAlign: 'middle' }}>طريقة الإرسال:</td>
                 <td className="p-center" style={{ verticalAlign: 'middle' }}>
-                   <div style={{ fontSize: '8px', fontWeight: 'bold' }}>مرفق مع هذا الإرسال</div>
-                   <div className="p-checkbox-box p-checkbox-checked" style={{ marginTop: '2px' }}></div>
+                  <div style={{ fontSize: '8px', fontWeight: 'bold' }}>مرفق مع هذا الإرسال</div>
+                  <div className="p-checkbox-box p-checkbox-checked" style={{ marginTop: '2px' }}></div>
                 </td>
               </tr>
             </tbody>
           </table>
         </div>
-        
+
         {/* 2. Purpose */}
         <div style={{ flex: 1, borderLeft: '0.5px solid #666' }}>
           <table className="p-table">
@@ -152,7 +152,7 @@ export function DeliveryPrint({ data }) {
             </thead>
             <tbody>
               {[
-                'للموافقة', 'للمراجعة والتعليق', 'حسب الطلب', 
+                'للموافقة', 'للمراجعة والتعليق', 'حسب الطلب',
                 'للمعلومات والسجلات فقط', 'للإجراء اللازم', 'أخرى: ....................'
               ].map(key => (
                 <tr key={key} style={{ height: '17px' }}>
@@ -243,10 +243,10 @@ export function DeliveryPrint({ data }) {
             </tr>
             <tr>
               <td colSpan="2" style={{ height: '90px', verticalAlign: 'top', padding: '5px' }}>
-                 <div className="p-label" style={{ width: 'auto', background: 'none', marginBottom: '2px' }}>اسم المستلم:</div>
-                 <div className="p-bold" style={{ fontSize: '10px' }}>{data.receiver_name}</div>
-                 <div className="p-label" style={{ width: 'auto', background: 'none', marginTop: '15px', marginBottom: '2px' }}>تاريخ الاستلام:</div>
-                 <div style={{ marginTop: '10px' }}>___________________</div>
+                <div className="p-label" style={{ width: 'auto', background: 'none', marginBottom: '2px' }}>اسم المستلم:</div>
+                <div className="p-bold" style={{ fontSize: '10px' }}>{data.receiver_name}</div>
+                <div className="p-label" style={{ width: 'auto', background: 'none', marginTop: '15px', marginBottom: '2px' }}>تاريخ الاستلام:</div>
+                <div style={{ marginTop: '10px' }}>___________________</div>
               </td>
               <td className="p-signature-area">
                 {data.signatures?.sender && <img src={data.signatures.sender} className="p-signature-img" />}
