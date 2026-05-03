@@ -97,6 +97,44 @@ export default function Dashboard() {
     <div style={{ background: '#f8fafc', minHeight: '100vh', padding: '20px' }}>
       <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
         
+        {/* --- INTEGRATED TOP BAR (RE-ADDED) --- */}
+        <div style={{ 
+          background: '#ffffff', padding: '15px 25px', borderRadius: '16px', marginBottom: '30px', 
+          display: 'flex', justifyContent: 'space-between', alignItems: 'center', border: '1px solid #e2e8f0',
+          boxShadow: '0 2px 4px rgba(0,0,0,0.02)'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+             <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: '#2563eb', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#ffffff', fontWeight: 900, fontSize: '20px' }}>F</div>
+             <div>
+                <h1 style={{ fontSize: '18px', fontWeight: 900, color: '#0f172a', margin: 0 }}>مكتب فريم الهندسي</h1>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '2px' }}>
+                   {!isConnected ? (
+                     <span style={{ fontSize: '10px', color: '#ef4444', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '3px' }}><WifiOff size={10} /> منقطع</span>
+                   ) : (
+                     <span style={{ fontSize: '10px', color: '#059669', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '3px' }}><Wifi size={10} /> متصل حياً</span>
+                   )}
+                   <button onClick={() => window.location.reload()} style={{ background: 'none', border: 'none', color: '#3b82f6', fontSize: '10px', fontWeight: 800, cursor: 'pointer', padding: 0 }}>تحديث الآن</button>
+                </div>
+             </div>
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+             <button onClick={toggleTheme} style={{ background: '#f1f5f9', border: '1px solid #e2e8f0', width: '36px', height: '36px', borderRadius: '10px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+               {theme === 'dark' ? <Sun size={18} color="#facc15" /> : <Moon size={18} color="#64748b" />}
+             </button>
+             <button onClick={() => logout()} style={{ background: '#fee2e2', border: '1px solid #fecaca', width: '36px', height: '36px', borderRadius: '10px', cursor: 'pointer', color: '#ef4444', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+               <LogOut size={18} />
+             </button>
+             <div style={{ width: '1px', height: '25px', background: '#e2e8f0', margin: '0 5px' }} />
+             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <div style={{ textAlign: 'right' }}>
+                   <div style={{ fontSize: '14px', fontWeight: 900, color: '#0f172a' }}>م. خالد</div>
+                   <div style={{ fontSize: '10px', color: '#059669', fontWeight: 800 }}>● متصل</div>
+                </div>
+                <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: '#2563eb', color: '#ffffff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900 }}>خ</div>
+             </div>
+          </div>
+        </div>
 
         {/* --- Greetings & Filter --- */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px' }}>
