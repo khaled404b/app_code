@@ -13,7 +13,7 @@ import { ref as fRef, set as fSet, get as fGet } from 'firebase/database';
 import { db as fDb } from '@/lib/firebase';
 import { processAttachment } from '@/lib/fileHelper';
 
-// Version: 1.0.6 - Final PDF and BiDi Stability
+// Version: 1.0.7 - Restored Missing Elements
 const generateId = () => {
   if (typeof window !== 'undefined' && window.crypto && window.crypto.randomUUID) {
     return window.crypto.randomUUID();
@@ -123,15 +123,12 @@ export default function TasksPage() {
       for (let i = 0; i < raw.length; i++) uArr[i] = raw.charCodeAt(i);
       const blob = new Blob([uArr], { type: contentType });
       const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.target = '_blank';
+      const link = document.body.appendChild(document.createElement('a'));
+      link.href = url; link.target = '_blank';
       if (contentType.includes('image')) link.download = `img_${Date.now()}.png`;
       else if (contentType.includes('pdf')) link.download = `doc_${Date.now()}.pdf`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      setTimeout(() => URL.revokeObjectURL(url), 3000);
+      link.click(); document.body.removeChild(link);
+      setTimeout(() => URL.revokeObjectURL(url), 4000);
     } catch (e) { window.open(base64Data, '_blank'); }
   };
 
@@ -158,7 +155,6 @@ export default function TasksPage() {
     setSelected(updatedTask); setUpdateText('');
   };
 
-  // The Fix: Use separate elements for numbers and text to stop flipping
   const bidiStyle = { unicodeBidi: 'plaintext', textAlign: 'right', direction: 'rtl' };
 
   if (isLoading) return <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg)' }}><Loader2 className="animate-spin" size={32} color="var(--blue)" /></div>;
@@ -183,20 +179,35 @@ export default function TasksPage() {
 
         {/* LIST VIEW */}
         {view === 'list' && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            {filteredTasks.map(task => (
-              <div key={task.id} onClick={() => { setSelected(task); setView('detail'); }} style={{ background: 'var(--surface)', padding: '20px', borderRadius: '16px', border: '1px solid var(--border)', cursor: 'pointer', boxShadow: 'var(--shadow)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <div style={{ display: 'flex', gap: '15px', alignItems: 'center' }}>
-                  <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: 'var(--surface-2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Briefcase size={20} color="var(--blue)" /></div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                    <h3 style={{ fontSize: '15px', fontWeight: 900, color: 'var(--text)', margin: 0, ...bidiStyle }}>{task.title}</h3>
-                    <p style={{ fontSize: '12px', color: 'var(--text-3)', fontWeight: 700, ...bidiStyle }}>{getClientName(task.client_id)}</p>
+          <>
+            <div style={{ display: 'flex', gap: '10px', marginBottom: '20px', alignItems: 'center' }}>
+              <div style={{ position: 'relative', flex: 1 }}>
+                <input style={{ width: '100%', padding: '15px 45px 15px 15px', borderRadius: '12px', border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text)', outline: 'none', fontWeight: 700 }} placeholder="ابحث..." value={search} onChange={e => setSearch(e.target.value)} />
+                <Search size={20} color="var(--text-3)" style={{ position: 'absolute', right: '15px', top: '50%', transform: 'translateY(-50%)' }} />
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'var(--surface)', padding: '10px 15px', borderRadius: '12px', border: '1px solid var(--border)', whiteSpace: 'nowrap' }}>
+                 <input type="checkbox" checked={includeFiles} onChange={e => setIncludeFiles(e.target.checked)} style={{ width: '18px', height: '18px', cursor: 'pointer' }} />
+                 <span style={{ fontSize: '11px', fontWeight: 800 }}>المرفقات بالتقرير</span>
+              </div>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              {filteredTasks.map(task => (
+                <div key={task.id} onClick={() => { setSelected(task); setView('detail'); }} style={{ background: 'var(--surface)', padding: '20px', borderRadius: '16px', border: '1px solid var(--border)', cursor: 'pointer', boxShadow: 'var(--shadow)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div style={{ display: 'flex', gap: '15px', alignItems: 'center' }}>
+                    <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: 'var(--surface-2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Briefcase size={20} color="var(--blue)" /></div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                      <h3 style={{ fontSize: '15px', fontWeight: 900, color: 'var(--text)', margin: 0, ...bidiStyle }}>{task.title}</h3>
+                      <p style={{ fontSize: '12px', color: 'var(--text-3)', fontWeight: 700, ...bidiStyle }}>{getClientName(task.client_id)}</p>
+                    </div>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                     <div style={{ padding: '4px 10px', borderRadius: '20px', fontSize: '10px', fontWeight: 900, background: task.status === 'منجزة' ? 'var(--green-light)' : task.status === 'متأخرة' ? 'var(--red-light)' : 'var(--blue-light)', color: task.status === 'منجزة' ? 'var(--green)' : task.status === 'متأخرة' ? 'var(--red)' : 'var(--blue)' }}>{task.status || 'جارية'}</div>
+                     <ArrowRight size={18} color="var(--text-3)" />
                   </div>
                 </div>
-                <ArrowRight size={18} color="var(--text-3)" />
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          </>
         )}
 
         {/* DETAIL VIEW */}
@@ -247,23 +258,21 @@ export default function TasksPage() {
                   <select style={{ padding: '15px', border: '1px solid var(--border)', borderRadius: '12px', background: 'var(--surface-2)', color: 'var(--text)', outline: 'none', fontWeight: 700 }} value={form.plot_number || ''} onChange={e => setForm({...form, plot_number: e.target.value})} disabled={!form.client_id}><option value="">اختر القسيمة...</option>{getClientPlots(form.client_id).map((p, i) => <option key={i} value={p.number}>قسيمة {p.number}</option>)}</select>
                 </div>
                 <textarea rows={4} style={{ padding: '15px', border: '1px solid var(--border)', borderRadius: '12px', background: 'var(--surface-2)', color: 'var(--text)', outline: 'none', fontWeight: 700 }} placeholder="ملاحظات..." value={form.notes || ''} onChange={e => setForm({...form, notes: e.target.value})} />
-                <div style={{ border: '2px dashed var(--border)', borderRadius: '16px', padding: '20px', textAlign: 'center' }}><input type="file" multiple id="fileZ" hidden onChange={handleFileUpload} /><label htmlFor="fileZ" style={{ cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>{loadingFile ? <Loader2 size={24} className="animate-spin" /> : <Paperclip size={24} color="var(--blue)" />}<span style={{ fontWeight: 900, fontSize: '13px' }}>إرفاق مرفقات</span></label></div>
+                <div style={{ border: '2px dashed var(--border)', borderRadius: '16px', padding: '20px', textAlign: 'center' }}><input type="file" multiple id="fileZZ" hidden onChange={handleFileUpload} /><label htmlFor="fileZZ" style={{ cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>{loadingFile ? <Loader2 size={24} className="animate-spin" /> : <Paperclip size={24} color="var(--blue)" />}<span style={{ fontWeight: 900, fontSize: '13px' }}>إرفاق مرفقات</span></label></div>
                 <button onClick={handleSave} style={{ background: 'var(--blue)', color: '#fff', border: 'none', padding: '18px', borderRadius: '14px', fontWeight: 950, fontSize: '17px', cursor: 'pointer' }}>حفظ</button>
              </div>
           </div>
         )}
 
-        {/* --- THE PDF REPORT (OFF-SCREEN) --- */}
+        {/* --- THE PDF REPORT --- */}
         <div style={{ display: 'none' }}>
            <div ref={reportRef} style={{ padding: '20mm', background: '#fff', color: '#000', direction: 'rtl', fontFamily: 'Tajawal, sans-serif' }}>
               <div style={{ borderBottom: '3px solid #2563eb', paddingBottom: '15px', marginBottom: '25px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                  <div><h1 style={{ color: '#2563eb', margin: 0, fontSize: '26px', fontWeight: 900 }}>مكتب فريم الهندسي</h1><p style={{ margin: '5px 0 0 0', fontSize: '14px', color: '#64748b' }}>تقرير متابعة الأعمال | {new Date().toLocaleDateString('ar-EG')}</p></div>
               </div>
-              
               <div style={{ display: 'flex', flexDirection: 'column', gap: '35px' }}>
                 {filteredTasks.map((task, i) => (
                   <div key={task.id} style={{ border: '1.5px solid #e2e8f0', borderRadius: '15px', padding: '25px', pageBreakInside: 'avoid' }}>
-                    {/* Title with number - separated to avoid BiDi flipping */}
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px', borderBottom: '1px dashed #e2e8f0', paddingBottom: '10px' }}>
                        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
                           <span style={{ background: '#2563eb', color: '#fff', padding: '2px 10px', borderRadius: '6px', fontWeight: 900, fontSize: '14px' }}>{i + 1}</span>
@@ -271,38 +280,21 @@ export default function TasksPage() {
                        </div>
                        <span style={{ fontSize: '13px', fontWeight: 800, padding: '4px 12px', background: '#f1f5f9', borderRadius: '20px', color: '#2563eb' }}>{task.status}</span>
                     </div>
-                    
-                    <div style={{ fontSize: '12px', color: '#64748b', marginBottom: '15px', fontWeight: 700 }}>
-                       العميل: {getClientName(task.client_id)} {task.plot_number ? ` | قسيمة: ${task.plot_number}` : ''}
-                    </div>
-                    
+                    <div style={{ fontSize: '12px', color: '#64748b', marginBottom: '15px', fontWeight: 700 }}>العميل: {getClientName(task.client_id)} {task.plot_number ? ` | قسيمة: ${task.plot_number}` : ''}</div>
                     <div style={{ fontSize: '14px', background: '#f8fafc', padding: '18px', borderRadius: '10px', marginBottom: '15px', borderRight: '4px solid #2563eb', color: '#000', unicodeBidi: 'plaintext', lineHeight: '1.6' }}>
                        <div style={{ fontWeight: 900, marginBottom: '6px', color: '#475569', fontSize: '12px' }}>الملاحظات الأساسية:</div>
                        <div style={{ whiteSpace: 'pre-wrap' }}>{task.notes || 'لا توجد ملاحظات'}</div>
                     </div>
-
                     {task.updates?.length > 0 && (
                       <div style={{ marginTop: '10px', padding: '15px', background: '#f1f5f9', borderRadius: '10px' }}>
                          <div style={{ fontSize: '13px', fontWeight: 900, marginBottom: '10px', color: '#1e293b', borderBottom: '1px solid #cbd5e1', paddingBottom: '5px' }}>📝 سجل المتابعة:</div>
-                         {task.updates.map((up, j) => (
-                           <div key={j} style={{ fontSize: '12px', marginBottom: '8px', paddingBottom: '5px', borderBottom: j === task.updates.length - 1 ? 'none' : '1px solid #e2e8f0', unicodeBidi: 'plaintext' }}>
-                              <span style={{ fontWeight: 900, color: '#2563eb' }}>{up.user}: </span>
-                              <span>{up.text}</span>
-                           </div>
-                         ))}
+                         {task.updates.map((up, j) => (<div key={j} style={{ fontSize: '12px', marginBottom: '8px', paddingBottom: '5px', borderBottom: j === task.updates.length - 1 ? 'none' : '1px solid #e2e8f0', unicodeBidi: 'plaintext' }}><span style={{ fontWeight: 900, color: '#2563eb' }}>{up.user}: </span><span>{up.text}</span></div>))}
                       </div>
                     )}
-
                     {includeFiles && reportFiles[task.id] && reportFiles[task.id].length > 0 && (
                       <div style={{ marginTop: '20px' }}>
                         <div style={{ fontWeight: 900, fontSize: '12px', marginBottom: '10px', color: '#64748b' }}>📸 المرفقات الصورية:</div>
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '15px' }}>
-                          {reportFiles[task.id].filter(f => f.startsWith('data:image')).map((file, idx) => (
-                            <div key={idx} style={{ border: '1px solid #e2e8f0', borderRadius: '10px', overflow: 'hidden', height: '150px' }}>
-                               <img src={file} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                            </div>
-                          ))}
-                        </div>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '15px' }}>{reportFiles[task.id].filter(f => f.startsWith('data:image')).map((file, idx) => (<div key={idx} style={{ border: '1px solid #e2e8f0', borderRadius: '10px', overflow: 'hidden', height: '150px' }}><img src={file} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /></div>))}</div>
                       </div>
                     )}
                   </div>
