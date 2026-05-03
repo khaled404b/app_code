@@ -147,7 +147,7 @@ export function DeliveryDetail({ state, actions }) {
 
       <div style={{ background: '#0f172a', borderRadius: '24px', padding: '24px', color: 'white', marginBottom: '20px' }}>
         <div style={{ fontSize: '12px', opacity: 0.7 }}>{selected.transmittal_no}</div>
-        <h2 style={{ fontSize: '22px', fontWeight: 950, marginTop: '4px', unicodeBidi: 'plaintext' }}>{selected.project_name}</h2>
+        <h2 style={{ fontSize: '22px', fontWeight: 900, marginTop: '4px', unicodeBidi: 'plaintext' }}>{selected.project_name}</h2>
         <div style={{ marginTop: '12px', display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
           <Badge status={selected.date} customCfg={{ bg: '#1e293b', color: '#fff' }} />
           {selected.plot_no && <Badge status={`قسيمة ${selected.plot_no}`} customCfg={{ bg: '#2563eb', color: '#fff' }} />}
