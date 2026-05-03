@@ -1,6 +1,6 @@
 'use client';
 
-import { Bell, Moon, Sun, User, X, Briefcase, Users, Eye } from 'lucide-react';
+import { Bell, Moon, Sun, User, X, Briefcase, Users, Eye, RefreshCw, Wifi } from 'lucide-react';
 import { useTheme } from './AppWrapper';
 import { useData } from '@/hooks/useData';
 import { useState } from 'react';
@@ -10,7 +10,7 @@ export default function Header() {
   const { notifications } = useData();
   const [showNotifs, setShowNotifs] = useState(false);
 
-  const unreadCount = notifications.filter(n => !n.read).length;
+  const unreadCount = (notifications || []).filter(n => !n.read).length;
 
   const getIcon = (type) => {
     switch(type) {
@@ -80,7 +80,7 @@ export default function Header() {
                 <X size={16} style={{ cursor: 'pointer' }} onClick={() => setShowNotifs(false)} />
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                {notifications.length > 0 ? notifications.map(n => (
+                {notifications && notifications.length > 0 ? notifications.map(n => (
                   <div key={n.id} style={{ 
                     padding: '10px', borderRadius: '12px', background: 'var(--bg-main)',
                     border: '1px solid var(--border-color)', display: 'flex', gap: '10px'
