@@ -37,7 +37,19 @@ export const FilterSection = ({ filters, setF, clients, showFilters, setShowFilt
             </div>
             <div className="form-group" style={{ marginBottom: 0 }}>
               <label className="form-label">رقم القسيمة</label>
-              <input type="text" className="form-input" placeholder="رقم القسيمة..." value={filters.plot} onChange={e => setF('plot', e.target.value)} />
+              <select className="form-select" value={filters.plot} onChange={e => setF('plot', e.target.value)}>
+                <option value="">كل القسايم</option>
+                {(() => {
+                  const availablePlots = new Set();
+                  if (filters.client === 'الكل') {
+                    clients.forEach(c => (c.plots || []).forEach(p => availablePlots.add(typeof p === 'object' ? p.number : p)));
+                  } else {
+                    const client = clients.find(c => c.id === filters.client);
+                    (client?.plots || []).forEach(p => availablePlots.add(typeof p === 'object' ? p.number : p));
+                  }
+                  return Array.from(availablePlots).filter(Boolean).sort().map(p => <option key={p} value={p}>قسيمة {p}</option>);
+                })()}
+              </select>
             </div>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '15px' }}>
