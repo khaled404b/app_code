@@ -39,8 +39,13 @@ export function useData() {
 
   const [isConnected, setIsConnected] = useState(true);
   const [isSyncing, setIsSyncing] = useState(true);
+  const [isTimedOut, setIsTimedOut] = useState(false);
 
   useEffect(() => {
+    const timer = setTimeout(() => {
+      if (!dataRef.current) setIsTimedOut(true);
+    }, 5000); // 5 second safety timeout
+
     // Monitor connection status
     const connectedRef = ref(db, '.info/connected');
     const unsubConn = onValue(connectedRef, (snap) => {
@@ -49,6 +54,7 @@ export function useData() {
 
     const dbRefValue = ref(db, '/');
     const unsubscribe = onValue(dbRefValue, (snapshot) => {
+      clearTimeout(timer);
       const val = snapshot.val();
       setIsSyncing(false);
       if (val) {
@@ -78,11 +84,13 @@ export function useData() {
       console.error('Firebase fetch error:', err);
       setError(err);
       setIsSyncing(false);
+      clearTimeout(timer);
     });
 
     return () => {
       unsubscribe();
       unsubConn();
+      clearTimeout(timer);
     };
   }, []);
 
@@ -164,5 +172,15 @@ export function useData() {
     }
   }, []);
 
-  return { data, isLoading: !error && !data, isError: error, updateData, getAttachment, notifications, addNotification, isConnected, isSyncing };
+  return { 
+    data, 
+    isLoading: !error && !data && !isTimedOut, 
+    isError: error, 
+    updateData, 
+    getAttachment, 
+    notifications, 
+    addNotification, 
+    isConnected, 
+    isSyncing 
+  };
 }
