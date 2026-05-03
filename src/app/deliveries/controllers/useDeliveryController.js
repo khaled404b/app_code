@@ -24,6 +24,7 @@ export function useDeliveryController() {
   const filteredDeliveries = useMemo(() => {
     if (!search) return deliveries;
     const lowerSearch = search.toLowerCase();
+    return deliveries.filter(d => 
       d.project_name?.toLowerCase().includes(lowerSearch) || 
       d.transmittal_no?.toLowerCase().includes(lowerSearch) ||
       d.client_name?.toLowerCase().includes(lowerSearch) ||
