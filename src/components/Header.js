@@ -50,11 +50,15 @@ export default function Header() {
             localStorage.removeItem('frame_app_cache');
             window.location.reload();
           }} 
-          className="icon-btn" 
-          style={{ background: 'none', border: 'none', padding: 0 }} 
-          title="تحديث البيانات (مزامنة قسرية)"
+          style={{ 
+            background: '#2563eb', color: 'white', border: 'none', 
+            padding: '6px 12px', borderRadius: '10px', display: 'flex', 
+            alignItems: 'center', gap: '6px', cursor: 'pointer', 
+            fontSize: '11px', fontWeight: 900, boxShadow: '0 4px 6px -1px rgba(37, 99, 235, 0.2)' 
+          }} 
+          title="تحديث البيانات ومزامنة الأجهزة"
         >
-          <RefreshCw size={18} color="var(--text-main)" />
+          <RefreshCw size={14} /> تحديث البيانات
         </button>
 
         <button onClick={toggleTheme} className="icon-btn" style={{ background: 'none', border: 'none', padding: 0 }}>

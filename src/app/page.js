@@ -39,8 +39,7 @@ export default function Dashboard() {
     price: '', 
     date: new Date().toISOString().split('T')[0], 
     body: '',
-    includeReport: false,
-    selectedAttachmentId: ''
+    includeReport: false
   });
 
   const clients = data?.clients || [];
@@ -48,16 +47,6 @@ export default function Dashboard() {
   const invoices = data?.invoices || [];
 
   const selectedClient = useMemo(() => clients.find(c => c?.id === selectedClientId) || null, [clients, selectedClientId]);
-
-  const clientAttachments = useMemo(() => {
-    if (!selectedClient) return [];
-    const clientTasks = tasks.filter(t => t.client_id === selectedClientId && t.has_file);
-    const clientInvoices = invoices.filter(i => i.client_id === selectedClientId && i.has_file);
-    return [
-      ...clientTasks.map(t => ({ id: t.id, title: `عمل: ${t.title}` })),
-      ...clientInvoices.map(i => ({ id: i.id, title: `فاتورة: ${i.invoice_no || i.id}` }))
-    ];
-  }, [selectedClient, tasks, invoices, selectedClientId]);
 
   const fTasks = useMemo(() => (selectedClientId === 'all' ? tasks : tasks.filter(t => t?.client_id === selectedClientId)).filter(Boolean), [tasks, selectedClientId]);
   const fInvoices = useMemo(() => (selectedClientId === 'all' ? invoices : invoices.filter(i => i?.client_id === selectedClientId)).filter(Boolean), [invoices, selectedClientId]);
@@ -121,11 +110,6 @@ export default function Dashboard() {
     msg += `*التاريخ:* ${waMsg.date}\n`;
     if (waMsg.price) msg += `*المبلغ:* ${waMsg.price} د.ك\n`;
     if (waMsg.body) msg += `\n${waMsg.body}\n`;
-    
-    if (waMsg.selectedAttachmentId) {
-      const att = clientAttachments.find(a => a.id === waMsg.selectedAttachmentId);
-      if (att) msg += `📎 *مرفق:* ${att.title}\n`;
-    }
     
     if (waMsg.includeReport && selectedClient.drive_link) {
       msg += `\n📂 *رابط المستندات:* ${selectedClient.drive_link}\n`;
@@ -247,23 +231,11 @@ export default function Dashboard() {
               <textarea className="form-input" rows={4} value={waMsg.body} onChange={e => setWaMsg(p => ({ ...p, body: e.target.value }))} placeholder="اكتب ملاحظات إضافية هنا..." />
             </div>
 
-            <div className="form-group">
-              <label className="form-label">إرفاق مستند من ملفات العميل</label>
-              <select className="form-select" value={waMsg.selectedAttachmentId} onChange={e => setWaMsg(p => ({ ...p, selectedAttachmentId: e.target.value }))}>
-                <option value="">— بدون مستند —</option>
-                {clientAttachments.map(att => <option key={att.id} value={att.id}>{att.title}</option>)}
-              </select>
-            </div>
-
             <div style={{ marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px', background: '#fefce8', padding: '10px', borderRadius: '12px', border: '1px solid #fef08a' }}>
               <input type="checkbox" id="inc-report" checked={waMsg.includeReport} onChange={e => setWaMsg(p => ({ ...p, includeReport: e.target.checked }))} />
               <label htmlFor="inc-report" style={{ fontSize: '12px', fontWeight: 800, color: '#854d0e', cursor: 'pointer' }}>إدراج رابط التقرير الشامل / الدرايف</label>
             </div>
             
-            <div style={{ padding: '12px', background: '#eff6ff', borderRadius: '12px', border: '1px solid #bfdbfe', marginBottom: '20px', fontSize: '11px', color: '#1e40af', lineHeight: 1.5 }}>
-              💡 <strong>ملاحظة:</strong> الواتساب لا يسمح بإرفاق ملفات تلقائياً عبر الرابط. سيقوم البرنامج بوضع بيانات الملف في الرسالة، وعليك إرفاق الملف يدوياً بمجرد فتح المحادثة.
-            </div>
-
             <button className="btn" style={{ background: '#22c55e' }} onClick={sendWhatsApp}>فتح المحادثة والإرسال</button>
           </Card>
         </div>
