@@ -1,6 +1,6 @@
 'use client';
 
-import { Bell, Moon, Sun, User, X, Briefcase, Users, Eye, RefreshCw, Wifi, WifiOff } from 'lucide-react';
+import { Bell, Moon, Sun, User, X, Briefcase, Users, Eye, RefreshCw, Wifi, WifiOff, LogOut } from 'lucide-react';
 import { useTheme } from './AppWrapper';
 import { useData } from '@/hooks/useData';
 import { useState } from 'react';
@@ -31,40 +31,46 @@ export default function Header() {
       display: 'flex', justifyContent: 'space-between', alignItems: 'center',
       flexWrap: 'wrap', rowGap: '10px'
     }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-        <div style={{ 
-          width: '32px', height: '32px', borderRadius: '10px', 
-          background: 'linear-gradient(135deg, #4f46e5, #06b6d4)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          color: 'white', fontWeight: 900, fontSize: '14px'
-        }}>F</div>
-        <span style={{ fontWeight: 900, fontSize: '18px', color: 'var(--text-main)' }}>فريم</span>
+      {/* LEFT GROUP: Logo, Status, Theme, Logout */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+        <button onClick={() => window.location.reload()} style={{ background: '#fee2e2', border: 'none', padding: '8px', borderRadius: '10px', cursor: 'pointer', color: '#ef4444' }} title="خروج">
+          <LogOut size={18} />
+        </button>
+
+        <button onClick={toggleTheme} style={{ background: 'var(--bg-main)', border: '1px solid var(--border-color)', padding: '8px', borderRadius: '10px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          {theme === 'dark' ? <Sun size={18} color="#facc15" /> : <Moon size={18} color="#64748b" />}
+        </button>
+
+        <div style={{ height: '24px', width: '1px', background: 'var(--border-color)', margin: '0 4px' }} />
+
+        {!isConnected ? (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '10px', color: '#ef4444', fontWeight: 800, background: '#fee2e2', padding: '4px 8px', borderRadius: '8px' }}>
+            <WifiOff size={12} /> غير متصل
+          </div>
+        ) : isSyncing ? (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '10px', color: '#2563eb', fontWeight: 800 }}>
+            <RefreshCw size={12} className="animate-spin" />
+          </div>
+        ) : (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '10px', color: '#22c55e', fontWeight: 800 }}>
+            <Wifi size={12} /> متصل
+          </div>
+        )}
+
+        <button 
+          onClick={() => { localStorage.removeItem('frame_app_cache'); window.location.reload(); }} 
+          style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px', color: 'var(--text-muted)' }}
+          title="تحديث البيانات"
+        >
+          <RefreshCw size={14} />
+        </button>
       </div>
 
-      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
-        <button 
-          onClick={() => {
-            localStorage.removeItem('frame_app_cache');
-            window.location.reload();
-          }} 
-          style={{ 
-            background: '#2563eb', color: 'white', border: 'none', 
-            padding: '6px 12px', borderRadius: '10px', display: 'flex', 
-            alignItems: 'center', gap: '6px', cursor: 'pointer', 
-            fontSize: '11px', fontWeight: 900, boxShadow: '0 4px 6px -1px rgba(37, 99, 235, 0.2)' 
-          }} 
-          title="تحديث البيانات ومزامنة الأجهزة"
-        >
-          <RefreshCw size={14} /> تحديث البيانات
-        </button>
-
-        <button onClick={toggleTheme} className="icon-btn" style={{ background: 'none', border: 'none', padding: 0 }}>
-          {theme === 'dark' ? <Sun size={20} color="#facc15" /> : <Moon size={20} color="#64748b" />}
-        </button>
-
+      {/* RIGHT GROUP: Notifications & Profile */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
         <div style={{ position: 'relative' }}>
           <button onClick={() => setShowNotifs(!showNotifs)} className="icon-btn" style={{ background: 'none', border: 'none', padding: 0, position: 'relative' }}>
-            <Bell size={20} color="var(--text-main)" />
+            <Bell size={22} color="var(--text-main)" />
             {unreadCount > 0 && (
               <span style={{
                 position: 'absolute', top: '-5px', right: '-5px',
@@ -82,7 +88,7 @@ export default function Header() {
               width: '280px', maxHeight: '400px', overflowY: 'auto',
               background: 'var(--card-bg)', border: '1px solid var(--border-color)',
               borderRadius: '16px', boxShadow: '0 10px 25px rgba(0,0,0,0.2)',
-              padding: '12px'
+              padding: '12px', zIndex: 1000
             }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', padding: '0 4px' }}>
                 <span style={{ fontWeight: 800, fontSize: '14px' }}>الإشعارات</span>
@@ -109,28 +115,16 @@ export default function Header() {
           )}
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginLeft: '5px' }}>
-          <div style={{ textAlign: 'left', display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
-            <span style={{ fontSize: '13px', fontWeight: 900, color: 'var(--text-main)', lineHeight: 1.2 }}>م. فواز</span>
-            {!isConnected ? (
-              <span style={{ fontSize: '10px', color: '#ef4444', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '2px' }}>
-                <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#ef4444' }} /> غير متصل
-              </span>
-            ) : isSyncing ? (
-              <span style={{ fontSize: '10px', color: '#2563eb', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '2px' }}>
-                <RefreshCw size={8} className="animate-spin" /> مزامنة...
-              </span>
-            ) : (
-              <span style={{ fontSize: '10px', color: '#22c55e', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '2px' }}>
-                <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#22c55e' }} /> متصل
-              </span>
-            )}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <div style={{ textAlign: 'right' }}>
+            <div style={{ fontSize: '14px', fontWeight: 900, color: 'var(--text-main)' }}>م. فواز</div>
+            <div style={{ fontSize: '10px', color: 'var(--text-muted)' }}>مدير النظام</div>
           </div>
           <div style={{ 
-            width: '36px', height: '36px', borderRadius: '50%', 
+            width: '38px', height: '38px', borderRadius: '50%', 
             background: 'linear-gradient(135deg, #2563eb, #3b82f6)', 
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            color: 'white', fontWeight: 900, fontSize: '14px',
+            color: 'white', fontWeight: 900, fontSize: '15px',
             boxShadow: '0 4px 10px rgba(37, 99, 235, 0.2)'
           }}>م</div>
         </div>
