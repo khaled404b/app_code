@@ -45,7 +45,15 @@ export default function Header() {
           <Wifi size={12} /> متصل
         </div>
         
-        <button onClick={() => window.location.reload()} className="icon-btn" style={{ background: 'none', border: 'none', padding: 0 }} title="تحديث البيانات">
+        <button 
+          onClick={() => {
+            localStorage.removeItem('frame_app_cache');
+            window.location.reload();
+          }} 
+          className="icon-btn" 
+          style={{ background: 'none', border: 'none', padding: 0 }} 
+          title="تحديث البيانات (مزامنة قسرية)"
+        >
           <RefreshCw size={18} color="var(--text-main)" />
         </button>
 
