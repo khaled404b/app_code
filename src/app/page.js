@@ -33,7 +33,14 @@ export default function Dashboard() {
   const [selectedClientId, setSelectedClientId] = useState('all');
   const [isExporting, setIsExporting] = useState(false);
   const [showWhatsApp, setShowWhatsApp] = useState(false);
-  const [waMsg, setWaMsg] = useState({ subject: '', price: '', date: new Date().toISOString().split('T')[0], body: '' });
+  const [waMsg, setWaMsg] = useState({ 
+    subject: '', 
+    category: '—',
+    price: '', 
+    date: new Date().toISOString().split('T')[0], 
+    body: '',
+    includeReport: false
+  });
 
   const clients = data?.clients || [];
   const tasks = data?.tasks || [];
@@ -95,7 +102,21 @@ export default function Dashboard() {
 
   const sendWhatsApp = () => {
     if (!selectedClient?.phone) return alert('لا يوجد رقم هاتف للعميل');
-    const msg = `*مكتب فريم للاستشارات الهندسية* 🏗️\n\n*الموضوع:* ${waMsg.subject}\n*التاريخ:* ${waMsg.date}\n${waMsg.price ? `*المبلغ:* ${waMsg.price} د.ك\n` : ''}\n${waMsg.body ? `${waMsg.body}\n` : ''}\nلأي استفسار يرجى التواصل معنا.`;
+    
+    let msg = `*مكتب فريم للاستشارات الهندسية* 🏗️\n`;
+    msg += `--------------------------------\n`;
+    if (waMsg.category !== '—') msg += `*القسم:* ${waMsg.category}\n`;
+    msg += `*الموضوع:* ${waMsg.subject}\n`;
+    msg += `*التاريخ:* ${waMsg.date}\n`;
+    if (waMsg.price) msg += `*المبلغ:* ${waMsg.price} د.ك\n`;
+    if (waMsg.body) msg += `\n${waMsg.body}\n`;
+    
+    if (waMsg.includeReport && selectedClient.drive_link) {
+      msg += `\n📂 *رابط المستندات:* ${selectedClient.drive_link}\n`;
+    }
+    
+    msg += `\nلأي استفسار يرجى التواصل معنا.`;
+    
     const url = `https://wa.me/${selectedClient.phone.replace(/\s/g, '')}?text=${encodeURIComponent(msg)}`;
     window.open(url, '_blank');
     setShowWhatsApp(false);
@@ -179,6 +200,17 @@ export default function Dashboard() {
             </div>
             
             <div className="form-group">
+              <label className="form-label">نوع الرسالة (التصنيف)</label>
+              <select className="form-select" value={waMsg.category} onChange={e => setWaMsg(p => ({ ...p, category: e.target.value }))}>
+                <option value="—">بدون تصنيف</option>
+                <option value="إشراف هندسي">إشراف هندسي</option>
+                <option value="تسليم مستندات">تسليم مستندات</option>
+                <option value="عرض سعر">عرض سعر</option>
+                <option value="فاتورة مالية">فاتورة مالية</option>
+              </select>
+            </div>
+
+            <div className="form-group">
               <label className="form-label">الموضوع / العنوان</label>
               <input className="form-input" value={waMsg.subject} onChange={e => setWaMsg(p => ({ ...p, subject: e.target.value }))} placeholder="مثال: عرض سعر فيلا..." />
             </div>
@@ -197,6 +229,11 @@ export default function Dashboard() {
             <div className="form-group">
               <label className="form-label">محتوى الرسالة</label>
               <textarea className="form-input" rows={4} value={waMsg.body} onChange={e => setWaMsg(p => ({ ...p, body: e.target.value }))} placeholder="اكتب ملاحظات إضافية هنا..." />
+            </div>
+
+            <div style={{ marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px', background: '#fefce8', padding: '10px', borderRadius: '12px', border: '1px solid #fef08a' }}>
+              <input type="checkbox" id="inc-report" checked={waMsg.includeReport} onChange={e => setWaMsg(p => ({ ...p, includeReport: e.target.checked }))} />
+              <label htmlFor="inc-report" style={{ fontSize: '12px', fontWeight: 800, color: '#854d0e', cursor: 'pointer' }}>إدراج رابط التقرير الشامل (رابط ذكي)</label>
             </div>
             
             <button className="btn" style={{ background: '#22c55e' }} onClick={sendWhatsApp}>إرسال المحادثة</button>

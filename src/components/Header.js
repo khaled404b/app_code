@@ -41,6 +41,14 @@ export default function Header() {
       </div>
 
       <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '10px', color: '#22c55e', fontWeight: 800 }}>
+          <Wifi size={12} /> متصل
+        </div>
+        
+        <button onClick={() => window.location.reload()} className="icon-btn" style={{ background: 'none', border: 'none', padding: 0 }} title="تحديث البيانات">
+          <RefreshCw size={18} color="var(--text-main)" />
+        </button>
+
         <button onClick={toggleTheme} className="icon-btn" style={{ background: 'none', border: 'none', padding: 0 }}>
           {theme === 'dark' ? <Sun size={20} color="#facc15" /> : <Moon size={20} color="#64748b" />}
         </button>
