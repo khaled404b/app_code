@@ -4,7 +4,6 @@ import { useState, useEffect, createContext, useContext } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import Login from './Login';
 import BottomNav from './BottomNav';
-import Header from './Header';
 
 const ThemeContext = createContext();
 
@@ -34,7 +33,8 @@ export default function AppWrapper({ children }) {
   return (
     <ThemeContext.Provider value={{ theme, toggleTheme }}>
       <div className={theme === 'dark' ? 'dark-theme-wrapper' : ''}>
-        <main>
+        {/* GLOBAL HEADER REMOVED AS REQUESTED (YELLOW SECTION) */}
+        <main style={{ paddingBottom: '90px' }}>
           {children}
         </main>
         <BottomNav />

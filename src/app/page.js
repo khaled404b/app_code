@@ -7,7 +7,7 @@ import { useTheme } from '@/components/AppWrapper';
 import { 
   Briefcase, FileText, CheckCircle, Clock, AlertCircle, 
   Percent, ArrowRight, Eye, Send, Link as LinkIcon, 
-  MapPin, Loader2, X, Plus, TrendingUp, RefreshCw, Wifi, WifiOff, Moon, Sun, LogOut, MessageSquare, DollarSign
+  MapPin, Loader2, X, TrendingUp, RefreshCw, Wifi, WifiOff, Moon, Sun, LogOut, MessageSquare, DollarSign
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { calculateSupervisionStats } from '@/utils/supervisionCalc';
@@ -97,7 +97,7 @@ export default function Dashboard() {
     <div style={{ background: '#f8fafc', minHeight: '100vh', padding: '20px' }}>
       <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
         
-        {/* --- INTEGRATED TOP BAR (RE-ADDED) --- */}
+        {/* --- INTEGRATED TOP BAR (THE BLACK SECTION YOU WANTED TO KEEP) --- */}
         <div style={{ 
           background: '#ffffff', padding: '15px 25px', borderRadius: '16px', marginBottom: '30px', 
           display: 'flex', justifyContent: 'space-between', alignItems: 'center', border: '1px solid #e2e8f0',
@@ -113,7 +113,7 @@ export default function Dashboard() {
                    ) : (
                      <span style={{ fontSize: '10px', color: '#059669', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '3px' }}><Wifi size={10} /> متصل حياً</span>
                    )}
-                   <button onClick={() => window.location.reload()} style={{ background: 'none', border: 'none', color: '#3b82f6', fontSize: '10px', fontWeight: 800, cursor: 'pointer', padding: 0 }}>تحديث الآن</button>
+                   <button onClick={() => window.location.reload()} style={{ background: 'none', border: 'none', color: '#3b82f6', fontSize: '10px', fontWeight: 800, cursor: 'pointer', padding: 0 }}>تحديث البيانات</button>
                 </div>
              </div>
           </div>
@@ -128,10 +128,10 @@ export default function Dashboard() {
              <div style={{ width: '1px', height: '25px', background: '#e2e8f0', margin: '0 5px' }} />
              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                 <div style={{ textAlign: 'right' }}>
-                   <div style={{ fontSize: '14px', fontWeight: 900, color: '#0f172a' }}>م. خالد</div>
+                   <div style={{ fontSize: '14px', fontWeight: 900, color: '#0f172a' }}>م. فواز</div>
                    <div style={{ fontSize: '10px', color: '#059669', fontWeight: 800 }}>● متصل</div>
                 </div>
-                <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: '#2563eb', color: '#ffffff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900 }}>خ</div>
+                <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: '#2563eb', color: '#ffffff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900 }}>ف</div>
              </div>
           </div>
         </div>
