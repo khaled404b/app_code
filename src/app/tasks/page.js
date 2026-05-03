@@ -104,19 +104,36 @@ export default function TasksPage() {
     }, 1000);
   };
 
-  const handleFileAction = (fileData) => {
-    if (!fileData) return;
-    const link = document.createElement('a');
-    link.href = fileData;
-    link.target = '_blank';
-    if (fileData.startsWith('data:image')) {
-       link.download = `image_${Date.now()}.png`;
-    } else if (fileData.startsWith('data:application/pdf')) {
-       link.download = `document_${Date.now()}.pdf`;
+  const handleFileAction = (base64Data) => {
+    if (!base64Data) return;
+    try {
+      // Fix URI_TOO_LONG by converting base64 to Blob
+      const parts = base64Data.split(';base64,');
+      const contentType = parts[0].split(':')[1];
+      const raw = window.atob(parts[1]);
+      const rawLength = raw.length;
+      const uInt8Array = new Uint8Array(rawLength);
+      for (let i = 0; i < rawLength; ++i) uInt8Array[i] = raw.charCodeAt(i);
+      
+      const blob = new Blob([uInt8Array], { type: contentType });
+      const url = URL.createObjectURL(blob);
+      
+      const link = document.createElement('a');
+      link.href = url;
+      link.target = '_blank';
+      if (contentType.includes('image')) link.download = `image_${Date.now()}.png`;
+      else if (contentType.includes('pdf')) link.download = `document_${Date.now()}.pdf`;
+      
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      // Revoke URL after a delay to clean up memory
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    } catch (e) {
+      // Fallback for non-base64 or direct links
+      window.open(base64Data, '_blank');
     }
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
   };
 
   const handleDelete = async (id) => {
@@ -194,7 +211,7 @@ export default function TasksPage() {
           </>
         )}
 
-        {/* DETAIL VIEW WITH FIXED UPDATES UI */}
+        {/* DETAIL VIEW WITH FIXED BIDI AND LONG URI */}
         {view === 'detail' && selected && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
              <div style={{ background: 'var(--surface)', padding: '30px', borderRadius: '24px', border: '1px solid var(--border)', boxShadow: 'var(--shadow)' }}>
@@ -226,17 +243,21 @@ export default function TasksPage() {
                 <h3 style={{ fontSize: '18px', fontWeight: 950, marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '10px' }}><History size={20} color="var(--blue)" /> سجل المتابعة</h3>
                 <div style={{ display: 'flex', gap: '10px', marginBottom: '25px' }}><textarea style={{ flex: 1, padding: '12px', border: '1px solid var(--border)', borderRadius: '12px', background: 'var(--surface-2)', color: 'var(--text)', outline: 'none', resize: 'none' }} rows={2} placeholder="أضف تحديثاً..." value={updateText} onChange={e => setUpdateText(e.target.value)} /><button onClick={handleAddUpdate} style={{ background: 'var(--blue)', color: '#fff', border: 'none', width: '50px', height: '50px', borderRadius: '12px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Send size={20} /></button></div>
                 
-                {/* FIXED UPDATES LIST UI */}
+                {/* FIXED UPDATES UI WITH BIDI FIX */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                    {(selected.updates || []).map((up, i) => (
                      <div key={up.id} style={{ background: 'var(--surface-2)', padding: '15px', borderRadius: '12px', border: '1px solid var(--border)' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
-                           <div style={{ fontSize: '13px', fontWeight: 950, color: 'var(--text)' }}>
-                             <span style={{ color: 'var(--blue)', marginLeft: '4px' }}>•</span> {up.user}
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                           <div style={{ fontSize: '13px', fontWeight: 950, color: 'var(--blue)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                             <User size={14} /> <span>{up.user}</span>
                            </div>
                            <span style={{ fontSize: '10px', color: 'var(--text-3)', fontWeight: 800 }}>{new Date(up.date).toLocaleDateString('ar-EG')}</span>
                         </div>
-                        <div style={{ fontSize: '14px', color: 'var(--text-2)', lineHeight: '1.6', paddingRight: '12px', borderRight: '2px solid var(--blue-light)' }}>
+                        {/* BiDi Fix: Use isolation and direction auto */}
+                        <div style={{ 
+                           fontSize: '14px', color: 'var(--text-2)', lineHeight: '1.6', 
+                           unicodeBidi: 'plaintext', textAlign: 'right', direction: 'rtl' 
+                        }}>
                            {up.text}
                         </div>
                      </div>
@@ -246,7 +267,7 @@ export default function TasksPage() {
           </div>
         )}
 
-        {/* FORM VIEW (REMAINS SAME) */}
+        {/* FORM VIEW */}
         {view === 'form' && (
           <div style={{ background: 'var(--surface)', padding: '30px', borderRadius: '24px', border: '1px solid var(--border)' }}>
              <h2 style={{ fontSize: '20px', fontWeight: 950, marginBottom: '20px' }}>{selected ? 'تعديل العمل' : 'إضافة عمل جديد'}</h2>
@@ -257,7 +278,7 @@ export default function TasksPage() {
                   <select style={{ padding: '15px', border: '1px solid var(--border)', borderRadius: '12px', background: 'var(--surface-2)', color: 'var(--text)', outline: 'none', fontWeight: 700 }} value={form.plot_number || ''} onChange={e => setForm({...form, plot_number: e.target.value})} disabled={!form.client_id}><option value="">اختر القسيمة...</option>{getClientPlots(form.client_id).map((p, i) => <option key={i} value={p.number}>قسيمة {p.number}</option>)}</select>
                 </div>
                 <textarea rows={4} style={{ padding: '15px', border: '1px solid var(--border)', borderRadius: '12px', background: 'var(--surface-2)', color: 'var(--text)', outline: 'none', fontWeight: 700 }} placeholder="ملاحظات..." value={form.notes || ''} onChange={e => setForm({...form, notes: e.target.value})} />
-                <div style={{ border: '2px dashed var(--border)', borderRadius: '16px', padding: '20px', textAlign: 'center' }}><input type="file" multiple id="fileFinal" hidden onChange={handleFileUpload} /><label htmlFor="fileFinal" style={{ cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>{loadingFile ? <Loader2 size={24} className="animate-spin" /> : <Paperclip size={24} color="var(--blue)" />}<span style={{ fontWeight: 900, fontSize: '13px' }}>إرفاق مرفقات</span></label></div>
+                <div style={{ border: '2px dashed var(--border)', borderRadius: '16px', padding: '20px', textAlign: 'center' }}><input type="file" multiple id="fileF" hidden onChange={handleFileUpload} /><label htmlFor="fileF" style={{ cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>{loadingFile ? <Loader2 size={24} className="animate-spin" /> : <Paperclip size={24} color="var(--blue)" />}<span style={{ fontWeight: 900, fontSize: '13px' }}>إرفاق مرفقات</span></label></div>
                 <button onClick={handleSave} style={{ background: 'var(--blue)', color: '#fff', border: 'none', padding: '18px', borderRadius: '14px', fontWeight: 950, fontSize: '17px', cursor: 'pointer' }}>حفظ</button>
              </div>
           </div>
