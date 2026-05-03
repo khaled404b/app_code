@@ -32,13 +32,15 @@ export const InvoiceForm = ({ form, setForm, clients, services, customService, s
         {form.client_id && !(clients.find(c => c.id === form.client_id)?.plots?.length) && <div style={{ fontSize: '11px', color: '#dc2626', marginTop: '4px' }}>هذا العميل ليس لديه قسايم مسجلة.</div>}
       </div>
       <div className="form-group"><label className="form-label">الشركة / المقاول</label><input className="form-input" value={form.contractor || '—'} onChange={e => setForm(p => ({ ...p, contractor: e.target.value }))} /></div>
-      <div className="form-group"><label className="form-label">نوع الخدمة</label>
-        <select className="form-select" value={form.service_type || ''} onChange={e => setForm(p => ({ ...p, service_type: e.target.value }))}>
-          {services.map(s => <option key={s} value={s}>{s}</option>)}
-          <option value="آخر...">+ أخرى</option>
-        </select>
-        {form.service_type === 'آخر...' && <input className="form-input" style={{ marginTop: '8px' }} value={customService} onChange={e => setCustomService(e.target.value)} placeholder="اكتب التصنيف هنا..." />}
-      </div>
+      {form.type !== 'deposit' && (
+        <div className="form-group"><label className="form-label">نوع الخدمة</label>
+          <select className="form-select" value={form.service_type || ''} onChange={e => setForm(p => ({ ...p, service_type: e.target.value }))}>
+            {services.map(s => <option key={s} value={s}>{s}</option>)}
+            <option value="آخر...">+ أخرى</option>
+          </select>
+          {form.service_type === 'آخر...' && <input className="form-input" style={{ marginTop: '8px' }} value={customService} onChange={e => setCustomService(e.target.value)} placeholder="اكتب التصنيف هنا..." />}
+        </div>
+      )}
       <div className="form-group"><label className="form-label">البيان التفصيلي</label><textarea className="form-input" rows={2} value={form.description || ''} onChange={e => setForm(p => ({ ...p, description: e.target.value }))} /></div>
       <div className="form-group"><label className="form-label">التاريخ</label><input type="date" className="form-input" value={form.issue_date || ''} onChange={e => setForm(p => ({ ...p, issue_date: e.target.value }))} /></div>
       <div className="form-group" style={{ marginBottom: 0 }}><label className="form-label">الحالة</label>

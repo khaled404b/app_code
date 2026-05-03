@@ -69,30 +69,30 @@ export const StatementView = ({
 
         {statementType === 'comprehensive' ? (
           <table className="statement-table">
-            <thead><tr><th style={{ width: '10%' }}>التاريخ</th><th style={{ width: '15%' }}>نوع الخدمة</th><th>وصف العمل (البيان)</th><th style={{ width: '15%' }}>المقاول / الشركة</th><th style={{ width: '12%' }}>المدفوع</th>{isCommissionMode && <th style={{ width: '12%' }}>نسبة المكتب {rate}%</th>}</tr></thead>
+            <thead><tr><th style={{ width: '10%' }}>التاريخ</th><th style={{ width: '10%' }}>القسيمة</th><th style={{ width: '15%' }}>نوع الخدمة</th><th>وصف العمل (البيان)</th><th style={{ width: '15%' }}>المقاول / الشركة</th><th style={{ width: '12%' }}>المدفوع</th>{isCommissionMode && <th style={{ width: '12%' }}>نسبة المكتب {rate}%</th>}</tr></thead>
             <tbody>
               {expenses.map((inv) => (
                 <tr key={inv.id}>
-                  <td>{inv.issue_date}</td><td>{inv.service_type}</td><td>{inv.description || '—'}</td><td>{inv.contractor || '—'}</td><td>{(parseFloat(inv.amount) || 0).toFixed(3)}</td>{isCommissionMode && <td>{((parseFloat(inv.amount) || 0) * (rate/100)).toFixed(3)}</td>}
+                  <td>{inv.issue_date}</td><td>{inv.plot_no || '—'}</td><td>{inv.service_type}</td><td>{inv.description || '—'}</td><td>{inv.contractor || '—'}</td><td>{(parseFloat(inv.amount) || 0).toFixed(3)}</td>{isCommissionMode && <td>{((parseFloat(inv.amount) || 0) * (rate/100)).toFixed(3)}</td>}
                 </tr>
               ))}
-              <tr style={{ background: '#eee', fontWeight: 900 }}><td colSpan={4}>الإجمالي</td><td>{totalExpenses.toFixed(3)}</td>{isCommissionMode && <td>{totalCommission.toFixed(3)}</td>}</tr>
+              <tr style={{ background: '#eee', fontWeight: 900 }}><td colSpan={5}>الإجمالي</td><td>{totalExpenses.toFixed(3)}</td>{isCommissionMode && <td>{totalCommission.toFixed(3)}</td>}</tr>
             </tbody>
           </table>
         ) : (
           <>
             <table className="statement-table" style={{ marginBottom: '30px' }}>
-              <thead><tr><th style={{ width: '5%' }}>م</th><th style={{ width: '40%' }}>البيان (العهدة المستلمة)</th><th style={{ width: '20%' }}>الشركة</th><th style={{ width: '15%' }}>التاريخ</th><th style={{ width: '20%' }}>المبلغ</th></tr></thead>
+              <thead><tr><th style={{ width: '5%' }}>م</th><th style={{ width: '40%' }}>البيان (العهدة المستلمة)</th><th style={{ width: '20%' }}>الشركة</th><th style={{ width: '15%' }}>القسيمة</th><th style={{ width: '10%' }}>التاريخ</th><th style={{ width: '10%' }}>المبلغ</th></tr></thead>
               <tbody>
-                {deposits.map((inv, i) => (<tr key={inv.id}><td>{i + 1}</td><td>{inv.description !== '—' ? inv.description : inv.service_type}</td><td>{inv.contractor || '—'}</td><td>{inv.issue_date}</td><td>{(parseFloat(inv.amount) || 0).toFixed(3)}</td></tr>))}
-                <tr style={{ background: '#f8fafc', fontWeight: 900 }}><td colSpan={4}>إجمالي العهد المستلمة</td><td>{totalDeposits.toFixed(3)}</td></tr>
+                {deposits.map((inv, i) => (<tr key={inv.id}><td>{i + 1}</td><td>{inv.description !== '—' ? inv.description : inv.service_type}</td><td>{inv.contractor || '—'}</td><td>{inv.plot_no || '—'}</td><td>{inv.issue_date}</td><td>{(parseFloat(inv.amount) || 0).toFixed(3)}</td></tr>))}
+                <tr style={{ background: '#f8fafc', fontWeight: 900 }}><td colSpan={5}>إجمالي العهد المستلمة</td><td>{totalDeposits.toFixed(3)}</td></tr>
               </tbody>
             </table>
             <table className="statement-table">
-              <thead><tr><th style={{ width: '5%' }}>م</th><th style={{ width: '15%' }}>نوع الخدمة</th><th>البيان (المصروفات)</th><th style={{ width: '15%' }}>الشركة</th><th style={{ width: '12%' }}>التاريخ</th><th style={{ width: '15%' }}>المبلغ</th></tr></thead>
+              <thead><tr><th style={{ width: '5%' }}>م</th><th style={{ width: '15%' }}>القسيمة</th><th style={{ width: '15%' }}>نوع الخدمة</th><th>البيان (المصروفات)</th><th style={{ width: '15%' }}>الشركة</th><th style={{ width: '10%' }}>التاريخ</th><th style={{ width: '10%' }}>المبلغ</th></tr></thead>
               <tbody>
-                {expenses.map((inv, i) => (<tr key={inv.id}><td>{i + 1}</td><td>{inv.service_type}</td><td>{inv.description || '—'}</td><td>{inv.contractor || '—'}</td><td>{inv.issue_date}</td><td>{(parseFloat(inv.amount) || 0).toFixed(3)}</td></tr>))}
-                <tr style={{ background: '#f8fafc', fontWeight: 900 }}><td colSpan={5}>إجمالي المصروفات</td><td>{totalExpenses.toFixed(3)}</td></tr>
+                {expenses.map((inv, i) => (<tr key={inv.id}><td>{i + 1}</td><td>{inv.plot_no || '—'}</td><td>{inv.service_type}</td><td>{inv.description || '—'}</td><td>{inv.contractor || '—'}</td><td>{inv.issue_date}</td><td>{(parseFloat(inv.amount) || 0).toFixed(3)}</td></tr>))}
+                <tr style={{ background: '#f8fafc', fontWeight: 900 }}><td colSpan={6}>إجمالي المصروفات</td><td>{totalExpenses.toFixed(3)}</td></tr>
               </tbody>
             </table>
             <div style={{ marginTop: '15px', textAlign: 'left', fontWeight: 900, fontSize: '13px' }}>المتبقي من العهدة: <span style={{ color: balance < 0 ? 'red' : 'green' }}>{balance.toFixed(3)} د.ك</span></div>

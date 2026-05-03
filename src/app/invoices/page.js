@@ -64,9 +64,10 @@ function InvoicesContent() {
       contractor: form.contractor || '—', description: form.description || '—', 
       invoice_no: form.invoice_no || '—', type: form.type || 'expense', amount: form.amount || '0', 
       issue_date: form.issue_date || new Date().toISOString().split('T')[0], status: form.status || 'معلقة',
-      has_file: tempFiles.length > 0 || form.has_file,
+      has_file: !!(tempFiles.length > 0 || form.has_file),
       created_by: selected ? (selected.created_by || '—') : (user && user.name) || '—', 
-      created_at: selected ? (selected.created_at || new Date().toISOString()) : new Date().toISOString() 
+      created_at: selected ? (selected.created_at || new Date().toISOString()) : new Date().toISOString(),
+      plot_no: form.plot_no || '—'
     };
 
     try { 
@@ -221,7 +222,14 @@ function InvoicesContent() {
     <div className="page">
       <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '24px' }}><button onClick={() => setView('list')} className="icon-btn"><ArrowRight size={20} /></button><h1 className="page-title">التفاصيل</h1>{canEdit && <button onClick={() => { setForm({...selected}); setView('form'); }} className="btn btn-ghost btn-sm" style={{ marginRight: 'auto', width: 'auto' }}>تعديل</button>}</div>
       <div style={{ background: STATUS_CFG.INVOICES[selected.status]?.color, borderRadius: '20px', padding: '24px', marginBottom: '20px', color: 'white' }}><div style={{ fontSize: '12px', opacity: 0.8 }}>{selected.invoice_no}</div><div style={{ fontSize: '32px', fontWeight: 900, marginTop: '8px' }}>{(parseFloat(selected.amount) || 0).toFixed(3)} د.ك</div></div>
-      <Card><div className="detail-row"><User size={18} color="#94a3b8" /><span className="detail-label">العميل</span><span className="detail-value">{clientName(selected.client_id)}</span></div><div className="detail-row"><Building2 size={18} color="#94a3b8" /><span className="detail-label">الشركة</span><span className="detail-value">{selected.contractor || '—'}</span></div><div className="detail-row"><AlignLeft size={18} color="#94a3b8" /><span className="detail-label">البيان</span><span className="detail-value">{selected.description || '—'}</span></div><div className="detail-row"><Calendar size={18} color="#94a3b8" /><span className="detail-label">التاريخ</span><span className="detail-value">{selected.issue_date}</span></div><div className="detail-row" style={{ border: 0 }}><span className="detail-label">الحالة</span><Badge status={selected.status} type="INVOICES" /></div></Card>
+      <Card>
+        <div className="detail-row"><User size={18} color="#94a3b8" /><span className="detail-label">العميل</span><span className="detail-value">{clientName(selected.client_id)}</span></div>
+        <div className="detail-row"><MapPin size={18} color="#94a3b8" /><span className="detail-label">القسيمة</span><span className="detail-value">{selected.plot_no || '—'}</span></div>
+        <div className="detail-row"><Building2 size={18} color="#94a3b8" /><span className="detail-label">الشركة</span><span className="detail-value">{selected.contractor || '—'}</span></div>
+        <div className="detail-row"><AlignLeft size={18} color="#94a3b8" /><span className="detail-label">البيان</span><span className="detail-value">{selected.description || '—'}</span></div>
+        <div className="detail-row"><Calendar size={18} color="#94a3b8" /><span className="detail-label">التاريخ</span><span className="detail-value">{selected.issue_date}</span></div>
+        <div className="detail-row" style={{ border: 0 }}><span className="detail-label">الحالة</span><Badge status={selected.status} type="INVOICES" /></div>
+      </Card>
       {selected.has_file && <button className="btn btn-outline" style={{ marginTop: '15px' }} onClick={() => fetchAndShowFile(selected)}>👁️ عرض المرفق</button>}
       {canEdit && <button className="btn btn-danger" style={{ marginTop: '10px', background: 'none', border: '1px solid #fee2e2', color: '#dc2626' }} onClick={() => handleDelete(selected.id)}><Trash2 size={16} /> حذف هذه الفاتورة</button>}
     </div>
@@ -269,7 +277,7 @@ function InvoicesContent() {
               <div style={{ fontWeight: 800 }}>{inv.invoice_no}</div>
               <div style={{ fontSize: '13px', color: '#64748b' }}>
                 {clientName(inv.client_id)} 
-                {getClient(inv.client_id)?.plot_no ? ` (قسيمة ${getClient(inv.client_id).plot_no})` : ''} 
+                {inv.plot_no ? ` (قسيمة ${inv.plot_no})` : (getClient(inv.client_id)?.plot_no ? ` (قسيمة ${getClient(inv.client_id).plot_no})` : '')} 
                 • {inv.issue_date}
               </div>
               <div style={{ marginTop: '4px', display: 'flex', gap: '5px' }}>
