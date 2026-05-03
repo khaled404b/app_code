@@ -4,6 +4,7 @@ import { useState, useEffect, createContext, useContext } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import Login from './Login';
 import BottomNav from './BottomNav';
+import Header from './Header';
 
 const ThemeContext = createContext();
 
@@ -33,6 +34,7 @@ export default function AppWrapper({ children }) {
   return (
     <ThemeContext.Provider value={{ theme, toggleTheme }}>
       <div className={theme === 'dark' ? 'dark-theme-wrapper' : ''}>
+        <Header />
         <main style={{ paddingBottom: '90px' }}>
           {children}
         </main>

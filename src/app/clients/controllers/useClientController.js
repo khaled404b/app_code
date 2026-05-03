@@ -4,7 +4,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { v4 as uuidv4 } from 'uuid';
 
 export function useClientController() {
-  const { data, isLoading, updateData } = useData();
+  const { data, isLoading, updateData, addNotification } = useData();
   const { canEdit } = useAuth();
   
   const [search, setSearch] = useState('');
@@ -57,6 +57,7 @@ export function useClientController() {
         updateData('clients', 'update', sanitized, selected.id);
       } else {
         updateData('clients', 'add', { ...sanitized, id: uuidv4() });
+        addNotification('client', 'عميل جديد', `تم إضافة العميل: ${sanitized.name}`);
       }
       
       setView('list'); 

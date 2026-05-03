@@ -14,7 +14,7 @@ import { Badge, Card, PageHeader, SearchBar } from '@/components/ui';
 import { useTasks } from '@/hooks/useTasks';
 
 function TasksContent() {
-  const { data, isLoading, updateData } = useData();
+  const { data, isLoading, updateData, addNotification } = useData();
   const { canEdit, user } = useAuth();
   
   const tasks = (data && data.tasks) || [];
@@ -46,7 +46,10 @@ function TasksContent() {
     
     try {
       if (selected) updateData('tasks', 'update', finalTask, selected.id);
-      else updateData('tasks', 'add', finalTask);
+      else {
+        updateData('tasks', 'add', finalTask);
+        addNotification('task', 'عمل جديد', `تم إضافة عمل: ${finalTask.title}`);
+      }
       
       if (tempFiles.length > 0) {
         fSet(fRef(fDb, `attachments/${finalTask.id}`), JSON.stringify(tempFiles));

@@ -3,7 +3,7 @@
 import { useState, useMemo, memo } from 'react';
 import { useData } from '@/hooks/useData';
 import { useAuth } from '@/hooks/useAuth';
-import { Briefcase, FileText, CheckCircle, Clock, AlertCircle, Percent, ArrowRight, Eye, Send, Link as LinkIcon, MapPin } from 'lucide-react';
+import { Briefcase, FileText, CheckCircle, Clock, AlertCircle, Percent, ArrowRight, Eye, Send, Link as LinkIcon, MapPin, Loader2, X } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
 import { Card } from '@/components/ui';
@@ -31,6 +31,9 @@ export default function Dashboard() {
   const { user } = useAuth();
   const router = useRouter();
   const [selectedClientId, setSelectedClientId] = useState('all');
+  const [isExporting, setIsExporting] = useState(false);
+  const [showWhatsApp, setShowWhatsApp] = useState(false);
+  const [waMsg, setWaMsg] = useState({ subject: '', price: '', date: new Date().toISOString().split('T')[0], body: '' });
 
   const clients = data?.clients || [];
   const tasks = data?.tasks || [];
@@ -72,6 +75,32 @@ export default function Dashboard() {
   const hour = new Date().getHours();
   const greeting = hour < 12 ? 'صباح الخير' : hour < 17 ? 'مساء الخير' : 'مساء النور';
 
+  const handleExportClientSummary = async () => {
+    if (!selectedClient) return;
+    setIsExporting(true);
+    try {
+      const html2pdf = (await import('html2pdf.js')).default;
+      const element = document.getElementById('client-summary-template');
+      element.style.display = 'block';
+      await html2pdf().from(element).set({
+        margin: [10, 10, 10, 10],
+        filename: `Client-Summary-${selectedClient.name}.pdf`,
+        html2canvas: { scale: 2 },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+      }).save();
+      element.style.display = 'none';
+    } catch (e) { alert('فشل التصدير'); }
+    setIsExporting(false);
+  };
+
+  const sendWhatsApp = () => {
+    if (!selectedClient?.phone) return alert('لا يوجد رقم هاتف للعميل');
+    const msg = `*مكتب فريم للاستشارات الهندسية* 🏗️\n\n*الموضوع:* ${waMsg.subject}\n*التاريخ:* ${waMsg.date}\n${waMsg.price ? `*المبلغ:* ${waMsg.price} د.ك\n` : ''}\n${waMsg.body ? `${waMsg.body}\n` : ''}\nلأي استفسار يرجى التواصل معنا.`;
+    const url = `https://wa.me/${selectedClient.phone.replace(/\s/g, '')}?text=${encodeURIComponent(msg)}`;
+    window.open(url, '_blank');
+    setShowWhatsApp(false);
+  };
+
   return (
     <div className="page">
       <div style={{ marginBottom: '28px' }}>
@@ -112,6 +141,137 @@ export default function Dashboard() {
               <span style={{ fontSize: '13px', fontWeight: 900, color: '#065f46' }}>موقع قسيمة {pl.number}</span>
             </a>
           ))}
+          
+          {selectedClient && (
+            <div style={{ width: '100%', display: 'flex', gap: '8px', marginTop: '16px' }}>
+              <button 
+                onClick={handleExportClientSummary}
+                disabled={isExporting}
+                className="btn btn-sm btn-outline" 
+                style={{ width: 'auto', background: 'white' }}
+              >
+                {isExporting ? <Loader2 className="animate-spin" size={14} /> : <FileText size={14} />} 
+                تنزيل تقرير شامل
+              </button>
+              
+              <button 
+                onClick={() => setShowWhatsApp(true)}
+                className="btn btn-sm btn-outline" 
+                style={{ width: 'auto', borderColor: '#22c55e', color: '#15803d', background: '#f0fdf4' }}
+              >
+                <Send size={14} /> إرسال واتساب
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {showWhatsApp && (
+        <div style={{
+          position: 'fixed', inset: 0, zIndex: 200, 
+          background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px'
+        }}>
+          <Card padded style={{ width: '100%', maxWidth: '400px', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+              <h3 style={{ fontWeight: 900 }}>مساعد الواتساب الذكي</h3>
+              <X size={20} style={{ cursor: 'pointer' }} onClick={() => setShowWhatsApp(false)} />
+            </div>
+            
+            <div className="form-group">
+              <label className="form-label">الموضوع / العنوان</label>
+              <input className="form-input" value={waMsg.subject} onChange={e => setWaMsg(p => ({ ...p, subject: e.target.value }))} placeholder="مثال: عرض سعر فيلا..." />
+            </div>
+            
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+              <div className="form-group">
+                <label className="form-label">المبلغ (د.ك)</label>
+                <input className="form-input" value={waMsg.price} onChange={e => setWaMsg(p => ({ ...p, price: e.target.value }))} placeholder="0.000" />
+              </div>
+              <div className="form-group">
+                <label className="form-label">التاريخ</label>
+                <input type="date" className="form-input" value={waMsg.date} onChange={e => setWaMsg(p => ({ ...p, date: e.target.value }))} />
+              </div>
+            </div>
+            
+            <div className="form-group">
+              <label className="form-label">محتوى الرسالة</label>
+              <textarea className="form-input" rows={4} value={waMsg.body} onChange={e => setWaMsg(p => ({ ...p, body: e.target.value }))} placeholder="اكتب ملاحظات إضافية هنا..." />
+            </div>
+            
+            <button className="btn" style={{ background: '#22c55e' }} onClick={sendWhatsApp}>إرسال المحادثة</button>
+          </Card>
+        </div>
+      )}
+
+      {/* Hidden Client Summary Template */}
+      <div id="client-summary-template" style={{ display: 'none', background: 'white', padding: '40px', direction: 'rtl', color: '#000' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '3px solid #000', paddingBottom: '20px', marginBottom: '30px' }}>
+          <div>
+            <h1 style={{ margin: 0, fontSize: '32px', fontWeight: 900 }}>FRAME</h1>
+            <div style={{ fontSize: '14px' }}>مكتب فريم للاستشارات الهندسية</div>
+          </div>
+          <div style={{ textAlign: 'left' }}>
+            <h2 style={{ margin: 0 }}>تقرير الحالة الشامل</h2>
+            <div style={{ fontSize: '12px' }}>تاريخ التقرير: {new Date().toLocaleDateString('ar-EG')}</div>
+          </div>
+        </div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '40px', marginBottom: '40px' }}>
+          <div style={{ background: '#f8fafc', padding: '20px', borderRadius: '12px' }}>
+            <h3 style={{ marginTop: 0, borderBottom: '1px solid #ddd', paddingBottom: '10px' }}>بيانات العميل</h3>
+            <div style={{ marginBottom: '8px' }}><strong>الاسم:</strong> {selectedClient?.name}</div>
+            <div style={{ marginBottom: '8px' }}><strong>الهاتف:</strong> {selectedClient?.phone}</div>
+            <div><strong>عدد القسايم:</strong> {selectedClient?.plots?.length || 0}</div>
+          </div>
+          <div style={{ background: '#f8fafc', padding: '20px', borderRadius: '12px' }}>
+            <h3 style={{ marginTop: 0, borderBottom: '1px solid #ddd', paddingBottom: '10px' }}>أرقام المشروع</h3>
+            <div style={{ marginBottom: '8px' }}><strong>إجمالي الأعمال:</strong> {fTasks.length}</div>
+            <div style={{ marginBottom: '8px' }}><strong>الفواتير المصدرة:</strong> {fInvoices.length}</div>
+            <div><strong>عروض الأسعار:</strong> {(data?.offers || []).filter(o => o.client_id === selectedClientId).length}</div>
+          </div>
+        </div>
+
+        {fSupervision.length > 0 && (
+          <div style={{ marginBottom: '40px' }}>
+            <h3 style={{ borderRight: '5px solid #059669', paddingRight: '10px' }}>الحالة الإشرافية</h3>
+            <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '10px' }}>
+              <thead><tr style={{ background: '#f1f5f9' }}><th style={{ border: '1px solid #ddd', padding: '10px' }}>المشروع</th><th style={{ border: '1px solid #ddd', padding: '10px' }}>القيمة</th><th style={{ border: '1px solid #ddd', padding: '10px' }}>المحصل</th><th style={{ border: '1px solid #ddd', padding: '10px' }}>المتبقي</th></tr></thead>
+              <tbody>
+                {fSupervision.map(s => {
+                  const sStats = calculateSupervisionStats(s);
+                  return (
+                    <tr key={s.id}>
+                      <td style={{ border: '1px solid #ddd', padding: '10px' }}>{s.project_name}</td>
+                      <td style={{ border: '1px solid #ddd', padding: '10px' }}>{s.contract_value.toFixed(3)}</td>
+                      <td style={{ border: '1px solid #ddd', padding: '10px' }}>{s.collected_amount.toFixed(3)}</td>
+                      <td style={{ border: '1px solid #ddd', padding: '10px', color: '#dc2626', fontWeight: 900 }}>{sStats.remaining.toFixed(3)} د.ك</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        <div style={{ marginBottom: '40px' }}>
+          <h3 style={{ borderRight: '5px solid #2563eb', paddingRight: '10px' }}>الأعمال الحالية</h3>
+          <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '10px' }}>
+            <thead><tr style={{ background: '#f1f5f9' }}><th style={{ border: '1px solid #ddd', padding: '10px' }}>البيان</th><th style={{ border: '1px solid #ddd', padding: '10px' }}>القسيمة</th><th style={{ border: '1px solid #ddd', padding: '10px' }}>الحالة</th></tr></thead>
+            <tbody>
+              {fTasks.map(t => (
+                <tr key={t.id}>
+                  <td style={{ border: '1px solid #ddd', padding: '10px' }}>{t.title}</td>
+                  <td style={{ border: '1px solid #ddd', padding: '10px' }}>{t.plot_no}</td>
+                  <td style={{ border: '1px solid #ddd', padding: '10px' }}>{t.status}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        <div style={{ marginTop: '60px', textAlign: 'center', fontSize: '12px', color: '#666' }}>
+          يُعتبر هذا التقرير ملخصاً داخلياً لمكتب فريم الهندسي، وليس مستنداً رسمياً للمطالبة المالية إلا بالفواتير المعتمدة.
         </div>
       </div>
 

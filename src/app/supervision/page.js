@@ -16,7 +16,7 @@ import { calculateSupervisionStats } from '@/utils/supervisionCalc';
 import { Badge, Card, PageHeader, SearchBar } from '@/components/ui';
 
 function SupervisionContent() {
-  const { data, isLoading, updateData } = useData();
+  const { data, isLoading, updateData, addNotification } = useData();
   const { canEdit } = useAuth();
 
   const supervision = data?.supervision || [];
@@ -63,7 +63,10 @@ function SupervisionContent() {
 
     try {
       if (selected) updateData('supervision', 'update', payload, selected.id);
-      else updateData('supervision', 'add', payload);
+      else {
+        updateData('supervision', 'add', payload);
+        addNotification('supervision', 'إشراف جديد', `مشروع جديد: ${payload.project_name}`);
+      }
 
       if (tempFiles.length > 0) {
         set(ref(db, `attachments/${payload.id}`), JSON.stringify(tempFiles));

@@ -33,32 +33,41 @@ export function useData() {
   const dataRef = useRef(data);
   useEffect(() => { dataRef.current = data; }, [data]);
 
+  const [notifications, setNotifications] = useState([]);
+  const notificationsRef = useRef([]);
+  useEffect(() => { notificationsRef.current = notifications; }, [notifications]);
+
   useEffect(() => {
-    const dbRef = ref(db, '/');
-    const unsubscribe = onValue(dbRef, (snapshot) => {
+    const dbRefValue = ref(db, '/');
+    const unsubscribe = onValue(dbRefValue, (snapshot) => {
       const val = snapshot.val();
       if (val) {
         // Prevent re-rendering if data is essentially the same
         const currentStr = JSON.stringify(dataRef.current);
         const newStr = JSON.stringify(val);
-        if (currentStr === newStr) return;
+        if (currentStr !== newStr) {
+          setData(val);
+          setError(null);
+          try {
+            const cacheData = { ...val };
+            delete cacheData.attachments;
+            localStorage.setItem('frame_app_cache', JSON.stringify(cacheData));
+          } catch (e) { console.error('Cache error', e); }
+        }
 
-        setData(val);
-        setError(null);
-        try {
-          const cacheData = { ...val };
-          delete cacheData.attachments;
-          localStorage.setItem('frame_app_cache', JSON.stringify(cacheData));
-        } catch (e) { console.error('Cache error', e); }
+        // Handle Notifications separately for better UX
+        const rawNotifs = val.notifications || {};
+        const notifList = Object.values(rawNotifs).sort((a, b) => b.timestamp - a.timestamp).slice(0, 50);
+        setNotifications(notifList);
       } else {
         const initialData = {
-          clients: [], tasks: [], invoices: [], offers: [],
+          clients: [], tasks: [], invoices: [], offers: [], notifications: {},
           settings: {
             companyName: 'مكتب فريم الهندسي',
             services: ['تصميم معماري', 'إشراف هندسي', 'رفع مساحي', 'استشارات هندسية', 'تقرير فني']
           }
         };
-        set(dbRef, initialData);
+        set(dbRefValue, initialData);
       }
     }, (err) => {
       console.error('Firebase fetch error:', err);
@@ -66,6 +75,21 @@ export function useData() {
     });
 
     return () => unsubscribe();
+  }, []);
+
+  const addNotification = useCallback(async (type, title, message) => {
+    const id = Date.now().toString();
+    const notif = {
+      id,
+      type, // 'client', 'task', 'supervision'
+      title,
+      message,
+      timestamp: Date.now(),
+      read: false
+    };
+    try {
+      await update(ref(db, `notifications/${id}`), notif);
+    } catch (e) { console.error("Failed to add notification", e); }
   }, []);
 
   const getAttachment = async (id) => {
@@ -131,5 +155,5 @@ export function useData() {
     }
   }, []);
 
-  return { data, isLoading: !error && !data, isError: error, updateData, getAttachment };
+  return { data, isLoading: !error && !data, isError: error, updateData, getAttachment, notifications, addNotification };
 }
