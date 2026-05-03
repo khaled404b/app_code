@@ -3,7 +3,7 @@
 import { useState, useRef } from 'react';
 import { useData } from '@/hooks/useData';
 import { useAuth } from '@/hooks/useAuth';
-import { Plus, ArrowRight, User, Calendar, FileText, Building2, AlignLeft, Image as ImageIcon, Trash2, AlertTriangle } from 'lucide-react';
+import { Plus, ArrowRight, User, Calendar, FileText, Building2, AlignLeft, Image as ImageIcon, Trash2, AlertTriangle, MapPin } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 import { ref, get, update, set } from 'firebase/database';
 import { db } from '@/lib/firebase';
