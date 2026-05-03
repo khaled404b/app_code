@@ -75,9 +75,11 @@ export function DeliveryPrint({ data }) {
           </tr>
           <tr>
             <td className="p-label">رقم العقد:</td>
-            <td colSpan="3">{data.contract_no}</td>
+            <td colSpan="2">{data.contract_no}</td>
+            <td className="p-label">رقم القسيمة:</td>
+            <td colSpan="1" className="p-bold" style={{ fontSize: '10px' }}>{data.plot_no}</td>
             <td className="p-label">رقم المشروع:</td>
-            <td colSpan="3">{data.project_no}</td>
+            <td colSpan="2">{data.project_no}</td>
           </tr>
           <tr>
             <td className="p-label">إلى:</td>

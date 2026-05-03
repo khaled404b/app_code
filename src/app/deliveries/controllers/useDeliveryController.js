@@ -27,7 +27,8 @@ export function useDeliveryController() {
     return deliveries.filter(d => 
       d.project_name?.toLowerCase().includes(lowerSearch) || 
       d.transmittal_no?.toLowerCase().includes(lowerSearch) ||
-      d.client_name?.toLowerCase().includes(lowerSearch)
+      d.client_name?.toLowerCase().includes(lowerSearch) ||
+      d.plot_no?.toLowerCase().includes(lowerSearch)
     );
   }, [deliveries, search]);
 
@@ -43,6 +44,8 @@ export function useDeliveryController() {
       project_name: '',
       project_no: '',
       contract_no: '',
+      client_id: '',
+      plot_no: '',
       to: '',
       from: 'مكتب فريم للإستشارات الهندسية',
       attn: '',

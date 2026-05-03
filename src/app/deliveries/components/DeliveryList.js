@@ -28,10 +28,11 @@ export function DeliveryList({ state, actions }) {
           <div key={d.id} className="list-row" onClick={() => openDetail(d)}>
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ fontWeight: 800, fontSize: '15px' }}>{d.project_name}</div>
-              <div style={{ fontSize: '12px', color: '#64748b', marginTop: '4px' }}>
-                رقم الإرسال: {d.transmittal_no} • {d.date}
+              <div style={{ fontSize: '12px', color: '#64748b', marginTop: '4px', unicodeBidi: 'plaintext', textAlign: 'right', direction: 'rtl' }}>
+                رقم الإرسال: {d.transmittal_no} • {d.date} 
+                {d.plot_no ? ` • قسيمة ${d.plot_no}` : ''}
               </div>
-              <div style={{ fontSize: '11px', color: '#94a3b8', marginTop: '2px' }}>
+              <div style={{ fontSize: '11px', color: '#94a3b8', marginTop: '2px', unicodeBidi: 'plaintext', textAlign: 'right', direction: 'rtl' }}>
                 الموضوع: {d.subject || 'بدون موضوع'}
               </div>
             </div>
@@ -146,9 +147,10 @@ export function DeliveryDetail({ state, actions }) {
 
       <div style={{ background: '#0f172a', borderRadius: '24px', padding: '24px', color: 'white', marginBottom: '20px' }}>
         <div style={{ fontSize: '12px', opacity: 0.7 }}>{selected.transmittal_no}</div>
-        <h2 style={{ fontSize: '22px', fontWeight: 900, marginTop: '4px' }}>{selected.project_name}</h2>
-        <div style={{ marginTop: '12px', display: 'flex', gap: '8px' }}>
+        <h2 style={{ fontSize: '22px', fontWeight: 950, marginTop: '4px', unicodeBidi: 'plaintext' }}>{selected.project_name}</h2>
+        <div style={{ marginTop: '12px', display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
           <Badge status={selected.date} customCfg={{ bg: '#1e293b', color: '#fff' }} />
+          {selected.plot_no && <Badge status={`قسيمة ${selected.plot_no}`} customCfg={{ bg: '#2563eb', color: '#fff' }} />}
         </div>
       </div>
 

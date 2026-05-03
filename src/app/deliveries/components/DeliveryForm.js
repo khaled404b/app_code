@@ -62,6 +62,28 @@ export function DeliveryForm({ state, actions }) {
               <input className="form-input" value={form.contract_no || ''} onChange={e => updateForm('contract_no', e.target.value)} />
             </div>
             <div className="form-group">
+              <label className="form-label">العميل</label>
+              <select className="form-select" value={form.client_id || ''} onChange={e => {
+                const client = clients.find(c => c.id === e.target.value);
+                updateForm('client_id', e.target.value);
+                updateForm('to', client?.name || '');
+                updateForm('plot_no', '');
+              }}>
+                <option value="">اختر العميل...</option>
+                {clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+              </select>
+            </div>
+            <div className="form-group">
+              <label className="form-label">رقم القسيمة</label>
+              <select className="form-select" value={form.plot_no || ''} onChange={e => updateForm('plot_no', e.target.value)}>
+                <option value="">اختر القسيمة...</option>
+                {(clients.find(c => c.id === form.client_id)?.plots || []).map((p, i) => {
+                  const val = typeof p === 'object' ? p.number : p;
+                  return <option key={i} value={val}>قسيمة {val}</option>;
+                })}
+              </select>
+            </div>
+            <div className="form-group">
               <label className="form-label">إلى</label>
               <input className="form-input" value={form.to || ''} onChange={e => updateForm('to', e.target.value)} placeholder="مثال: ورثة أحمد المحري" />
             </div>
