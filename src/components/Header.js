@@ -42,20 +42,6 @@ export default function Header() {
       </div>
 
       <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
-        {!isConnected ? (
-          <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '10px', color: '#ef4444', fontWeight: 800, background: '#fee2e2', padding: '4px 8px', borderRadius: '8px' }}>
-            <WifiOff size={12} /> غير متصل
-          </div>
-        ) : isSyncing ? (
-          <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '10px', color: '#2563eb', fontWeight: 800 }}>
-            <RefreshCw size={12} className="animate-spin" /> جاري المزامنة...
-          </div>
-        ) : (
-          <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '10px', color: '#22c55e', fontWeight: 800 }}>
-            <Wifi size={12} /> متصل حياً
-          </div>
-        )}
-        
         <button 
           onClick={() => {
             localStorage.removeItem('frame_app_cache');
@@ -123,8 +109,30 @@ export default function Header() {
           )}
         </div>
 
-        <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: '#e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <User size={18} color="#64748b" />
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginLeft: '5px' }}>
+          <div style={{ textAlign: 'left', display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
+            <span style={{ fontSize: '13px', fontWeight: 900, color: 'var(--text-main)', lineHeight: 1.2 }}>م. فواز</span>
+            {!isConnected ? (
+              <span style={{ fontSize: '10px', color: '#ef4444', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '2px' }}>
+                <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#ef4444' }} /> غير متصل
+              </span>
+            ) : isSyncing ? (
+              <span style={{ fontSize: '10px', color: '#2563eb', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '2px' }}>
+                <RefreshCw size={8} className="animate-spin" /> مزامنة...
+              </span>
+            ) : (
+              <span style={{ fontSize: '10px', color: '#22c55e', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '2px' }}>
+                <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#22c55e' }} /> متصل
+              </span>
+            )}
+          </div>
+          <div style={{ 
+            width: '36px', height: '36px', borderRadius: '50%', 
+            background: 'linear-gradient(135deg, #2563eb, #3b82f6)', 
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            color: 'white', fontWeight: 900, fontSize: '14px',
+            boxShadow: '0 4px 10px rgba(37, 99, 235, 0.2)'
+          }}>م</div>
         </div>
       </div>
     </header>
