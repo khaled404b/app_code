@@ -87,12 +87,25 @@ export function OfferComparison({ state, actions }) {
       </div>
 
       <Card padded style={{ marginBottom: '20px', background: '#f8fafc', border: '1px solid #e2e8f0' }}>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '15px' }}>
           <div className="form-group" style={{ marginBottom: 0 }}>
             <label className="form-label" style={{ fontSize: '12px' }}><Filter size={12} style={{ display: 'inline', marginLeft: '4px' }} />اسم العميل</label>
-            <select className="form-select" value={compClient} onChange={e => setCompClient(e.target.value)}>
+            <select className="form-select" value={compClient} onChange={e => {
+              setCompClient(e.target.value);
+              setCompPlot('all');
+            }}>
               <option value="all">اختر العميل من القائمة</option>
               {clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+            </select>
+          </div>
+          <div className="form-group" style={{ marginBottom: 0 }}>
+            <label className="form-label" style={{ fontSize: '12px' }}><Filter size={12} style={{ display: 'inline', marginLeft: '4px' }} />رقم القسيمة</label>
+            <select className="form-select" value={compPlot} onChange={e => setCompPlot(e.target.value)}>
+              <option value="all">كل القسائم</option>
+              {(clients.find(c => c.id === compClient)?.plots || []).map((pl, i) => {
+                const val = typeof pl === 'object' ? pl.number : pl;
+                return <option key={i} value={val}>قسيمة {val}</option>;
+              })}
             </select>
           </div>
           <div className="form-group" style={{ marginBottom: 0 }}>
@@ -133,6 +146,7 @@ export function OfferComparison({ state, actions }) {
               <tr style={{ background: '#4f46e5', color: 'white' }}>
                 <th style={{ padding: '12px', textAlign: 'center' }}>م</th>
                 <th style={{ padding: '12px', textAlign: 'right' }}>اسم الشركة</th>
+                <th style={{ padding: '12px', textAlign: 'center' }}>القسيمة</th>
                 <th style={{ padding: '12px', textAlign: 'center' }}>قيمة العرض</th>
                 <th style={{ padding: '12px', textAlign: 'center' }}>الحالة</th>
                 <th style={{ padding: '12px', textAlign: 'center' }}>صلاحية العرض</th>
@@ -147,6 +161,7 @@ export function OfferComparison({ state, actions }) {
                 <tr key={o.id} style={{ borderBottom: '1px solid #f1f5f9', background: o.is_selected ? '#f0fdf4' : (i % 2 === 0 ? '#fff' : '#f8fafc') }}>
                   <td style={{ padding: '12px', textAlign: 'center', fontWeight: 800 }}>{o.rank}</td>
                   <td style={{ padding: '12px', textAlign: 'right', fontWeight: o.is_selected ? 800 : 500 }}>{o.company_name}</td>
+                  <td style={{ padding: '12px', textAlign: 'center', unicodeBidi: 'plaintext' }}>{o.plot_no || '—'}</td>
                   <td style={{ padding: '12px', textAlign: 'center', fontWeight: 900, color: '#2563eb' }}>{parseFloat(o.price || 0).toFixed(2)}</td>
                   <td style={{ padding: '12px', textAlign: 'center' }}>{o.status}</td>
                   <td style={{ padding: '12px', textAlign: 'center' }}>{o.validity_date || '—'}</td>
@@ -196,6 +211,7 @@ export function OfferComparison({ state, actions }) {
                <tr style={{ background: '#4f46e5', color: 'white' }}>
                   <th style={{ border: '1px solid #000', padding: '8px' }}>م</th>
                   <th style={{ border: '1px solid #000', padding: '8px' }}>اسم الشركة</th>
+                  <th style={{ border: '1px solid #000', padding: '8px' }}>القسيمة</th>
                   <th style={{ border: '1px solid #000', padding: '8px' }}>رقم العرض</th>
                   <th style={{ border: '1px solid #000', padding: '8px' }}>قيمة العرض</th>
                   <th style={{ border: '1px solid #000', padding: '8px' }}>صلاحية العرض</th>
@@ -209,6 +225,7 @@ export function OfferComparison({ state, actions }) {
                   <tr key={o.id} style={{ background: o.is_selected ? '#f0fdf4' : 'transparent' }}>
                      <td style={{ border: '1px solid #000', padding: '8px' }}>{o.rank}</td>
                      <td style={{ border: '1px solid #000', padding: '8px', textAlign: 'right' }}>{o.company_name}</td>
+                     <td style={{ border: '1px solid #000', padding: '8px' }}>{o.plot_no || '—'}</td>
                      <td style={{ border: '1px solid #000', padding: '8px' }}>{o.offer_number || '—'}</td>
                      <td style={{ border: '1px solid #000', padding: '8px', fontWeight: 800 }}>{parseFloat(o.price || 0).toFixed(2)}</td>
                      <td style={{ border: '1px solid #000', padding: '8px' }}>{o.validity_date || '—'}</td>

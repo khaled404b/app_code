@@ -18,6 +18,7 @@ export function useOfferController() {
   
   // Filters for Comparison
   const [compClient, setCompClient] = useState('all');
+  const [compPlot, setCompPlot] = useState('all');
   const [compWorkType, setCompWorkType] = useState('all');
   const [customWorkType, setCustomWorkType] = useState('');
 
@@ -39,7 +40,8 @@ export function useOfferController() {
     return offers.filter(o => 
       o.company_name?.toLowerCase().includes(lowerSearch) || 
       o.request_code?.toLowerCase().includes(lowerSearch) ||
-      getClientName(o.client_id).toLowerCase().includes(lowerSearch)
+      getClientName(o.client_id).toLowerCase().includes(lowerSearch) ||
+      String(o.plot_no || '').toLowerCase().includes(lowerSearch)
     );
   }, [offers, search, clients]);
 
@@ -47,7 +49,11 @@ export function useOfferController() {
   const comparisonOffers = useMemo(() => {
     if (compClient === 'all' || compWorkType === 'all') return [];
     
-    const filtered = offers.filter(o => o.client_id === compClient && o.work_type === compWorkType);
+    const filtered = offers.filter(o => 
+      o.client_id === compClient && 
+      o.work_type === compWorkType && 
+      (compPlot === 'all' || String(o.plot_no) === String(compPlot))
+    );
     if (filtered.length === 0) return [];
     
     // Sort by price ascending
@@ -65,7 +71,7 @@ export function useOfferController() {
         is_highest: index === sorted.length - 1 && sorted.length > 1
       };
     });
-  }, [offers, compClient, compWorkType]);
+  }, [offers, compClient, compWorkType, compPlot]);
 
   const comparisonStats = useMemo(() => {
     if (comparisonOffers.length === 0) return null;
@@ -88,7 +94,7 @@ export function useOfferController() {
   const openNew = () => { 
     setSelected(null); 
     setForm({ 
-      client_id: '', work_type: services[0], request_code: `PR-${String(offers.length + 1).padStart(3, '0')}`,
+      client_id: '', plot_no: '', work_type: services[0], request_code: `PR-${String(offers.length + 1).padStart(3, '0')}`,
       company_name: '', offer_number: '', receive_date: new Date().toISOString().split('T')[0],
       validity_date: '', price: '', status: 'قيد الدراسة', is_selected: false, 
       description: '', notes: '', has_file: false 
@@ -210,11 +216,11 @@ export function useOfferController() {
     state: { 
       isLoading, canEdit, view, selected, form, search, 
       offers, clients, services, filteredOffers, comparisonOffers, comparisonStats,
-      compClient, compWorkType, tempFiles, customWorkType
+      compClient, compPlot, compWorkType, tempFiles, customWorkType
     },
     actions: { 
       setSearch, setView, openDetail, openNew, openEdit, goBack, openComparison, 
-      handleSave, handleDelete, markAsSelected, setCompClient, setCompWorkType, 
+      handleSave, handleDelete, markAsSelected, setCompClient, setCompPlot, setCompWorkType, 
       setForm, setTempFiles, getClientName, fetchAndShowFile, setCustomWorkType, getAttachment
     }
   };
