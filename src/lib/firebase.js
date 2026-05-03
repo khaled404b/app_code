@@ -1,8 +1,8 @@
 import { initializeApp, getApps, getApp } from "firebase/app";
-import { getDatabase } from "firebase/database";
+import { getDatabase, connectDatabaseEmulator } from "firebase/database";
 import { getStorage } from "firebase/storage";
 
-// Hardcoded config is necessary for Surge static deployment to ensure connectivity
+// THE ONLY SOURCE OF TRUTH FOR FIREBASE CONFIG
 const firebaseConfig = {
   apiKey: "AIzaSyB2eI498qsMcghoSQgzvx6ZO1cvPF4oVFw",
   authDomain: "frameapp-ce456.firebaseapp.com",
@@ -14,6 +14,9 @@ const firebaseConfig = {
   measurementId: "G-LYZ7F0LKQZ"
 };
 
+// Singleton pattern to ensure only one instance exists
 const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
-export const db = getDatabase(app);
+
+// Force the database to use the specific regional URL provided
+export const db = getDatabase(app, "https://frameapp-ce456-default-rtdb.asia-southeast1.firebasedatabase.app");
 export const storage = getStorage(app);
