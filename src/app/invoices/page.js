@@ -269,7 +269,7 @@ function InvoicesContent() {
         {canEdit && <button className="btn btn-sm" style={{ width: 'auto' }} onClick={() => { setForm({ invoice_no: generateNextNo('expense'), client_id: clients[0]?.id || '', status: 'معلقة', type: 'expense', issue_date: new Date().toISOString().split('T')[0] }); setSelected(null); setView('form'); }}>+ جديد</button>}
       </>} />
       <SearchBar value={filters.search} onChange={v => setF('search', v)} placeholder="بحث شامل..." />
-      <FilterSection {...{ filters, setF, clients, showFilters, setShowFilters, initialFilters: { status: 'الكل', client: 'الكل', dateFrom: '', dateTo: '', amountMin: '', amountMax: '', search: '', sort: 'desc' } }} />
+      <FilterSection {...{ filters, setF, clients, showFilters, setShowFilters, initialFilters: { status: 'الكل', client: 'الكل', dateFrom: '', dateTo: '', amountMin: '', amountMax: '', plot: '', search: '', sort: 'desc' } }} />
       <div className="list-group">
         {filtered.map(inv => (
           <div key={inv.id} className="list-row" onClick={() => { setSelected(inv); setView('detail'); }}>

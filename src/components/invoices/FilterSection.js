@@ -27,12 +27,18 @@ export const FilterSection = ({ filters, setF, clients, showFilters, setShowFilt
 
       {showFilters && (
         <Card padded style={{ marginBottom: '15px' }}>
-          <div className="form-group">
-            <label className="form-label">تصفية حسب العميل</label>
-            <select className="form-select" value={filters.client} onChange={e => setF('client', e.target.value)}>
-              <option value="الكل">كل العملاء</option>
-              {clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-            </select>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '15px' }}>
+            <div className="form-group" style={{ marginBottom: 0 }}>
+              <label className="form-label">تصفية حسب العميل</label>
+              <select className="form-select" value={filters.client} onChange={e => setF('client', e.target.value)}>
+                <option value="الكل">كل العملاء</option>
+                {clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+              </select>
+            </div>
+            <div className="form-group" style={{ marginBottom: 0 }}>
+              <label className="form-label">رقم القسيمة</label>
+              <input type="text" className="form-input" placeholder="رقم القسيمة..." value={filters.plot} onChange={e => setF('plot', e.target.value)} />
+            </div>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '15px' }}>
             <div><label className="form-label">من تاريخ</label><input type="date" className="form-input" value={filters.dateFrom} onChange={e => setF('dateFrom', e.target.value)} /></div>
