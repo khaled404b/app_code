@@ -2,15 +2,16 @@ import { initializeApp, getApps, getApp } from "firebase/app";
 import { getDatabase } from "firebase/database";
 import { getStorage } from "firebase/storage";
 
+// Hardcoded config is necessary for Surge static deployment to ensure connectivity
 const firebaseConfig = {
-  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
-  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
-  databaseURL: process.env.NEXT_PUBLIC_FIREBASE_DATABASE_URL,
-  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
-  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
-  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
-  measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID
+  apiKey: "AIzaSyB2eI498qsMcghoSQgzvx6ZO1cvPF4oVFw",
+  authDomain: "frameapp-ce456.firebaseapp.com",
+  databaseURL: "https://frameapp-ce456-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "frameapp-ce456",
+  storageBucket: "frameapp-ce456.firebasestorage.app",
+  messagingSenderId: "98784998076",
+  appId: "1:98784998076:web:d112459eb1b8cce64116b9",
+  measurementId: "G-LYZ7F0LKQZ"
 };
 
 const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();

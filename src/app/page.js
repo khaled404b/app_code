@@ -82,7 +82,6 @@ export default function Dashboard() {
   };
 
   const handleRefresh = () => {
-    localStorage.removeItem('frame_app_cache');
     window.location.reload();
   };
 
