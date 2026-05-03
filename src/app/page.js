@@ -43,6 +43,12 @@ export default function Dashboard() {
     selectedAttachmentId: ''
   });
 
+  const clients = data?.clients || [];
+  const tasks = data?.tasks || [];
+  const invoices = data?.invoices || [];
+
+  const selectedClient = useMemo(() => clients.find(c => c?.id === selectedClientId) || null, [clients, selectedClientId]);
+
   const clientAttachments = useMemo(() => {
     if (!selectedClient) return [];
     const clientTasks = tasks.filter(t => t.client_id === selectedClientId && t.has_file);
@@ -52,12 +58,6 @@ export default function Dashboard() {
       ...clientInvoices.map(i => ({ id: i.id, title: `فاتورة: ${i.invoice_no || i.id}` }))
     ];
   }, [selectedClient, tasks, invoices, selectedClientId]);
-
-  const clients = data?.clients || [];
-  const tasks = data?.tasks || [];
-  const invoices = data?.invoices || [];
-
-  const selectedClient = useMemo(() => clients.find(c => c?.id === selectedClientId) || null, [clients, selectedClientId]);
 
   const fTasks = useMemo(() => (selectedClientId === 'all' ? tasks : tasks.filter(t => t?.client_id === selectedClientId)).filter(Boolean), [tasks, selectedClientId]);
   const fInvoices = useMemo(() => (selectedClientId === 'all' ? invoices : invoices.filter(i => i?.client_id === selectedClientId)).filter(Boolean), [invoices, selectedClientId]);
