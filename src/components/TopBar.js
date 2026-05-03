@@ -12,33 +12,33 @@ export default function TopBar() {
 
   return (
     <div style={{ 
-      background: '#ffffff', padding: '12px 20px', 
+      background: 'var(--surface)', padding: '12px 20px', 
       display: 'flex', justifyContent: 'space-between', alignItems: 'center', 
-      borderBottom: '1px solid #e2e8f0', position: 'sticky', top: 0, zIndex: 1100,
-      boxShadow: '0 2px 4px rgba(0,0,0,0.02)'
+      borderBottom: '1px solid var(--border)', position: 'sticky', top: 0, zIndex: 1100,
+      boxShadow: 'var(--shadow)'
     }}>
       {/* RIGHT: BRANDING & STATUS */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
          <div style={{ 
            width: '36px', height: '36px', borderRadius: '8px', 
-           background: '#2563eb', display: 'flex', alignItems: 'center', justifyContent: 'center', 
+           background: 'var(--blue)', display: 'flex', alignItems: 'center', justifyContent: 'center', 
            color: '#ffffff', fontWeight: 900, fontSize: '18px' 
          }}>F</div>
          <div>
-            <h1 style={{ fontSize: '15px', fontWeight: 900, color: '#0f172a', margin: 0 }}>مكتب فريم الهندسي</h1>
+            <h1 style={{ fontSize: '15px', fontWeight: 900, color: 'var(--text)', margin: 0 }}>مكتب فريم الهندسي</h1>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '1px' }}>
                {!isConnected ? (
-                 <span style={{ fontSize: '9px', color: '#ef4444', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '3px' }}>
+                 <span style={{ fontSize: '9px', color: 'var(--red)', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '3px' }}>
                    <WifiOff size={10} /> منقطع
                  </span>
                ) : (
-                 <span style={{ fontSize: '9px', color: '#059669', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '3px' }}>
+                 <span style={{ fontSize: '9px', color: 'var(--green)', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '3px' }}>
                    <Wifi size={10} /> متصل حياً
                  </span>
                )}
                <button 
                  onClick={() => window.location.reload()} 
-                 style={{ background: 'none', border: 'none', color: '#3b82f6', fontSize: '9px', fontWeight: 800, cursor: 'pointer', padding: 0 }}
+                 style={{ background: 'none', border: 'none', color: 'var(--blue)', fontSize: '9px', fontWeight: 800, cursor: 'pointer', padding: 0 }}
                >تحديث البيانات</button>
             </div>
          </div>
@@ -46,22 +46,19 @@ export default function TopBar() {
 
       {/* LEFT: CONTROLS & PROFILE */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-         <button onClick={toggleTheme} style={{ background: '#f1f5f9', border: '1px solid #e2e8f0', width: '34px', height: '34px', borderRadius: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+         <button onClick={toggleTheme} style={{ background: 'var(--surface-2)', border: '1px solid var(--border)', width: '34px', height: '34px', borderRadius: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text)' }}>
            {theme === 'dark' ? <Sun size={16} color="#facc15" /> : <Moon size={16} color="#64748b" />}
          </button>
-         <button onClick={() => logout()} style={{ background: '#fee2e2', border: '1px solid #fecaca', width: '34px', height: '34px', borderRadius: '8px', cursor: 'pointer', color: '#ef4444', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+         <button onClick={() => logout()} style={{ background: 'var(--red-light)', border: '1px solid var(--border)', width: '34px', height: '34px', borderRadius: '8px', cursor: 'pointer', color: 'var(--red)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
            <LogOut size={16} />
          </button>
          
-         <div style={{ width: '1px', height: '22px', background: '#e2e8f0', margin: '0 2px' }} />
+         <div style={{ width: '1px', height: '22px', background: 'var(--border)', margin: '0 2px' }} />
          
          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <div style={{ textAlign: 'right', display: 'none' }}> {/* Responsive hide */}
-               <div style={{ fontSize: '13px', fontWeight: 900, color: '#0f172a' }}>م. فواز</div>
-            </div>
             <div style={{ 
               width: '36px', height: '36px', borderRadius: '8px', 
-              background: '#2563eb', color: '#ffffff', 
+              background: 'var(--blue)', color: '#ffffff', 
               display: 'flex', alignItems: 'center', justifyContent: 'center', 
               fontWeight: 900, fontSize: '15px' 
             }}>ف</div>
