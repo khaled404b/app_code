@@ -37,25 +37,30 @@ export function useData() {
   const notificationsRef = useRef([]);
   useEffect(() => { notificationsRef.current = notifications; }, [notifications]);
 
+  const [isConnected, setIsConnected] = useState(true);
+  const [isSyncing, setIsSyncing] = useState(true);
+
   useEffect(() => {
+    // Monitor connection status
+    const connectedRef = ref(db, '.info/connected');
+    const unsubConn = onValue(connectedRef, (snap) => {
+      setIsConnected(snap.val() === true);
+    });
+
     const dbRefValue = ref(db, '/');
     const unsubscribe = onValue(dbRefValue, (snapshot) => {
       const val = snapshot.val();
+      setIsSyncing(false);
       if (val) {
-        // Prevent re-rendering if data is essentially the same
-        const currentStr = JSON.stringify(dataRef.current);
-        const newStr = JSON.stringify(val);
-        if (currentStr !== newStr) {
-          setData(val);
-          setError(null);
-          try {
-            const cacheData = { ...val };
-            delete cacheData.attachments;
-            localStorage.setItem('frame_app_cache', JSON.stringify(cacheData));
-          } catch (e) { console.error('Cache error', e); }
-        }
+        setData(val);
+        setError(null);
+        try {
+          const cacheData = { ...val };
+          delete cacheData.attachments;
+          localStorage.setItem('frame_app_cache', JSON.stringify(cacheData));
+        } catch (e) { console.error('Cache error', e); }
 
-        // Handle Notifications separately for better UX
+        // Handle Notifications separately
         const rawNotifs = val.notifications || {};
         const notifList = Object.values(rawNotifs).sort((a, b) => b.timestamp - a.timestamp).slice(0, 50);
         setNotifications(notifList);
@@ -72,9 +77,13 @@ export function useData() {
     }, (err) => {
       console.error('Firebase fetch error:', err);
       setError(err);
+      setIsSyncing(false);
     });
 
-    return () => unsubscribe();
+    return () => {
+      unsubscribe();
+      unsubConn();
+    };
   }, []);
 
   const addNotification = useCallback(async (type, title, message) => {
@@ -155,5 +164,5 @@ export function useData() {
     }
   }, []);
 
-  return { data, isLoading: !error && !data, isError: error, updateData, getAttachment, notifications, addNotification };
+  return { data, isLoading: !error && !data, isError: error, updateData, getAttachment, notifications, addNotification, isConnected, isSyncing };
 }

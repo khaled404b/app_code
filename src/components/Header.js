@@ -1,13 +1,13 @@
 'use client';
 
-import { Bell, Moon, Sun, User, X, Briefcase, Users, Eye, RefreshCw, Wifi } from 'lucide-react';
+import { Bell, Moon, Sun, User, X, Briefcase, Users, Eye, RefreshCw, Wifi, WifiOff } from 'lucide-react';
 import { useTheme } from './AppWrapper';
 import { useData } from '@/hooks/useData';
 import { useState } from 'react';
 
 export default function Header() {
   const { theme, toggleTheme } = useTheme();
-  const { notifications } = useData();
+  const { notifications, isConnected, isSyncing } = useData();
   const [showNotifs, setShowNotifs] = useState(false);
 
   const unreadCount = (notifications || []).filter(n => !n.read).length;
@@ -41,9 +41,19 @@ export default function Header() {
       </div>
 
       <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '10px', color: '#22c55e', fontWeight: 800 }}>
-          <Wifi size={12} /> متصل
-        </div>
+        {!isConnected ? (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '10px', color: '#ef4444', fontWeight: 800, background: '#fee2e2', padding: '4px 8px', borderRadius: '8px' }}>
+            <WifiOff size={12} /> غير متصل
+          </div>
+        ) : isSyncing ? (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '10px', color: '#2563eb', fontWeight: 800 }}>
+            <RefreshCw size={12} className="animate-spin" /> جاري المزامنة...
+          </div>
+        ) : (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '10px', color: '#22c55e', fontWeight: 800 }}>
+            <Wifi size={12} /> متصل حياً
+          </div>
+        )}
         
         <button 
           onClick={() => {

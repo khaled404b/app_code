@@ -38,8 +38,7 @@ export default function Dashboard() {
     category: '—',
     price: '', 
     date: new Date().toISOString().split('T')[0], 
-    body: '',
-    includeReport: false
+    body: ''
   });
 
   const clients = data?.clients || [];
@@ -110,10 +109,6 @@ export default function Dashboard() {
     msg += `*التاريخ:* ${waMsg.date}\n`;
     if (waMsg.price) msg += `*المبلغ:* ${waMsg.price} د.ك\n`;
     if (waMsg.body) msg += `\n${waMsg.body}\n`;
-    
-    if (waMsg.includeReport && selectedClient.drive_link) {
-      msg += `\n📂 *رابط المستندات:* ${selectedClient.drive_link}\n`;
-    }
     
     msg += `\nلأي استفسار يرجى التواصل معنا.`;
     
@@ -231,11 +226,6 @@ export default function Dashboard() {
               <textarea className="form-input" rows={4} value={waMsg.body} onChange={e => setWaMsg(p => ({ ...p, body: e.target.value }))} placeholder="اكتب ملاحظات إضافية هنا..." />
             </div>
 
-            <div style={{ marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px', background: '#fefce8', padding: '10px', borderRadius: '12px', border: '1px solid #fef08a' }}>
-              <input type="checkbox" id="inc-report" checked={waMsg.includeReport} onChange={e => setWaMsg(p => ({ ...p, includeReport: e.target.checked }))} />
-              <label htmlFor="inc-report" style={{ fontSize: '12px', fontWeight: 800, color: '#854d0e', cursor: 'pointer' }}>إدراج رابط التقرير الشامل / الدرايف</label>
-            </div>
-            
             <button className="btn" style={{ background: '#22c55e' }} onClick={sendWhatsApp}>فتح المحادثة والإرسال</button>
           </Card>
         </div>
