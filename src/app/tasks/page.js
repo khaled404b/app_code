@@ -1,12 +1,13 @@
 'use client';
 
-import { useState, useMemo, memo, useEffect } from 'react';
+import { useState, useMemo, memo, useEffect, useRef } from 'react';
 import { useData } from '@/hooks/useData';
 import { useAuth } from '@/hooks/useAuth';
 import { 
   Briefcase, FileText, ArrowRight, Eye, Send, Link as LinkIcon, 
   MapPin, Loader2, X, Plus, Trash2, Paperclip, Search, 
-  Download, History, MessageSquare, PlusCircle, Clock, User, CheckCircle2
+  Download, History, MessageSquare, PlusCircle, Clock, User, CheckCircle2,
+  FileCheck, Info
 } from 'lucide-react';
 import { ref as fRef, set as fSet, get as fGet } from 'firebase/database';
 import { db as fDb } from '@/lib/firebase';
@@ -23,6 +24,8 @@ const generateId = () => {
 export default function TasksPage() {
   const { data, isLoading, updateData, addNotification } = useData();
   const { user, canEdit } = useAuth();
+  
+  // States
   const [view, setView] = useState('list');
   const [selected, setSelected] = useState(null);
   const [search, setSearch] = useState('');
@@ -31,10 +34,16 @@ export default function TasksPage() {
   const [loadingFile, setLoadingFile] = useState(false);
   const [updateText, setUpdateText] = useState('');
   const [existingFiles, setExistingFiles] = useState([]);
+  const [isExporting, setIsExporting] = useState(false);
+  const [includeFiles, setIncludeFiles] = useState(false);
+  
+  const reportRef = useRef();
 
+  // Data Selectors
   const tasks = useMemo(() => (data?.tasks || []), [data]);
   const clients = useMemo(() => (data?.clients || []), [data]);
   const getClientName = (id) => clients.find(c => c.id === id)?.name || '—';
+  const getClientPlots = (id) => clients.find(c => c.id === id)?.plots || [];
 
   const filteredTasks = useMemo(() => {
     return tasks.filter(t => 
@@ -43,7 +52,14 @@ export default function TasksPage() {
     );
   }, [tasks, search, clients]);
 
-  // Fetch attachments when a task is selected
+  const stats = useMemo(() => {
+    const total = filteredTasks.length;
+    const done = filteredTasks.filter(t => t.status === 'منجزة').length;
+    const active = filteredTasks.filter(t => t.status === 'جارية').length;
+    return { total, done, active, percent: total > 0 ? Math.round((done/total)*100) : 0 };
+  }, [filteredTasks]);
+
+  // Effects
   useEffect(() => {
     if (selected && selected.id) {
       fGet(fRef(fDb, `attachments/${selected.id}`)).then(snap => {
@@ -53,6 +69,7 @@ export default function TasksPage() {
     }
   }, [selected]);
 
+  // Actions
   const handleSave = async (e) => {
     if (e) e.preventDefault();
     if (!form.title) return alert('يرجى إدخال عنوان المهمة');
@@ -83,25 +100,16 @@ export default function TasksPage() {
       setSelected(null);
       setTempFiles([]);
       setForm({});
-    } catch (err) {
-      alert('فشل الحفظ: ' + err.message);
-    }
+    } catch (err) { alert('فشل الحفظ: ' + err.message); }
   };
 
   const handleAddUpdate = async () => {
     if (!updateText.trim()) return;
-    const newUpdate = {
-      id: generateId(),
-      text: updateText,
-      user: user?.name || 'مجهول',
-      date: new Date().toISOString()
-    };
+    const newUpdate = { id: generateId(), text: updateText, user: user?.name || 'مجهول', date: new Date().toISOString() };
     const updatedTask = { ...selected, updates: [newUpdate, ...(selected.updates || [])] };
-    try {
-      await updateData('tasks', 'update', updatedTask, selected.id);
-      setSelected(updatedTask);
-      setUpdateText('');
-    } catch (err) { alert('فشل إضافة التحديث'); }
+    await updateData('tasks', 'update', updatedTask, selected.id);
+    setSelected(updatedTask);
+    setUpdateText('');
   };
 
   const handleFileUpload = async (e) => {
@@ -111,18 +119,25 @@ export default function TasksPage() {
     try {
       const processed = await Promise.all(files.map(file => processAttachment(file)));
       setTempFiles(prev => [...prev, ...processed]);
-    } catch (err) {
-      alert('فشل معالجة الملفات');
-    } finally {
-      setLoadingFile(false);
-    }
+    } catch (err) { alert('فشل معالجة الملفات'); } finally { setLoadingFile(false); }
   };
 
-  if (isLoading) return (
-    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg)' }}>
-      <Loader2 className="animate-spin" size={32} color="var(--blue)" />
-    </div>
-  );
+  const handleExportPDF = () => {
+    setIsExporting(true);
+    setTimeout(() => {
+      const element = reportRef.current;
+      const opt = {
+        margin: 10, filename: `تقرير_الأعمال_${new Date().toLocaleDateString('ar-EG')}.pdf`,
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { scale: 2, useCORS: true },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+        pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
+      };
+      html2pdf().set(opt).from(element).save().then(() => setIsExporting(false));
+    }, 500);
+  };
+
+  if (isLoading) return <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg)' }}><Loader2 className="animate-spin" size={32} color="var(--blue)" /></div>;
 
   return (
     <div style={{ background: 'var(--bg)', minHeight: '100vh', padding: '20px', paddingBottom: '100px' }}>
@@ -130,29 +145,46 @@ export default function TasksPage() {
         
         {/* HEADER */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '25px' }}>
-           <h1 style={{ fontSize: '24px', fontWeight: 950, color: 'var(--text)', margin: 0 }}>متابعة الأعمال</h1>
+           <div>
+              <h1 style={{ fontSize: '24px', fontWeight: 950, color: 'var(--text)', margin: 0 }}>متابعة الأعمال</h1>
+              <p style={{ fontSize: '13px', color: 'var(--text-3)', fontWeight: 700 }}>نظام فريم لإدارة المشاريع</p>
+           </div>
            {view === 'list' && (
-             <button onClick={() => { setForm({ status: 'جارية' }); setView('form'); setSelected(null); setTempFiles([]); }} style={{ background: 'var(--blue)', color: '#fff', border: 'none', padding: '10px 20px', borderRadius: '12px', fontWeight: 900, display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
-               <Plus size={18} /> إضافة عمل
-             </button>
+             <div style={{ display: 'flex', gap: '10px' }}>
+                <button onClick={handleExportPDF} style={{ background: 'var(--surface)', border: '1px solid var(--border)', padding: '10px 15px', borderRadius: '12px', fontWeight: 800, color: 'var(--text)', display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+                  <Download size={18} /> التقرير
+                </button>
+                {canEdit && (
+                  <button onClick={() => { setForm({ status: 'جارية' }); setView('form'); setSelected(null); setTempFiles([]); }} style={{ background: 'var(--blue)', color: '#fff', border: 'none', padding: '10px 20px', borderRadius: '12px', fontWeight: 900, display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+                    <Plus size={18} /> إضافة عمل
+                  </button>
+                )}
+             </div>
            )}
-           {view !== 'list' && (
-             <button onClick={() => setView('list')} style={{ background: 'var(--surface)', border: '1px solid var(--border)', padding: '10px 15px', borderRadius: '12px', fontWeight: 800, color: 'var(--text)', cursor: 'pointer' }}>العودة للقائمة</button>
-           )}
+           {view !== 'list' && <button onClick={() => setView('list')} style={{ background: 'var(--surface)', border: '1px solid var(--border)', padding: '10px 15px', borderRadius: '12px', fontWeight: 800, color: 'var(--text)', cursor: 'pointer' }}>العودة للقائمة</button>}
         </div>
 
         {/* LIST VIEW */}
         {view === 'list' && (
           <>
-            <div style={{ position: 'relative', marginBottom: '20px' }}>
-              <input style={{ width: '100%', padding: '15px 45px 15px 15px', borderRadius: '12px', border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text)', outline: 'none', fontWeight: 700 }} placeholder="ابحث..." value={search} onChange={e => setSearch(e.target.value)} />
-              <Search size={20} color="var(--text-3)" style={{ position: 'absolute', right: '15px', top: '50%', transform: 'translateY(-50%)' }} />
+            <div style={{ display: 'flex', gap: '10px', marginBottom: '20px' }}>
+              <div style={{ position: 'relative', flex: 1 }}>
+                <input style={{ width: '100%', padding: '15px 45px 15px 15px', borderRadius: '12px', border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text)', outline: 'none', fontWeight: 700 }} placeholder="ابحث..." value={search} onChange={e => setSearch(e.target.value)} />
+                <Search size={20} color="var(--text-3)" style={{ position: 'absolute', right: '15px', top: '50%', transform: 'translateY(-50%)' }} />
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'var(--surface)', padding: '10px 15px', borderRadius: '12px', border: '1px solid var(--border)' }}>
+                 <input type="checkbox" checked={includeFiles} onChange={e => setIncludeFiles(e.target.checked)} style={{ width: '18px', height: '18px', cursor: 'pointer' }} />
+                 <span style={{ fontSize: '11px', fontWeight: 800 }}>المرفقات بالتقرير</span>
+              </div>
             </div>
             {filteredTasks.map(task => (
               <div key={task.id} onClick={() => { setSelected(task); setView('detail'); }} style={{ background: 'var(--surface)', padding: '20px', borderRadius: '16px', border: '1px solid var(--border)', cursor: 'pointer', boxShadow: 'var(--shadow)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
                 <div style={{ display: 'flex', gap: '15px', alignItems: 'center' }}>
                   <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: 'var(--surface-2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Briefcase size={20} color="var(--blue)" /></div>
-                  <div><h3 style={{ fontSize: '15px', fontWeight: 900, color: 'var(--text)', margin: 0 }}>{task.title}</h3><p style={{ fontSize: '12px', color: 'var(--text-3)', fontWeight: 700 }}>{getClientName(task.client_id)}</p></div>
+                  <div>
+                    <h3 style={{ fontSize: '15px', fontWeight: 900, color: 'var(--text)', margin: 0 }}>{task.title}</h3>
+                    <p style={{ fontSize: '12px', color: 'var(--text-3)', fontWeight: 700 }}>{getClientName(task.client_id)} {task.plot_number ? `| قسيمة: ${task.plot_number}` : ''}</p>
+                  </div>
                 </div>
                 <ArrowRight size={18} color="var(--text-3)" />
               </div>
@@ -160,49 +192,67 @@ export default function TasksPage() {
           </>
         )}
 
-        {/* FORM VIEW */}
+        {/* FORM VIEW (WITH PLOT SELECTION) */}
         {view === 'form' && (
           <div style={{ background: 'var(--surface)', padding: '30px', borderRadius: '24px', border: '1px solid var(--border)' }}>
              <h2 style={{ fontSize: '20px', fontWeight: 950, marginBottom: '20px' }}>{selected ? 'تعديل العمل' : 'إضافة عمل جديد'}</h2>
              <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                <input style={{ padding: '15px', border: '1px solid var(--border)', borderRadius: '12px', background: 'var(--surface-2)', color: 'var(--text)', outline: 'none', fontWeight: 700 }} placeholder="عنوان العمل..." value={form.title || ''} onChange={e => setForm({...form, title: e.target.value})} />
-                <select style={{ padding: '15px', border: '1px solid var(--border)', borderRadius: '12px', background: 'var(--surface-2)', color: 'var(--text)', outline: 'none', fontWeight: 700 }} value={form.client_id || ''} onChange={e => setForm({...form, client_id: e.target.value})}>
-                  <option value="">اختر العميل...</option>
-                  {clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                </select>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+                   <label style={{ fontSize: '12px', fontWeight: 800, color: 'var(--text-3)' }}>عنوان العمل</label>
+                   <input style={{ padding: '15px', border: '1px solid var(--border)', borderRadius: '12px', background: 'var(--surface-2)', color: 'var(--text)', outline: 'none', fontWeight: 700 }} placeholder="مثال: ترخيص بناء..." value={form.title || ''} onChange={e => setForm({...form, title: e.target.value})} />
+                </div>
                 
-                {/* ATTACHMENTS IN FORM */}
-                <div style={{ border: '2px dashed var(--border)', borderRadius: '16px', padding: '20px', textAlign: 'center' }}>
-                   <input type="file" multiple id="fileAdd" hidden onChange={handleFileUpload} />
-                   <label htmlFor="fileAdd" style={{ cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
-                      {loadingFile ? <Loader2 size={24} className="animate-spin" /> : <Paperclip size={24} color="var(--blue)" />}
-                      <span style={{ fontWeight: 900, fontSize: '13px' }}>إرفاق ملفات أو صور</span>
-                   </label>
-                   {tempFiles.length > 0 && (
-                     <div style={{ marginTop: '15px', display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-                        {tempFiles.map((f, i) => <div key={i} style={{ padding: '5px 10px', background: 'var(--blue-light)', color: 'var(--blue)', borderRadius: '8px', fontSize: '11px', fontWeight: 800 }}>مرفق {i+1}</div>)}
-                     </div>
-                   )}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
+                   <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+                      <label style={{ fontSize: '12px', fontWeight: 800, color: 'var(--text-3)' }}>العميل</label>
+                      <select style={{ padding: '15px', border: '1px solid var(--border)', borderRadius: '12px', background: 'var(--surface-2)', color: 'var(--text)', outline: 'none', fontWeight: 700 }} value={form.client_id || ''} onChange={e => setForm({...form, client_id: e.target.value, plot_number: ''})}>
+                        <option value="">اختر العميل...</option>
+                        {clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                      </select>
+                   </div>
+                   <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+                      <label style={{ fontSize: '12px', fontWeight: 800, color: 'var(--text-3)' }}>القسيمة</label>
+                      <select style={{ padding: '15px', border: '1px solid var(--border)', borderRadius: '12px', background: 'var(--surface-2)', color: 'var(--text)', outline: 'none', fontWeight: 700 }} value={form.plot_number || ''} onChange={e => setForm({...form, plot_number: e.target.value})} disabled={!form.client_id}>
+                        <option value="">اختر القسيمة...</option>
+                        {getClientPlots(form.client_id).map((p, i) => <option key={i} value={p.number}>قسيمة {p.number}</option>)}
+                      </select>
+                   </div>
                 </div>
 
-                <button onClick={handleSave} style={{ background: 'var(--blue)', color: '#fff', border: 'none', padding: '18px', borderRadius: '14px', fontWeight: 950, fontSize: '17px', cursor: 'pointer' }}>حفظ العمل والمرفقات</button>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+                   <label style={{ fontSize: '12px', fontWeight: 800, color: 'var(--text-3)' }}>ملاحظات أولية</label>
+                   <textarea rows={4} style={{ padding: '15px', border: '1px solid var(--border)', borderRadius: '12px', background: 'var(--surface-2)', color: 'var(--text)', outline: 'none', fontWeight: 700 }} placeholder="اكتب ملاحظاتك هنا..." value={form.notes || ''} onChange={e => setForm({...form, notes: e.target.value})} />
+                </div>
+
+                <div style={{ border: '2px dashed var(--border)', borderRadius: '16px', padding: '20px', textAlign: 'center' }}>
+                   <input type="file" multiple id="fileTask" hidden onChange={handleFileUpload} />
+                   <label htmlFor="fileTask" style={{ cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
+                      {loadingFile ? <Loader2 size={24} className="animate-spin" /> : <Paperclip size={24} color="var(--blue)" />}
+                      <span style={{ fontWeight: 900, fontSize: '13px' }}>إرفاق مرفقات (صور/ملفات)</span>
+                   </label>
+                   {tempFiles.length > 0 && <div style={{ marginTop: '10px', display: 'flex', gap: '5px', flexWrap: 'wrap' }}>{tempFiles.map((_, i) => <div key={i} style={{ padding: '4px 8px', background: 'var(--blue-light)', color: 'var(--blue)', borderRadius: '6px', fontSize: '10px', fontWeight: 900 }}>مرفق {i+1}</div>)}</div>}
+                </div>
+
+                <button onClick={handleSave} style={{ background: 'var(--blue)', color: '#fff', border: 'none', padding: '18px', borderRadius: '14px', fontWeight: 950, fontSize: '17px', cursor: 'pointer' }}>{selected ? 'حفظ التعديلات' : 'إضافة العمل الآن'}</button>
              </div>
           </div>
         )}
 
-        {/* DETAIL VIEW WITH UPDATES TIMELINE */}
+        {/* DETAIL VIEW WITH UPDATES */}
         {view === 'detail' && selected && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
              <div style={{ background: 'var(--surface)', padding: '30px', borderRadius: '24px', border: '1px solid var(--border)', boxShadow: 'var(--shadow)' }}>
-                <h2 style={{ fontSize: '22px', fontWeight: 950, color: 'var(--text)', marginBottom: '5px' }}>{selected.title}</h2>
-                <p style={{ fontWeight: 800, color: 'var(--blue)', marginBottom: '20px' }}>{getClientName(selected.client_id)}</p>
-                
-                <div style={{ padding: '15px', background: 'var(--bg)', borderRadius: '12px', color: 'var(--text-2)', marginBottom: '20px' }}>{selected.notes || 'لا توجد ملاحظات أساسية'}</div>
-                
-                {/* ATTACHMENTS DISPLAY */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                   <div>
+                      <h2 style={{ fontSize: '22px', fontWeight: 950, color: 'var(--text)', margin: 0 }}>{selected.title}</h2>
+                      <p style={{ fontWeight: 800, color: 'var(--blue)', marginTop: '4px' }}>{getClientName(selected.client_id)} {selected.plot_number ? `| قسيمة: ${selected.plot_number}` : ''}</p>
+                   </div>
+                   <button onClick={() => { setForm(selected); setView('form'); }} style={{ background: 'var(--blue-light)', color: 'var(--blue)', border: 'none', padding: '8px 15px', borderRadius: '10px', fontWeight: 800, cursor: 'pointer' }}>تعديل</button>
+                </div>
+                <div style={{ marginTop: '20px', padding: '20px', background: 'var(--bg)', borderRadius: '16px', color: 'var(--text-2)', fontSize: '14px' }}>{selected.notes || 'لا توجد ملاحظات'}</div>
                 {existingFiles.length > 0 && (
-                  <div style={{ marginBottom: '20px' }}>
-                     <h4 style={{ fontSize: '14px', fontWeight: 900, marginBottom: '10px' }}>المرفقات</h4>
+                  <div style={{ marginTop: '20px' }}>
+                     <h4 style={{ fontSize: '13px', fontWeight: 900, marginBottom: '10px' }}>المرفقات ({existingFiles.length})</h4>
                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(80px, 1fr))', gap: '10px' }}>
                         {existingFiles.map((f, i) => (
                            <div key={i} onClick={() => window.open(f, '_blank')} style={{ height: '80px', borderRadius: '10px', background: 'var(--surface-2)', border: '1px solid var(--border)', cursor: 'pointer', overflow: 'hidden' }}>
@@ -214,37 +264,57 @@ export default function TasksPage() {
                 )}
              </div>
 
-             {/* UPDATES TIMELINE SECTION */}
              <div style={{ background: 'var(--surface)', padding: '30px', borderRadius: '24px', border: '1px solid var(--border)' }}>
-                <h3 style={{ fontSize: '18px', fontWeight: 950, marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '10px' }}>
-                  <History size={20} color="var(--blue)" /> سجل التحديثات والمتابعة
-                </h3>
-
-                {/* Add New Update */}
+                <h3 style={{ fontSize: '18px', fontWeight: 950, marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '10px' }}><History size={20} color="var(--blue)" /> سجل التحديثات</h3>
                 <div style={{ display: 'flex', gap: '10px', marginBottom: '25px' }}>
-                   <textarea style={{ flex: 1, padding: '12px', border: '1px solid var(--border)', borderRadius: '12px', background: 'var(--surface-2)', color: 'var(--text)', outline: 'none', resize: 'none' }} rows={2} placeholder="أضف تحديثاً جديداً لمسار العمل..." value={updateText} onChange={e => setUpdateText(e.target.value)} />
+                   <textarea style={{ flex: 1, padding: '12px', border: '1px solid var(--border)', borderRadius: '12px', background: 'var(--surface-2)', color: 'var(--text)', outline: 'none', resize: 'none' }} rows={2} placeholder="أضف تحديثاً..." value={updateText} onChange={e => setUpdateText(e.target.value)} />
                    <button onClick={handleAddUpdate} style={{ background: 'var(--blue)', color: '#fff', border: 'none', width: '50px', height: '50px', borderRadius: '12px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Send size={20} /></button>
                 </div>
-
-                {/* Timeline */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', borderRight: '2px solid var(--border)', paddingRight: '20px' }}>
                    {(selected.updates || []).map((up, i) => (
                      <div key={up.id} style={{ position: 'relative' }}>
                         <div style={{ position: 'absolute', right: '-27px', top: '0', width: '12px', height: '12px', borderRadius: '50%', background: 'var(--blue)', border: '3px solid var(--surface)' }} />
                         <div style={{ background: 'var(--surface-2)', padding: '15px', borderRadius: '12px' }}>
-                           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-                              <span style={{ fontSize: '12px', fontWeight: 900, color: 'var(--text)' }}>{up.user}</span>
-                              <span style={{ fontSize: '11px', color: 'var(--text-3)', fontWeight: 700 }}>{new Date(up.date).toLocaleDateString('ar-EG')}</span>
-                           </div>
+                           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '5px' }}><span style={{ fontSize: '12px', fontWeight: 900 }}>{up.user}</span><span style={{ fontSize: '10px', color: 'var(--text-3)' }}>{new Date(up.date).toLocaleDateString('ar-EG')}</span></div>
                            <p style={{ fontSize: '13px', color: 'var(--text-2)', margin: 0 }}>{up.text}</p>
                         </div>
                      </div>
                    ))}
-                   {(selected.updates || []).length === 0 && <p style={{ textAlign: 'center', color: 'var(--text-3)', fontWeight: 700 }}>لا توجد تحديثات مسجلة بعد</p>}
                 </div>
              </div>
           </div>
         )}
+
+        {/* --- HIDDEN REPORT (ALL FEATURES INCLUDED) --- */}
+        <div style={{ display: 'none' }}>
+           <div ref={reportRef} style={{ padding: '20mm', background: '#fff', color: '#000', direction: 'rtl', fontFamily: 'Tajawal, sans-serif' }}>
+              <div style={{ borderBottom: '2px solid #2563eb', paddingBottom: '10px', marginBottom: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                 <div><h1 style={{ color: '#2563eb', margin: 0, fontSize: '22px' }}>مكتب فريم الهندسي</h1><p style={{ margin: 0, fontSize: '13px' }}>تقرير متابعة الأعمال - {new Date().toLocaleDateString('ar-EG')}</p></div>
+                 <div style={{ textAlign: 'left' }}><p style={{ margin: 0, fontSize: '11px' }}>بواسطة: {user?.name || 'م. فواز'}</p></div>
+              </div>
+              <div style={{ background: '#f8fafc', padding: '20px', borderRadius: '12px', marginBottom: '25px', display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '10px', textAlign: 'center' }}>
+                 <div><div style={{ fontSize: '10px', color: '#64748b' }}>الإجمالي</div><div style={{ fontSize: '18px', fontWeight: 900 }}>{stats.total}</div></div>
+                 <div><div style={{ fontSize: '10px', color: '#64748b' }}>المنجز</div><div style={{ fontSize: '18px', fontWeight: 900, color: '#059669' }}>{stats.done}</div></div>
+                 <div><div style={{ fontSize: '10px', color: '#64748b' }}>الجاري</div><div style={{ fontSize: '18px', fontWeight: 900, color: '#2563eb' }}>{stats.active}</div></div>
+                 <div><div style={{ fontSize: '10px', color: '#64748b' }}>الإنجاز</div><div style={{ fontSize: '18px', fontWeight: 900, color: '#8b5cf6' }}>{stats.percent}%</div></div>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                {filteredTasks.map((task, i) => (
+                  <div key={task.id} style={{ border: '1px solid #e2e8f0', borderRadius: '12px', padding: '15px', pageBreakInside: 'avoid' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}><h3 style={{ margin: 0, fontSize: '15px' }}>{i + 1}. {task.title}</h3><span style={{ fontSize: '12px', fontWeight: 800, color: '#2563eb' }}>{task.status}</span></div>
+                    <div style={{ fontSize: '11px', color: '#64748b', marginBottom: '10px' }}>العميل: {getClientName(task.client_id)} {task.plot_number ? `| قسيمة: ${task.plot_number}` : ''} | {task.start_date || '—'}</div>
+                    <div style={{ fontSize: '13px', background: '#f8fafc', padding: '12px', borderRadius: '8px' }}>{task.notes || 'لا توجد ملاحظات'}</div>
+                    {includeFiles && task.has_file && <div style={{ marginTop: '8px', fontSize: '10px', color: '#2563eb', fontWeight: 700 }}>* يحتوي على مرفقات/صور</div>}
+                    {task.updates?.length > 0 && (
+                      <div style={{ marginTop: '10px', paddingRight: '10px', borderRight: '2px solid #e2e8f0' }}>
+                         {task.updates.slice(0, 3).map((up, j) => <div key={j} style={{ fontSize: '11px', marginBottom: '4px' }}><span style={{ fontWeight: 800 }}>- {up.user}:</span> {up.text}</div>)}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+           </div>
+        </div>
 
       </div>
     </div>
