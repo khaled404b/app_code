@@ -87,8 +87,6 @@ export default function TasksPage() {
 
   const handleExportPDF = async () => {
     setIsExporting(true);
-    
-    // Dynamic import to avoid SSR crash
     const html2pdf = (await import('html2pdf.js')).default;
     
     if (includeFiles) {
@@ -106,7 +104,7 @@ export default function TasksPage() {
       const opt = {
         margin: 10, filename: `تقرير_الأعمال_${new Date().toLocaleDateString('ar-EG')}.pdf`,
         image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: { scale: 2, useCORS: true },
+        html2canvas: { scale: 2, useCORS: true, letterRendering: true },
         jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
         pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
       };
@@ -114,7 +112,21 @@ export default function TasksPage() {
         setIsExporting(false);
         setReportFiles({}); 
       });
-    }, 800);
+    }, 1000);
+  };
+
+  const handleFileAction = (fileData) => {
+    if (!fileData) return;
+    const link = document.createElement('a');
+    link.href = fileData;
+    link.target = '_blank';
+    // If it's base64 image, we can try to download it too
+    if (fileData.startsWith('data:image')) {
+       link.download = `attachment_${Date.now()}.png`;
+    }
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   const handleDelete = async (id) => {
@@ -192,7 +204,7 @@ export default function TasksPage() {
           </>
         )}
 
-        {/* DETAIL VIEW WITH QUICK ACTIONS */}
+        {/* DETAIL VIEW */}
         {view === 'detail' && selected && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
              <div style={{ background: 'var(--surface)', padding: '30px', borderRadius: '24px', border: '1px solid var(--border)', boxShadow: 'var(--shadow)' }}>
@@ -200,15 +212,24 @@ export default function TasksPage() {
                    <div><h2 style={{ fontSize: '22px', fontWeight: 950, color: 'var(--text)', margin: 0 }}>{selected.title}</h2><p style={{ fontWeight: 800, color: 'var(--blue)', marginTop: '4px' }}>{getClientName(selected.client_id)} {selected.plot_number ? `| قسيمة: ${selected.plot_number}` : ''}</p></div>
                    <div style={{ display: 'flex', gap: '10px' }}><button onClick={() => { setForm(selected); setView('form'); }} style={{ background: 'var(--surface-2)', border: '1px solid var(--border)', padding: '8px 12px', borderRadius: '10px', fontWeight: 800, cursor: 'pointer', color: 'var(--text)' }}>تعديل</button><button onClick={() => handleDelete(selected.id)} style={{ background: 'var(--red-light)', color: 'var(--red)', border: 'none', padding: '8px 12px', borderRadius: '10px', fontWeight: 800, cursor: 'pointer' }}><Trash2 size={16} /></button></div>
                 </div>
-                <div style={{ marginBottom: '25px', padding: '15px', background: 'var(--surface-2)', borderRadius: '16px', border: '1px solid var(--border)' }}>
-                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '10px' }}>
-                      {[{ label: 'منجزة', color: 'var(--green)', icon: CheckCircle2 }, { label: 'جارية', color: 'var(--blue)', icon: PlayCircle }, { label: 'متأخرة', color: 'var(--red)', icon: AlertCircle }, { label: 'معلقة', color: 'var(--orange)', icon: PauseCircle }].map(s => (
-                        <button key={s.label} onClick={() => handleStatusQuickChange(s.label)} style={{ padding: '10px 5px', borderRadius: '10px', border: selected.status === s.label ? `2px solid ${s.color}` : '1px solid var(--border)', background: selected.status === s.label ? `${s.color}15` : 'var(--surface)', color: s.color, fontWeight: 900, fontSize: '11px', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '5px' }}><s.icon size={16} /> {s.label}</button>
-                      ))}
-                   </div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '10px', marginBottom: '25px' }}>
+                   {[{ label: 'منجزة', color: 'var(--green)', icon: CheckCircle2 }, { label: 'جارية', color: 'var(--blue)', icon: PlayCircle }, { label: 'متأخرة', color: 'var(--red)', icon: AlertCircle }, { label: 'معلقة', color: 'var(--orange)', icon: PauseCircle }].map(s => (
+                     <button key={s.label} onClick={() => handleStatusQuickChange(s.label)} style={{ padding: '10px 5px', borderRadius: '10px', border: selected.status === s.label ? `2px solid ${s.color}` : '1px solid var(--border)', background: selected.status === s.label ? `${s.color}15` : 'var(--surface)', color: s.color, fontWeight: 900, fontSize: '11px', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '5px' }}><s.icon size={16} /> {s.label}</button>
+                   ))}
                 </div>
-                <div style={{ padding: '20px', background: 'var(--bg)', borderRadius: '16px', color: 'var(--text-2)', fontSize: '14px' }}>{selected.notes || 'لا توجد ملاحظات'}</div>
-                {existingFiles.length > 0 && <div style={{ marginTop: '20px' }}><h4 style={{ fontSize: '13px', fontWeight: 900, marginBottom: '10px' }}>المرفقات ({existingFiles.length})</h4><div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(80px, 1fr))', gap: '10px' }}>{existingFiles.map((f, i) => (<div key={i} onClick={() => window.open(f, '_blank')} style={{ height: '80px', borderRadius: '10px', background: 'var(--surface-2)', border: '1px solid var(--border)', cursor: 'pointer', overflow: 'hidden' }}>{f.startsWith('data:image') ? <img src={f} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><FileText size={20} /></div>}</div>))}</div></div>}
+                <div style={{ padding: '20px', background: 'var(--bg)', borderRadius: '16px', color: 'var(--text-2)', fontSize: '14px', marginBottom: '20px' }}>{selected.notes || 'لا توجد ملاحظات أساسية'}</div>
+                {existingFiles.length > 0 && (
+                  <div style={{ marginTop: '20px' }}>
+                    <h4 style={{ fontSize: '13px', fontWeight: 900, marginBottom: '10px' }}>المرفقات ({existingFiles.length})</h4>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(80px, 1fr))', gap: '10px' }}>
+                      {existingFiles.map((f, i) => (
+                        <div key={i} onClick={() => handleFileAction(f)} style={{ height: '80px', borderRadius: '10px', background: 'var(--surface-2)', border: '1px solid var(--border)', cursor: 'pointer', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                          {f.startsWith('data:image') ? <img src={f} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <FileText size={24} color="var(--text-3)" />}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
              </div>
              <div style={{ background: 'var(--surface)', padding: '30px', borderRadius: '24px', border: '1px solid var(--border)' }}>
                 <h3 style={{ fontSize: '18px', fontWeight: 950, marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '10px' }}><History size={20} color="var(--blue)" /> سجل التحديثات</h3>
@@ -229,7 +250,7 @@ export default function TasksPage() {
                   <select style={{ padding: '15px', border: '1px solid var(--border)', borderRadius: '12px', background: 'var(--surface-2)', color: 'var(--text)', outline: 'none', fontWeight: 700 }} value={form.plot_number || ''} onChange={e => setForm({...form, plot_number: e.target.value})} disabled={!form.client_id}><option value="">اختر القسيمة...</option>{getClientPlots(form.client_id).map((p, i) => <option key={i} value={p.number}>قسيمة {p.number}</option>)}</select>
                 </div>
                 <textarea rows={4} style={{ padding: '15px', border: '1px solid var(--border)', borderRadius: '12px', background: 'var(--surface-2)', color: 'var(--text)', outline: 'none', fontWeight: 700 }} placeholder="ملاحظات..." value={form.notes || ''} onChange={e => setForm({...form, notes: e.target.value})} />
-                <div style={{ border: '2px dashed var(--border)', borderRadius: '16px', padding: '20px', textAlign: 'center' }}><input type="file" multiple id="fileF" hidden onChange={handleFileUpload} /><label htmlFor="fileF" style={{ cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>{loadingFile ? <Loader2 size={24} className="animate-spin" /> : <Paperclip size={24} color="var(--blue)" />}<span style={{ fontWeight: 900, fontSize: '13px' }}>إرفاق مرفقات</span></label></div>
+                <div style={{ border: '2px dashed var(--border)', borderRadius: '16px', padding: '20px', textAlign: 'center' }}><input type="file" multiple id="fileFF" hidden onChange={handleFileUpload} /><label htmlFor="fileFF" style={{ cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>{loadingFile ? <Loader2 size={24} className="animate-spin" /> : <Paperclip size={24} color="var(--blue)" />}<span style={{ fontWeight: 900, fontSize: '13px' }}>إرفاق مرفقات</span></label></div>
                 <button onClick={handleSave} style={{ background: 'var(--blue)', color: '#fff', border: 'none', padding: '18px', borderRadius: '14px', fontWeight: 950, fontSize: '17px', cursor: 'pointer' }}>حفظ</button>
              </div>
           </div>
@@ -251,8 +272,26 @@ export default function TasksPage() {
                 {filteredTasks.map((task, i) => (
                   <div key={task.id} style={{ border: '1px solid #e2e8f0', borderRadius: '12px', padding: '20px', pageBreakInside: 'avoid' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}><h3 style={{ margin: 0, fontSize: '16px' }}>{i + 1}. {task.title}</h3><span style={{ fontSize: '12px', fontWeight: 800, color: '#2563eb' }}>{task.status}</span></div>
-                    <div style={{ fontSize: '11px', color: '#64748b', marginBottom: '10px' }}>العميل: {getClientName(task.client_id)} {task.plot_number ? `| قسيمة: ${task.plot_number}` : ''} | {task.start_date || '—'}</div>
-                    <div style={{ fontSize: '13px', background: '#f8fafc', padding: '15px', borderRadius: '8px', marginBottom: '15px', borderRight: '3px solid #2563eb' }}>{task.notes || 'لا توجد ملاحظات'}</div>
+                    <div style={{ fontSize: '11px', color: '#64748b', marginBottom: '10px' }}>العميل: {getClientName(task.client_id)} {task.plot_number ? `| قسيمة: ${task.plot_number}` : ''}</div>
+                    
+                    {/* Notes Section */}
+                    <div style={{ fontSize: '13px', background: '#f8fafc', padding: '15px', borderRadius: '8px', marginBottom: '10px', borderRight: '3px solid #2563eb', color: '#000' }}>
+                       <div style={{ fontWeight: 900, marginBottom: '5px' }}>الملاحظات:</div>
+                       <div>{task.notes || 'لا توجد ملاحظات أساسية'}</div>
+                    </div>
+
+                    {/* Updates Section in Report */}
+                    {task.updates?.length > 0 && (
+                      <div style={{ marginTop: '10px', padding: '10px', background: '#f1f5f9', borderRadius: '8px' }}>
+                         <div style={{ fontSize: '12px', fontWeight: 900, marginBottom: '8px', color: '#475569' }}>📝 سجل التحديثات:</div>
+                         {task.updates.map((up, j) => (
+                           <div key={j} style={{ fontSize: '11px', marginBottom: '4px', paddingBottom: '4px', borderBottom: '1px solid #e2e8f0' }}>
+                              <span style={{ fontWeight: 900 }}>{up.user}: </span> {up.text} <span style={{ color: '#94a3b8', fontSize: '9px' }}>({new Date(up.date).toLocaleDateString('ar-EG')})</span>
+                           </div>
+                         ))}
+                      </div>
+                    )}
+                    
                     {includeFiles && reportFiles[task.id] && reportFiles[task.id].length > 0 && (
                       <div style={{ marginTop: '15px' }}>
                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '10px' }}>
