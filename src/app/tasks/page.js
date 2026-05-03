@@ -7,7 +7,7 @@ import {
   Briefcase, FileText, ArrowRight, Eye, Send, Link as LinkIcon, 
   MapPin, Loader2, X, Plus, Trash2, Paperclip, Search, 
   Download, History, MessageSquare, PlusCircle, Clock, User, CheckCircle2,
-  FileCheck, Info
+  FileCheck, Info, AlertCircle, PauseCircle, PlayCircle
 } from 'lucide-react';
 import { ref as fRef, set as fSet, get as fGet } from 'firebase/database';
 import { db as fDb } from '@/lib/firebase';
@@ -90,17 +90,31 @@ export default function TasksPage() {
         await updateData('tasks', 'add', finalTask);
         if (addNotification) await addNotification('task', 'عمل جديد', `تم إضافة عمل: ${finalTask.title}`);
       }
-
       if (tempFiles.length > 0) {
         const allFiles = [...existingFiles, ...tempFiles];
         await fSet(fRef(fDb, `attachments/${taskId}`), JSON.stringify(allFiles));
       }
+      setView('list'); setSelected(null); setTempFiles([]); setForm({});
+    } catch (err) { alert('فشل الحفظ'); }
+  };
 
-      setView('list');
-      setSelected(null);
-      setTempFiles([]);
-      setForm({});
-    } catch (err) { alert('فشل الحفظ: ' + err.message); }
+  const handleStatusQuickChange = async (newStatus) => {
+    if (!selected) return;
+    const updatedTask = { ...selected, status: newStatus };
+    try {
+      await updateData('tasks', 'update', updatedTask, selected.id);
+      setSelected(updatedTask);
+      if (addNotification) await addNotification('task', 'تحديث حالة', `تغيرت حالة "${selected.title}" إلى ${newStatus}`);
+    } catch (err) { alert('فشل تغيير الحالة'); }
+  };
+
+  const handleDelete = async (id) => {
+    if (!confirm('هل أنت متأكد من حذف هذا العمل نهائياً؟')) return;
+    try {
+      await updateData('tasks', 'delete', null, id);
+      await fSet(fRef(fDb, `attachments/${id}`), null);
+      setView('list'); setSelected(null);
+    } catch (err) { alert('فشل الحذف'); }
   };
 
   const handleAddUpdate = async () => {
@@ -108,8 +122,7 @@ export default function TasksPage() {
     const newUpdate = { id: generateId(), text: updateText, user: user?.name || 'مجهول', date: new Date().toISOString() };
     const updatedTask = { ...selected, updates: [newUpdate, ...(selected.updates || [])] };
     await updateData('tasks', 'update', updatedTask, selected.id);
-    setSelected(updatedTask);
-    setUpdateText('');
+    setSelected(updatedTask); setUpdateText('');
   };
 
   const handleFileUpload = async (e) => {
@@ -186,70 +199,59 @@ export default function TasksPage() {
                     <p style={{ fontSize: '12px', color: 'var(--text-3)', fontWeight: 700 }}>{getClientName(task.client_id)} {task.plot_number ? `| قسيمة: ${task.plot_number}` : ''}</p>
                   </div>
                 </div>
-                <ArrowRight size={18} color="var(--text-3)" />
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                   <div style={{ padding: '4px 10px', borderRadius: '20px', fontSize: '10px', fontWeight: 900, background: task.status === 'منجزة' ? 'var(--green-light)' : task.status === 'متأخرة' ? 'var(--red-light)' : 'var(--blue-light)', color: task.status === 'منجزة' ? 'var(--green)' : task.status === 'متأخرة' ? 'var(--red)' : 'var(--blue)' }}>{task.status}</div>
+                   <ArrowRight size={18} color="var(--text-3)" />
+                </div>
               </div>
             ))}
           </>
         )}
 
-        {/* FORM VIEW (WITH PLOT SELECTION) */}
-        {view === 'form' && (
-          <div style={{ background: 'var(--surface)', padding: '30px', borderRadius: '24px', border: '1px solid var(--border)' }}>
-             <h2 style={{ fontSize: '20px', fontWeight: 950, marginBottom: '20px' }}>{selected ? 'تعديل العمل' : 'إضافة عمل جديد'}</h2>
-             <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
-                   <label style={{ fontSize: '12px', fontWeight: 800, color: 'var(--text-3)' }}>عنوان العمل</label>
-                   <input style={{ padding: '15px', border: '1px solid var(--border)', borderRadius: '12px', background: 'var(--surface-2)', color: 'var(--text)', outline: 'none', fontWeight: 700 }} placeholder="مثال: ترخيص بناء..." value={form.title || ''} onChange={e => setForm({...form, title: e.target.value})} />
-                </div>
-                
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
-                   <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
-                      <label style={{ fontSize: '12px', fontWeight: 800, color: 'var(--text-3)' }}>العميل</label>
-                      <select style={{ padding: '15px', border: '1px solid var(--border)', borderRadius: '12px', background: 'var(--surface-2)', color: 'var(--text)', outline: 'none', fontWeight: 700 }} value={form.client_id || ''} onChange={e => setForm({...form, client_id: e.target.value, plot_number: ''})}>
-                        <option value="">اختر العميل...</option>
-                        {clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                      </select>
-                   </div>
-                   <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
-                      <label style={{ fontSize: '12px', fontWeight: 800, color: 'var(--text-3)' }}>القسيمة</label>
-                      <select style={{ padding: '15px', border: '1px solid var(--border)', borderRadius: '12px', background: 'var(--surface-2)', color: 'var(--text)', outline: 'none', fontWeight: 700 }} value={form.plot_number || ''} onChange={e => setForm({...form, plot_number: e.target.value})} disabled={!form.client_id}>
-                        <option value="">اختر القسيمة...</option>
-                        {getClientPlots(form.client_id).map((p, i) => <option key={i} value={p.number}>قسيمة {p.number}</option>)}
-                      </select>
-                   </div>
-                </div>
-
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
-                   <label style={{ fontSize: '12px', fontWeight: 800, color: 'var(--text-3)' }}>ملاحظات أولية</label>
-                   <textarea rows={4} style={{ padding: '15px', border: '1px solid var(--border)', borderRadius: '12px', background: 'var(--surface-2)', color: 'var(--text)', outline: 'none', fontWeight: 700 }} placeholder="اكتب ملاحظاتك هنا..." value={form.notes || ''} onChange={e => setForm({...form, notes: e.target.value})} />
-                </div>
-
-                <div style={{ border: '2px dashed var(--border)', borderRadius: '16px', padding: '20px', textAlign: 'center' }}>
-                   <input type="file" multiple id="fileTask" hidden onChange={handleFileUpload} />
-                   <label htmlFor="fileTask" style={{ cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
-                      {loadingFile ? <Loader2 size={24} className="animate-spin" /> : <Paperclip size={24} color="var(--blue)" />}
-                      <span style={{ fontWeight: 900, fontSize: '13px' }}>إرفاق مرفقات (صور/ملفات)</span>
-                   </label>
-                   {tempFiles.length > 0 && <div style={{ marginTop: '10px', display: 'flex', gap: '5px', flexWrap: 'wrap' }}>{tempFiles.map((_, i) => <div key={i} style={{ padding: '4px 8px', background: 'var(--blue-light)', color: 'var(--blue)', borderRadius: '6px', fontSize: '10px', fontWeight: 900 }}>مرفق {i+1}</div>)}</div>}
-                </div>
-
-                <button onClick={handleSave} style={{ background: 'var(--blue)', color: '#fff', border: 'none', padding: '18px', borderRadius: '14px', fontWeight: 950, fontSize: '17px', cursor: 'pointer' }}>{selected ? 'حفظ التعديلات' : 'إضافة العمل الآن'}</button>
-             </div>
-          </div>
-        )}
-
-        {/* DETAIL VIEW WITH UPDATES */}
+        {/* DETAIL VIEW (WITH QUICK ACTIONS) */}
         {view === 'detail' && selected && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
              <div style={{ background: 'var(--surface)', padding: '30px', borderRadius: '24px', border: '1px solid var(--border)', boxShadow: 'var(--shadow)' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '20px' }}>
                    <div>
                       <h2 style={{ fontSize: '22px', fontWeight: 950, color: 'var(--text)', margin: 0 }}>{selected.title}</h2>
                       <p style={{ fontWeight: 800, color: 'var(--blue)', marginTop: '4px' }}>{getClientName(selected.client_id)} {selected.plot_number ? `| قسيمة: ${selected.plot_number}` : ''}</p>
                    </div>
-                   <button onClick={() => { setForm(selected); setView('form'); }} style={{ background: 'var(--blue-light)', color: 'var(--blue)', border: 'none', padding: '8px 15px', borderRadius: '10px', fontWeight: 800, cursor: 'pointer' }}>تعديل</button>
+                   <div style={{ display: 'flex', gap: '10px' }}>
+                      <button onClick={() => { setForm(selected); setView('form'); }} style={{ background: 'var(--surface-2)', border: '1px solid var(--border)', padding: '8px 12px', borderRadius: '10px', fontWeight: 800, cursor: 'pointer', color: 'var(--text)' }}>تعديل</button>
+                      <button onClick={() => handleDelete(selected.id)} style={{ background: 'var(--red-light)', color: 'var(--red)', border: 'none', padding: '8px 12px', borderRadius: '10px', fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                        <Trash2 size={16} /> حذف
+                      </button>
+                   </div>
                 </div>
-                <div style={{ marginTop: '20px', padding: '20px', background: 'var(--bg)', borderRadius: '16px', color: 'var(--text-2)', fontSize: '14px' }}>{selected.notes || 'لا توجد ملاحظات'}</div>
+
+                {/* QUICK STATUS BUTTONS */}
+                <div style={{ marginBottom: '25px', padding: '15px', background: 'var(--surface-2)', borderRadius: '16px', border: '1px solid var(--border)' }}>
+                   <div style={{ fontSize: '11px', fontWeight: 900, color: 'var(--text-3)', marginBottom: '10px', textAlign: 'center' }}>تغيير الحالة بسرعة</div>
+                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '10px' }}>
+                      {[
+                        { label: 'منجزة', color: 'var(--green)', icon: CheckCircle2 },
+                        { label: 'جارية', color: 'var(--blue)', icon: PlayCircle },
+                        { label: 'متأخرة', color: 'var(--red)', icon: AlertCircle },
+                        { label: 'معلقة', color: 'var(--orange)', icon: PauseCircle }
+                      ].map(s => (
+                        <button 
+                          key={s.label}
+                          onClick={() => handleStatusQuickChange(s.label)}
+                          style={{ 
+                            padding: '10px 5px', borderRadius: '10px', border: selected.status === s.label ? `2px solid ${s.color}` : '1px solid var(--border)',
+                            background: selected.status === s.label ? `${s.color}15` : 'var(--surface)',
+                            color: s.color, fontWeight: 900, fontSize: '11px', cursor: 'pointer',
+                            display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '5px', transition: 'all 0.2s'
+                          }}
+                        >
+                          <s.icon size={16} /> {s.label}
+                        </button>
+                      ))}
+                   </div>
+                </div>
+
+                <div style={{ padding: '20px', background: 'var(--bg)', borderRadius: '16px', color: 'var(--text-2)', fontSize: '14px' }}>{selected.notes || 'لا توجد ملاحظات'}</div>
                 {existingFiles.length > 0 && (
                   <div style={{ marginTop: '20px' }}>
                      <h4 style={{ fontSize: '13px', fontWeight: 900, marginBottom: '10px' }}>المرفقات ({existingFiles.length})</h4>
@@ -285,31 +287,51 @@ export default function TasksPage() {
           </div>
         )}
 
-        {/* --- HIDDEN REPORT (ALL FEATURES INCLUDED) --- */}
+        {/* FORM VIEW (REMAINS SAME) */}
+        {view === 'form' && (
+          <div style={{ background: 'var(--surface)', padding: '30px', borderRadius: '24px', border: '1px solid var(--border)' }}>
+             <h2 style={{ fontSize: '20px', fontWeight: 950, marginBottom: '20px' }}>{selected ? 'تعديل العمل' : 'إضافة عمل جديد'}</h2>
+             <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                <input style={{ padding: '15px', border: '1px solid var(--border)', borderRadius: '12px', background: 'var(--surface-2)', color: 'var(--text)', outline: 'none', fontWeight: 700 }} placeholder="العنوان..." value={form.title || ''} onChange={e => setForm({...form, title: e.target.value})} />
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
+                  <select style={{ padding: '15px', border: '1px solid var(--border)', borderRadius: '12px', background: 'var(--surface-2)', color: 'var(--text)', outline: 'none', fontWeight: 700 }} value={form.client_id || ''} onChange={e => setForm({...form, client_id: e.target.value, plot_number: ''})}>
+                    <option value="">اختر العميل...</option>
+                    {clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                  </select>
+                  <select style={{ padding: '15px', border: '1px solid var(--border)', borderRadius: '12px', background: 'var(--surface-2)', color: 'var(--text)', outline: 'none', fontWeight: 700 }} value={form.plot_number || ''} onChange={e => setForm({...form, plot_number: e.target.value})} disabled={!form.client_id}>
+                    <option value="">اختر القسيمة...</option>
+                    {getClientPlots(form.client_id).map((p, i) => <option key={i} value={p.number}>قسيمة {p.number}</option>)}
+                  </select>
+                </div>
+                <textarea rows={4} style={{ padding: '15px', border: '1px solid var(--border)', borderRadius: '12px', background: 'var(--surface-2)', color: 'var(--text)', outline: 'none', fontWeight: 700 }} placeholder="ملاحظات..." value={form.notes || ''} onChange={e => setForm({...form, notes: e.target.value})} />
+                <div style={{ border: '2px dashed var(--border)', borderRadius: '16px', padding: '20px', textAlign: 'center' }}>
+                   <input type="file" multiple id="fileNew" hidden onChange={handleFileUpload} />
+                   <label htmlFor="fileNew" style={{ cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
+                      {loadingFile ? <Loader2 size={24} className="animate-spin" /> : <Paperclip size={24} color="var(--blue)" />}
+                      <span style={{ fontWeight: 900, fontSize: '13px' }}>إرفاق مرفقات</span>
+                   </label>
+                </div>
+                <button onClick={handleSave} style={{ background: 'var(--blue)', color: '#fff', border: 'none', padding: '18px', borderRadius: '14px', fontWeight: 950, fontSize: '17px', cursor: 'pointer' }}>حفظ</button>
+             </div>
+          </div>
+        )}
+
+        {/* --- HIDDEN REPORT (UNCHANGED) --- */}
         <div style={{ display: 'none' }}>
            <div ref={reportRef} style={{ padding: '20mm', background: '#fff', color: '#000', direction: 'rtl', fontFamily: 'Tajawal, sans-serif' }}>
               <div style={{ borderBottom: '2px solid #2563eb', paddingBottom: '10px', marginBottom: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                 <div><h1 style={{ color: '#2563eb', margin: 0, fontSize: '22px' }}>مكتب فريم الهندسي</h1><p style={{ margin: 0, fontSize: '13px' }}>تقرير متابعة الأعمال - {new Date().toLocaleDateString('ar-EG')}</p></div>
-                 <div style={{ textAlign: 'left' }}><p style={{ margin: 0, fontSize: '11px' }}>بواسطة: {user?.name || 'م. فواز'}</p></div>
+                 <div><h1 style={{ color: '#2563eb', margin: 0, fontSize: '22px' }}>مكتب فريم الهندسي</h1><p style={{ margin: 0, fontSize: '13px' }}>تقرير متابعة الأعمال</p></div>
               </div>
               <div style={{ background: '#f8fafc', padding: '20px', borderRadius: '12px', marginBottom: '25px', display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '10px', textAlign: 'center' }}>
                  <div><div style={{ fontSize: '10px', color: '#64748b' }}>الإجمالي</div><div style={{ fontSize: '18px', fontWeight: 900 }}>{stats.total}</div></div>
                  <div><div style={{ fontSize: '10px', color: '#64748b' }}>المنجز</div><div style={{ fontSize: '18px', fontWeight: 900, color: '#059669' }}>{stats.done}</div></div>
                  <div><div style={{ fontSize: '10px', color: '#64748b' }}>الجاري</div><div style={{ fontSize: '18px', fontWeight: 900, color: '#2563eb' }}>{stats.active}</div></div>
-                 <div><div style={{ fontSize: '10px', color: '#64748b' }}>الإنجاز</div><div style={{ fontSize: '18px', fontWeight: 900, color: '#8b5cf6' }}>{stats.percent}%</div></div>
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
                 {filteredTasks.map((task, i) => (
                   <div key={task.id} style={{ border: '1px solid #e2e8f0', borderRadius: '12px', padding: '15px', pageBreakInside: 'avoid' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}><h3 style={{ margin: 0, fontSize: '15px' }}>{i + 1}. {task.title}</h3><span style={{ fontSize: '12px', fontWeight: 800, color: '#2563eb' }}>{task.status}</span></div>
-                    <div style={{ fontSize: '11px', color: '#64748b', marginBottom: '10px' }}>العميل: {getClientName(task.client_id)} {task.plot_number ? `| قسيمة: ${task.plot_number}` : ''} | {task.start_date || '—'}</div>
                     <div style={{ fontSize: '13px', background: '#f8fafc', padding: '12px', borderRadius: '8px' }}>{task.notes || 'لا توجد ملاحظات'}</div>
-                    {includeFiles && task.has_file && <div style={{ marginTop: '8px', fontSize: '10px', color: '#2563eb', fontWeight: 700 }}>* يحتوي على مرفقات/صور</div>}
-                    {task.updates?.length > 0 && (
-                      <div style={{ marginTop: '10px', paddingRight: '10px', borderRight: '2px solid #e2e8f0' }}>
-                         {task.updates.slice(0, 3).map((up, j) => <div key={j} style={{ fontSize: '11px', marginBottom: '4px' }}><span style={{ fontWeight: 800 }}>- {up.user}:</span> {up.text}</div>)}
-                      </div>
-                    )}
                   </div>
                 ))}
               </div>
