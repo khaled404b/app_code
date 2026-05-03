@@ -88,7 +88,6 @@ export function useData() {
     }
   }, []);
 
-  // ADDED: Missing addNotification function
   const addNotification = useCallback(async (type, title, message) => {
     try {
       const newNotif = {
@@ -105,12 +104,23 @@ export function useData() {
     }
   }, []);
 
+  const getAttachment = useCallback(async (id) => {
+    try {
+      const snap = await get(ref(db, `attachments/${id}`));
+      return snap.exists() ? snap.val() : null;
+    } catch (err) {
+      console.error('Failed to get attachment:', err);
+      return null;
+    }
+  }, []);
+
   return { 
     data, 
     isLoading: !data && !isTimedOut && !error, 
     isError: error, 
     updateData, 
-    addNotification, // NOW RETURNED CORRECTLY
+    addNotification,
+    getAttachment,
     notifications, 
     isConnected, 
     isSyncing 
