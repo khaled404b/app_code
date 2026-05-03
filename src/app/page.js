@@ -6,7 +6,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { 
   Briefcase, FileText, CheckCircle, Clock, AlertCircle, 
   Percent, ArrowRight, Eye, Send, Link as LinkIcon, 
-  MapPin, Loader2, X, Plus, ExternalLink
+  MapPin, Loader2, X, Plus, ExternalLink, TrendingUp
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { calculateSupervisionStats } from '@/utils/supervisionCalc';
