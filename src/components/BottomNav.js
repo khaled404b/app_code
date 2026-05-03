@@ -1,17 +1,12 @@
 'use client';
 
-import { useState, memo } from 'react';
+import { memo } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Home, Users, Briefcase, FileText, Settings, LogOut, Eye, ClipboardList, Send, Plus, Sun, Moon } from 'lucide-react';
-import { useAuth } from '@/hooks/useAuth';
-import { useTheme } from './AppWrapper';
+import { Home, Users, Briefcase, FileText, Settings, Eye } from 'lucide-react';
 
 function BottomNavContent() {
   const pathname = usePathname();
-  const { user, logout, canEdit } = useAuth();
-  const { theme, toggleTheme } = useTheme();
-  const [isOpen, setIsOpen] = useState(false);
 
   const navItems = [
     { href: '/', icon: Home, label: 'الرئيسية' },
@@ -19,70 +14,35 @@ function BottomNavContent() {
     { href: '/tasks', icon: Briefcase, label: 'الأعمال' },
     { href: '/invoices', icon: FileText, label: 'الفواتير' },
     { href: '/supervision', icon: Eye, label: 'الإشراف' },
-    { href: '/offers', icon: ClipboardList, label: 'العروض' },
-    { href: '/deliveries', icon: Send, label: 'التسليم' },
-    { href: '/services', icon: ClipboardList, label: 'مركز الخدمات' },
     { href: '/settings', icon: Settings, label: 'الإعدادات' },
   ];
 
-  const toggleMenu = () => setIsOpen(!isOpen);
-  const closeMenu = () => setIsOpen(false);
-
   return (
-    <>
-      {/* Top Bar - Always Visible */}
-      <div className="top-bar" style={{ zIndex: 1002, background: 'var(--surface)', borderBottom: '1px solid var(--border)' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <div className="avatar" style={{ background: user?.color || '#2563eb', width: '34px', height: '34px', fontSize: '13px' }}>
-            {user?.name?.[0]}
-          </div>
-          <div>
-            <div style={{ fontSize: '14px', fontWeight: 700, lineHeight: 1.2, color: 'var(--text)' }}>{user?.name}</div>
-            <div style={{
-              fontSize: '11px', fontWeight: 700, lineHeight: 1,
-              color: canEdit ? '#10b981' : '#f59e0b',
-            }}>
-              {canEdit ? '● متصل' : '● مشاهد'}
-            </div>
-          </div>
-        </div>
-
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <button onClick={toggleTheme} className="icon-btn" style={{ width: '34px', height: '34px', background: 'var(--surface-2)', border: '1px solid var(--border)' }}>
-            {theme === 'dark' ? <Sun size={15} color="#f59e0b" /> : <Moon size={15} color="#3b82f6" />}
-          </button>
-          <button onClick={logout} className="icon-btn" style={{ width: '34px', height: '34px', background: 'var(--red-light)' }}>
-            <LogOut size={15} color="var(--red)" />
-          </button>
-        </div>
-      </div>
-
-      {/* FAB Button */}
-      <button className={`fab-btn ${isOpen ? 'active' : ''}`} onClick={toggleMenu} style={{ background: 'var(--blue)', boxShadow: 'var(--shadow-md)' }}>
-        <Plus size={32} strokeWidth={3} />
-      </button>
-
-      {/* Navigation Overlay */}
-      <div className={`nav-overlay ${isOpen ? 'active' : ''}`} onClick={closeMenu}>
-        <div className="nav-grid" onClick={e => e.stopPropagation()}>
-          {navItems.map(({ href, icon: Icon, label }) => (
-            <Link 
-              key={href} 
-              href={href} 
-              className="fab-item" 
-              onClick={closeMenu}
-              style={{
-                background: pathname === href ? 'rgba(255, 255, 255, 0.15)' : 'rgba(255, 255, 255, 0.05)',
-                borderColor: pathname === href ? 'rgba(255, 255, 255, 0.3)' : 'rgba(255, 255, 255, 0.1)'
-              }}
-            >
-              <Icon size={24} color={pathname === href ? '#fff' : 'rgba(255, 255, 255, 0.7)'} strokeWidth={2.5} />
-              <span>{label}</span>
-            </Link>
-          ))}
-        </div>
-      </div>
-    </>
+    <div style={{
+      position: 'fixed', bottom: 0, left: 0, right: 0,
+      background: '#ffffff', borderTop: '1px solid #e2e8f0',
+      display: 'flex', justifyContent: 'space-around', alignItems: 'center',
+      height: '70px', zIndex: 1000, paddingBottom: 'env(safe-area-inset-bottom)',
+      boxShadow: '0 -2px 10px rgba(0,0,0,0.05)'
+    }}>
+      {navItems.map(({ href, icon: Icon, label }) => {
+        const isActive = pathname === href;
+        return (
+          <Link 
+            key={href} 
+            href={href}
+            style={{
+              display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px',
+              textDecoration: 'none', color: isActive ? '#2563eb' : '#64748b',
+              flex: 1, padding: '10px 0', transition: 'all 0.2s'
+            }}
+          >
+            <Icon size={22} strokeWidth={isActive ? 2.5 : 2} />
+            <span style={{ fontSize: '10px', fontWeight: isActive ? 900 : 700 }}>{label}</span>
+          </Link>
+        );
+      })}
+    </div>
   );
 }
 
