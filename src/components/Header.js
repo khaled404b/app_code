@@ -28,7 +28,8 @@ export default function Header() {
       backdropFilter: 'blur(10px)',
       borderBottom: '1px solid var(--border-color)',
       padding: '12px 20px',
-      display: 'flex', justifyContent: 'space-between', alignItems: 'center'
+      display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+      flexWrap: 'wrap', rowGap: '10px'
     }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
         <div style={{ 
@@ -40,7 +41,7 @@ export default function Header() {
         <span style={{ fontWeight: 900, fontSize: '18px', color: 'var(--text-main)' }}>فريم</span>
       </div>
 
-      <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
         {!isConnected ? (
           <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '10px', color: '#ef4444', fontWeight: 800, background: '#fee2e2', padding: '4px 8px', borderRadius: '8px' }}>
             <WifiOff size={12} /> غير متصل
