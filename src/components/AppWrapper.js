@@ -34,8 +34,7 @@ export default function AppWrapper({ children }) {
   return (
     <ThemeContext.Provider value={{ theme, toggleTheme }}>
       <div className={theme === 'dark' ? 'dark-theme-wrapper' : ''}>
-        <Header />
-        <main style={{ paddingBottom: '90px' }}>
+        <main>
           {children}
         </main>
         <BottomNav />
