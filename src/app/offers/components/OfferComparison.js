@@ -5,8 +5,8 @@ import { mergePdfs } from '@/lib/pdfUtils';
 import { parseAttachment } from '@/lib/fileHelper';
 
 export function OfferComparison({ state, actions }) {
-  const { clients, services, compClient, compWorkType, comparisonOffers, comparisonStats, canEdit } = state;
-  const { goBack, setCompClient, setCompWorkType, getClientName, markAsSelected, getAttachment } = actions;
+  const { clients, services, compClient, compPlot, compWorkType, comparisonOffers, comparisonStats, canEdit } = state;
+  const { goBack, setCompClient, setCompPlot, setCompWorkType, getClientName, markAsSelected, getAttachment } = actions;
   const [isExporting, setIsExporting] = useState(false);
   const [pdfAttachments, setPdfAttachments] = useState({});
 
@@ -194,7 +194,7 @@ export function OfferComparison({ state, actions }) {
             <div><h1 style={{ margin: 0, fontSize: '28px', fontWeight: 900 }}>FRAME</h1><div style={{ fontSize: '11px' }}>فريم للاستشارات الهندسية</div></div>
             <div style={{ textAlign: 'center' }}>
                <h2 style={{ textDecoration: 'underline', margin: 0, fontSize: '18px' }}>مقارنة عروض الأسعار</h2>
-               <div style={{ fontSize: '12px', marginTop: '5px' }}>العميل: {getClientName(compClient)} | نوع العمل: {compWorkType}</div>
+               <div style={{ fontSize: '12px', marginTop: '5px' }}>العميل: {getClientName(compClient)} | القسيمة: {compPlot === 'all' ? 'الكل' : compPlot} | نوع العمل: {compWorkType}</div>
             </div>
             <div style={{ textAlign: 'left', fontSize: '11px' }}><div>التاريخ: {new Date().toLocaleDateString('ar-EG')}</div></div>
          </div>
