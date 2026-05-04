@@ -343,7 +343,7 @@ function SupervisionContent() {
          `}</style>
 
         <div className="rep-header">
-          <div><h1 style={{ margin: 0, fontSize: '28px', fontWeight: 900 }}>FRAME</h1><div style={{ fontSize: '11px' }}>فريم للاستشارات الهندسية</div></div>
+          <div style={{ width: '120px' }}><img src="/logo.png" style={{ width: '100px' }} /></div>
           <div style={{ textAlign: 'center' }}>
             <h2 style={{ textDecoration: 'underline', margin: 0, fontSize: '18px' }}>كشف متابعة عقود الإشراف</h2>
             <div style={{ fontSize: '11px', marginTop: '3px' }}>تاريخ التقرير: {new Date().toLocaleDateString('ar-EG')}</div>

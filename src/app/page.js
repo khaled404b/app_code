@@ -96,7 +96,7 @@ export default function Dashboard() {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px' }}>
           <div>
             <h2 style={{ fontSize: '24px', fontWeight: 900, color: 'var(--text)', margin: 0 }}>مرحباً بك مجدداً</h2>
-            <p style={{ fontSize: '13px', color: 'var(--text-3)', fontWeight: 700, marginTop: '4px' }}>لوحة التحكم الذكية لمكتب فريم</p>
+            <p style={{ fontSize: '13px', color: 'var(--text-3)', fontWeight: 700, marginTop: '4px' }}>لوحة التحكم الذكية للنظام</p>
           </div>
           <select 
             style={{ 

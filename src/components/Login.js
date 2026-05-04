@@ -41,7 +41,7 @@ export default function Login() {
         }}>
           <img src="/logo.png" alt="FRAME" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
         </div>
-        <h1 style={{ color: 'white', fontSize: '32px', fontWeight: 900, letterSpacing: '2px' }}>فريم للاستشارات الهندسية</h1>
+        <div style={{ height: '40px' }} />
         <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '14px', marginTop: '6px' }}>نظام الإدارة الداخلي</p>
       </div>
 

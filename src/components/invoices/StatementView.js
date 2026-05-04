@@ -24,9 +24,8 @@ export const StatementView = ({
         <style>{`.statement-table { width: 100%; border-collapse: collapse; margin-top: 15px; } .statement-table th, .statement-table td { border: 1px solid #000; padding: 6px; text-align: center; font-size: 10px; } .header-box { display: flex; justify-content: space-between; margin-bottom: 20px; border-bottom: 2px solid #000; padding-bottom: 10px; } .attachment-gallery { margin-top: 50px; page-break-before: always; } .attachment-item { margin-bottom: 30px; border: 1px solid #eee; padding: 10px; break-inside: avoid; }`}</style>
         
         <div className="header-box">
-          <div style={{ width: '180px' }}>
-            <h1 style={{ margin: 0, fontSize: '32px', fontWeight: 900, color: '#0f172a' }}>FRAME</h1>
-            <div style={{ fontSize: '12px', fontWeight: 700, color: '#64748b' }}>فريم للاستشارات الهندسية</div>
+          <div style={{ width: '150px' }}>
+            <img src="/logo.png" style={{ width: '120px' }} />
           </div>
           <div style={{ textAlign: 'center' }}>
             <h2 style={{ fontSize: '20px', fontWeight: 900, textDecoration: 'underline', color: '#0f172a' }}>{currentTitle}</h2>

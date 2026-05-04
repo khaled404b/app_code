@@ -102,7 +102,7 @@ export default function TasksPage() {
       const element = reportRef.current;
       const opt = { 
         margin: 10, 
-        filename: `تقرير_فريم_${new Date().toLocaleDateString('ar-EG')}.pdf`, 
+        filename: `تقرير_المشاريع_${new Date().toLocaleDateString('ar-EG')}.pdf`, 
         image: { type: 'jpeg', quality: 1 }, 
         html2canvas: { scale: 3, useCORS: true, letterRendering: true }, 
         jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }, 
@@ -165,7 +165,7 @@ export default function TasksPage() {
         
         {/* APP HEADER */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '25px' }}>
-           <div><h1 style={{ fontSize: '24px', fontWeight: 950, color: 'var(--text)', margin: 0 }}>متابعة الأعمال</h1><p style={{ fontSize: '13px', color: 'var(--text-3)', fontWeight: 700 }}>نظام فريم لإدارة المشاريع</p></div>
+           <div><h1 style={{ fontSize: '24px', fontWeight: 950, color: 'var(--text)', margin: 0 }}>متابعة الأعمال</h1><p style={{ fontSize: '13px', color: 'var(--text-3)', fontWeight: 700 }}>نظام إدارة المشاريع</p></div>
            {view === 'list' && (
              <div style={{ display: 'flex', gap: '10px' }}>
                 <button onClick={handleExportPDF} disabled={isExporting} style={{ background: 'var(--surface)', border: '1px solid var(--border)', padding: '10px 15px', borderRadius: '12px', fontWeight: 800, color: 'var(--text)', display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', opacity: isExporting ? 0.5 : 1 }}>
@@ -268,7 +268,8 @@ export default function TasksPage() {
         <div style={{ display: 'none' }}>
            <div ref={reportRef} style={{ padding: '20mm', background: '#fff', color: '#000', direction: 'rtl', fontFamily: 'Tajawal, sans-serif' }}>
               <div style={{ borderBottom: '3px solid #2563eb', paddingBottom: '15px', marginBottom: '25px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                 <div><h1 style={{ color: '#2563eb', margin: 0, fontSize: '26px', fontWeight: 900 }}>مكتب فريم الهندسي</h1><p style={{ margin: '5px 0 0 0', fontSize: '14px', color: '#64748b' }}>تقرير متابعة الأعمال | {new Date().toLocaleDateString('ar-EG')}</p></div>
+                 <div style={{ width: '150px' }}><img src="/logo.png" style={{ width: '120px' }} /></div>
+                 <div style={{ textAlign: 'left' }}><p style={{ margin: 0, fontSize: '14px', color: '#64748b' }}>تقرير متابعة الأعمال | {new Date().toLocaleDateString('ar-EG')}</p></div>
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '35px' }}>
                 {filteredTasks.map((task, i) => (

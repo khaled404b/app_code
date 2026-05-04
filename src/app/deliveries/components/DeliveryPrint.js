@@ -58,7 +58,7 @@ export function DeliveryPrint({ data }) {
             <img src="/logo.png" style={{ width: '100px' }} />
           </div>
           <div style={{ textAlign: 'center', flex: 1 }}>
-            <h1 style={{ margin: 0, fontSize: '16px', fontWeight: 'bold' }}>فريم للاستشارات الهندسية</h1>
+            <div style={{ height: '20px' }} />
             <div style={{ borderTop: '1.5px solid #000', marginTop: '4px', paddingTop: '4px', fontWeight: 'bold', fontSize: '13px' }}>نموذج إرسال المستندات</div>
           </div>
           <div style={{ width: '80px' }}></div>

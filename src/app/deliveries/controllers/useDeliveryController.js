@@ -47,7 +47,7 @@ export function useDeliveryController() {
       client_id: '',
       plot_no: '',
       to: '',
-      from: 'مكتب فريم للإستشارات الهندسية',
+      from: 'مكتب الاستشارات الهندسية',
       attn: '',
       subject: '',
       date: new Date().toISOString().split('T')[0],
