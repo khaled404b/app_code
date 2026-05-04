@@ -35,8 +35,7 @@ export default function Header() {
 
       {/* CENTER: Branding */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-        <div style={{ width: '35px', height: '35px', borderRadius: '8px', background: '#2563eb', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#ffffff', fontWeight: 900 }}>F</div>
-        <span style={{ fontWeight: 900, fontSize: '20px', color: '#0f172a' }}>فريم</span>
+        <img src="/logo.png" alt="FRAME Logo" style={{ height: '55px', objectFit: 'contain' }} />
       </div>
 
       {/* RIGHT: Status & Profile */}

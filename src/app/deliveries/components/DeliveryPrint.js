@@ -54,9 +54,8 @@ export function DeliveryPrint({ data }) {
       {/* Header */}
       <div className="p-header-box">
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <div style={{ width: '80px', textAlign: 'center' }}>
-            <img src="/favicon.ico" style={{ width: '30px' }} />
-            <div style={{ fontSize: '8px', fontWeight: 'bold' }}>FRAME</div>
+          <div style={{ width: '120px', textAlign: 'center' }}>
+            <img src="/logo.png" style={{ width: '100px' }} />
           </div>
           <div style={{ textAlign: 'center', flex: 1 }}>
             <h1 style={{ margin: 0, fontSize: '16px', fontWeight: 'bold' }}>فريم للاستشارات الهندسية</h1>

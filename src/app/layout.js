@@ -25,7 +25,7 @@ export default function RootLayout({ children }) {
   return (
     <html lang="ar" dir="rtl">
       <head>
-        <link rel="apple-touch-icon" href="/icon.png" />
+        <link rel="apple-touch-icon" href="/logo.png" />
       </head>
       <body>
         <AuthProvider>

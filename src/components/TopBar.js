@@ -19,13 +19,8 @@ export default function TopBar() {
     }}>
       {/* RIGHT: BRANDING & STATUS */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-         <div style={{ 
-           width: '36px', height: '36px', borderRadius: '8px', 
-           background: 'var(--blue)', display: 'flex', alignItems: 'center', justifyContent: 'center', 
-           color: '#ffffff', fontWeight: 900, fontSize: '18px' 
-         }}>F</div>
+         <img src="/logo.png" alt="FRAME Logo" style={{ height: '42px', objectFit: 'contain' }} />
          <div>
-            <h1 style={{ fontSize: '15px', fontWeight: 900, color: 'var(--text)', margin: 0 }}>مكتب فريم الهندسي</h1>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '1px' }}>
                {!isConnected ? (
                  <span style={{ fontSize: '9px', color: 'var(--red)', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '3px' }}>

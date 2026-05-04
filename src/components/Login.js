@@ -33,13 +33,13 @@ export default function Login() {
       {/* Logo */}
       <div style={{ textAlign: 'center', marginBottom: '40px' }}>
         <div style={{
-          width: '88px', height: '88px', borderRadius: '22px',
-          background: 'white', margin: '0 auto 16px',
-          boxShadow: `0 8px 30px ${activeColor}55`,
+          width: '120px', height: '120px', borderRadius: '24px',
+          background: 'white', margin: '0 auto 20px',
+          boxShadow: `0 8px 30px ${activeColor}33`,
           overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center',
-          border: `2px solid ${activeColor}44`, transition: 'border-color 0.4s, box-shadow 0.4s',
+          padding: '10px'
         }}>
-          <img src="/icon.png" alt="FRAME" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+          <img src="/logo.png" alt="FRAME" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
         </div>
         <h1 style={{ color: 'white', fontSize: '32px', fontWeight: 900, letterSpacing: '2px' }}>فريم للاستشارات الهندسية</h1>
         <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '14px', marginTop: '6px' }}>نظام الإدارة الداخلي</p>
