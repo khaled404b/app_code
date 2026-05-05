@@ -7,7 +7,7 @@ import { useData } from '@/hooks/useData';
 
 export default function TopBar() {
   const { isConnected, isSyncing } = useData();
-  const { logout } = useAuth();
+  const { logout, user } = useAuth();
   const { theme, toggleTheme } = useTheme();
 
   return (
@@ -53,10 +53,10 @@ export default function TopBar() {
          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <div style={{ 
               width: '36px', height: '36px', borderRadius: '8px', 
-              background: 'var(--blue)', color: '#ffffff', 
+              background: user?.color || 'var(--blue)', color: '#ffffff', 
               display: 'flex', alignItems: 'center', justifyContent: 'center', 
               fontWeight: 900, fontSize: '15px' 
-            }}>ف</div>
+            }}>{user?.name?.replace(/^(م\.|أ\.|د\.)/, '')?.[0] || '؟'}</div>
          </div>
       </div>
     </div>

@@ -2,11 +2,13 @@
 
 import { Bell, X, LogOut, Moon, Sun, RefreshCw, Wifi, WifiOff } from 'lucide-react';
 import { useData } from '@/hooks/useData';
+import { useAuth } from '@/hooks/useAuth';
 import { useTheme } from './AppWrapper';
 import { useState } from 'react';
 
 export default function Header() {
   const { notifications, isConnected, isSyncing } = useData();
+  const { user } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const [showNotifs, setShowNotifs] = useState(false);
 
@@ -102,15 +104,15 @@ export default function Header() {
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
           <div style={{ textAlign: 'right' }}>
-            <div style={{ fontSize: '15px', fontWeight: 900, color: '#0f172a' }}>م. خالد</div>
-            <div style={{ fontSize: '11px', color: '#059669', fontWeight: 800 }}>● مدير النظام</div>
+            <div style={{ fontSize: '15px', fontWeight: 900, color: '#0f172a' }}>{user?.name || 'مستخدم'}</div>
+            <div style={{ fontSize: '11px', color: '#059669', fontWeight: 800 }}>● {user?.mode === 'edit' ? 'مدير النظام' : 'مشاهد فقط'}</div>
           </div>
           <div style={{ 
             width: '42px', height: '42px', borderRadius: '10px', 
-            background: '#2563eb', color: '#ffffff',
+            background: user?.color || '#2563eb', color: '#ffffff',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             fontWeight: 900, fontSize: '18px'
-          }}>خ</div>
+          }}>{user?.name?.replace(/^(م\.|أ\.|د\.)/, '')?.[0] || '؟'}</div>
         </div>
       </div>
     </header>
