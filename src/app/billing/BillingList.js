@@ -31,7 +31,7 @@ export default function BillingList({ billingInvoices, onEdit, onDelete, onPrint
                 </div>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', marginTop: '6px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '12px', color: '#64748b', fontWeight: 700 }}>
-                    <User size={14} /> {inv.client_name}
+                    <User size={14} /> {inv.client_name} {inv.plot_no ? `(قسيمة ${inv.plot_no})` : ''}
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '12px', color: '#64748b', fontWeight: 700 }}>
                     <Calendar size={14} /> {inv.date}

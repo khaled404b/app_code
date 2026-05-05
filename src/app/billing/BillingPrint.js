@@ -49,7 +49,10 @@ export default function BillingPrint({ invoice }) {
         </div>
         <div>
           <span style={{ color: '#94a3b8', marginRight: '10px' }}>TO</span>
-          <span style={{ fontWeight: '900', fontSize: '15px' }}>{invoice.client_name || '—'}</span>
+          <span style={{ fontWeight: '900', fontSize: '15px' }}>
+            {invoice.client_name || '—'} 
+            {invoice.plot_no ? ` | Plot: ${invoice.plot_no}` : ''}
+          </span>
         </div>
       </div>
 

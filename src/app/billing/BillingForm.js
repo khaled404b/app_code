@@ -52,12 +52,28 @@ export default function BillingForm({ form, setForm, clients, handleSave, tempFi
         </div>
       </div>
 
-      <div className="form-group" style={{ marginBottom: '25px' }}>
-        <label className="form-label">العميل المرسل إليه (To)</label>
-        <select className="form-select" value={form.client_id || ''} onChange={e => setForm({ ...form, client_id: e.target.value })}>
-          <option value="">اختر العميل...</option>
-          {clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-        </select>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '25px' }}>
+        <div className="form-group">
+          <label className="form-label">العميل المرسل إليه (To)</label>
+          <select className="form-select" value={form.client_id || ''} onChange={e => setForm({ ...form, client_id: e.target.value, plot_no: '' })}>
+            <option value="">اختر العميل...</option>
+            {clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+          </select>
+        </div>
+        <div className="form-group">
+          <label className="form-label">القسيمة</label>
+          <select 
+            className="form-select" 
+            value={form.plot_no || ''} 
+            onChange={e => setForm({ ...form, plot_no: e.target.value })}
+            disabled={!form.client_id}
+          >
+            <option value="">اختر القسيمة...</option>
+            {(clients.find(c => c.id === form.client_id)?.plots || []).map((p, i) => (
+              <option key={i} value={p.number}>قسيمة {p.number}</option>
+            ))}
+          </select>
+        </div>
       </div>
 
       <div style={{ marginBottom: '25px' }}>
