@@ -1,24 +1,32 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useBillingController } from './useBillingController';
 import BillingList from './BillingList';
 import BillingForm from './BillingForm';
 import BillingPrint from './BillingPrint';
 import { PageHeader, SearchBar } from '@/components/ui';
-import { Plus, Printer, Download, ArrowRight, Loader2, FileText, Image as ImageIcon } from 'lucide-react';
+import { Plus, Printer, Download, ArrowRight, Loader2, FileText, Paperclip } from 'lucide-react';
 import { ref, get } from 'firebase/database';
 import { db } from '@/lib/firebase';
 import { parseAttachment } from '@/lib/fileHelper';
 
 export default function BillingPage() {
   const { state, actions } = useBillingController();
-  const { view, selected, search, form, filtered, tempFiles, loadingFile, isLoading, canEdit, clients } = state;
-  const { setView, setSelected, setSearch, setForm, setTempFiles, handleSave, openNew, openEdit, handleDelete } = actions;
+  const { 
+    view, selected, search, form, filtered, 
+    tempFiles, loadingFile, isLoading, canEdit, clients 
+  } = state;
+  
+  const { 
+    setView, setSelected, setSearch, setForm, 
+    setTempFiles, handleSave, openNew, openEdit, handleDelete 
+  } = actions;
 
-  const [isPrinting, setIsPrinting] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
   const [loadingAttachment, setLoadingAttachment] = useState(false);
 
+  // Safe Print Handler
   const handlePrint = (inv) => {
     setSelected(inv);
     setView('print');
@@ -27,56 +35,76 @@ export default function BillingPage() {
     }, 500);
   };
 
+  // Safe PDF Export Handler
   const handleExportPDF = async (inv) => {
-    setIsPrinting(true);
+    if (!inv) return;
+    setIsExporting(true);
     try {
       const html2pdf = (await import('html2pdf.js')).default;
       const element = document.getElementById('billing-invoice-print');
+      if (!element) throw new Error('قالب الطباعة غير موجود');
       
       const opt = {
         margin: 0,
-        filename: `Invoice-${inv.invoice_no}.pdf`,
+        filename: `Invoice-${inv.invoice_no || 'Draft'}.pdf`,
         image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: { scale: 2, useCORS: true },
+        html2canvas: { scale: 2, useCORS: true, letterRendering: true },
         jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
       };
 
       await html2pdf().from(element).set(opt).save();
     } catch (err) {
-      alert('فشل تصدير PDF');
+      console.error(err);
+      alert('فشل تصدير PDF: ' + err.message);
     }
-    setIsPrinting(false);
+    setIsExporting(false);
   };
 
+  // Safe Attachment Viewer
   const showAttachment = async (inv) => {
+    if (!inv || !inv.id) return;
     setLoadingAttachment(true);
     try {
       const snap = await get(ref(db, `attachments/${inv.id}`));
-      if (!snap.exists()) return alert('لا يوجد مرفقات');
+      if (!snap.exists()) {
+        alert('لا توجد مرفقات لهذه الفاتورة');
+        setLoadingAttachment(false);
+        return;
+      }
       
       const files = parseAttachment(snap.val());
-      if (files.length === 0) return alert('صيغة غير مدعومة');
+      if (files.length === 0) {
+        alert('صيغة المرفقات غير مدعومة');
+        setLoadingAttachment(false);
+        return;
+      }
 
       const imgTags = files.map((src, i) => `
         <div style="background:white; border-radius:8px; padding:16px; box-shadow:0 2px 12px rgba(0,0,0,0.15); max-width:860px; width:100%; margin-bottom: 20px;">
+          <div style="font-size:12px; color:#64748b; margin-bottom:10px;">مرفق ${i+1}</div>
           <img src="${src}" style="width:100%; display:block; border-radius:4px;" />
         </div>`
       ).join('');
       
-      const html = `<!DOCTYPE html><html dir="rtl"><head><meta charset="UTF-8"><title>مرفقات الفاتورة - ${inv.invoice_no}</title>
+      const html = `<!DOCTYPE html><html dir="rtl"><head><meta charset="UTF-8"><title>مرفقات - ${inv.invoice_no}</title>
         <style>body{margin:0; background:#f1f5f9; display:flex; flex-direction:column; align-items:center; padding:30px; font-family:sans-serif;}</style>
         </head><body>${imgTags}</body></html>`;
       
       const blob = new Blob([html], { type: 'text/html' });
       const url = URL.createObjectURL(blob);
       window.open(url, '_blank');
+      setTimeout(() => URL.revokeObjectURL(url), 5000);
     } catch (err) {
       alert('خطأ في جلب الملف');
     }
     setLoadingAttachment(false);
   };
 
-  if (isLoading) return <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Loader2 className="animate-spin" size={32} color="#2563eb" /></div>;
+  if (isLoading) return (
+    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg)' }}>
+      <Loader2 className="animate-spin" size={32} color="var(--blue)" />
+    </div>
+  );
 
   return (
     <div className="page" style={{ paddingBottom: '100px' }}>
@@ -108,13 +136,21 @@ export default function BillingPage() {
                 </button>
               )}
               <button className="btn btn-outline" style={{ width: 'auto' }} onClick={() => handlePrint(selected)}><Printer size={18} /> طباعة</button>
-              <button className="btn" style={{ width: 'auto' }} onClick={() => handleExportPDF(selected)} disabled={isPrinting}>
-                {isPrinting ? <Loader2 className="animate-spin" size={18} /> : <Download size={18} />} PDF
+              <button className="btn" style={{ width: 'auto' }} onClick={() => handleExportPDF(selected)} disabled={isExporting}>
+                {isExporting ? <Loader2 className="animate-spin" size={18} /> : <Download size={18} />} PDF
               </button>
             </div>
           </div>
           
-          <div style={{ background: '#fff', borderRadius: '16px', border: '1px solid #e2e8f0', overflow: 'hidden', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)' }}>
+          <div style={{ 
+            background: '#fff', 
+            borderRadius: '16px', 
+            border: '1px solid #e2e8f0', 
+            overflow: 'hidden', 
+            boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)',
+            maxWidth: '900px',
+            margin: '0 auto'
+          }}>
             <BillingPrint invoice={selected} />
           </div>
         </>

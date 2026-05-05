@@ -1,7 +1,19 @@
 import React from 'react';
 
-export default function BillingPrint({ invoice, getClientName }) {
-  if (!invoice) return null;
+export default function BillingPrint({ invoice }) {
+  if (!invoice) return <div style={{ padding: '20px', textAlign: 'center' }}>جاري تحميل بيانات الفاتورة...</div>;
+
+  const safeDate = (dateStr) => {
+    try {
+      if (!dateStr) return new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+      return new Date(dateStr).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+    } catch (e) {
+      return dateStr || '—';
+    }
+  };
+
+  const items = invoice.items || [];
+  const totalAmount = parseFloat(invoice.amount || 0).toFixed(3);
 
   return (
     <div id="billing-invoice-print" style={{ 
@@ -9,15 +21,17 @@ export default function BillingPrint({ invoice, getClientName }) {
       padding: '40px', 
       fontFamily: 'Arial, sans-serif', 
       color: '#000',
-      width: '210mm',
+      width: '100%',
+      maxWidth: '210mm',
       minHeight: '297mm',
       margin: '0 auto',
-      position: 'relative'
+      position: 'relative',
+      boxSizing: 'border-box'
     }}>
       {/* Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '50px' }}>
         <div style={{ width: '120px' }}>
-          <img src="/logo.png" alt="Logo" style={{ width: '100%' }} />
+          <img src="/logo.png" alt="Logo" style={{ width: '100%', display: 'block' }} />
         </div>
         <div style={{ textAlign: 'right', fontSize: '13px', lineHeight: '1.6' }}>
           <div style={{ fontWeight: '900', fontSize: '16px' }}>FROM FRAME ENGINEERING CONSULTANTS</div>
@@ -31,55 +45,55 @@ export default function BillingPrint({ invoice, getClientName }) {
       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '40px', fontSize: '14px' }}>
         <div>
           <span style={{ color: '#94a3b8', marginRight: '40px' }}>DATE</span>
-          <span style={{ fontWeight: '700' }}>{new Date(invoice.date).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</span>
+          <span style={{ fontWeight: '700' }}>{safeDate(invoice.date)}</span>
         </div>
         <div>
           <span style={{ color: '#94a3b8', marginRight: '10px' }}>TO</span>
-          <span style={{ fontWeight: '900', fontSize: '15px' }}>{invoice.client_name}</span>
+          <span style={{ fontWeight: '900', fontSize: '15px' }}>{invoice.client_name || '—'}</span>
         </div>
       </div>
 
       {/* Table */}
       <div style={{ border: '1.5px solid #000', borderRadius: '4px', overflow: 'hidden', marginBottom: '20px' }}>
-        <div style={{ display: 'flex', borderBottom: '1.5px solid #000', background: '#fff' }}>
+        <div style={{ display: 'flex', borderBottom: '1.5px solid #000', background: '#f8fafc' }}>
           <div style={{ flex: 1, padding: '12px', fontWeight: '900', borderRight: '1.5px solid #000' }}>SERVICE DESCRIPTION</div>
           <div style={{ width: '150px', padding: '12px', fontWeight: '900', textAlign: 'center' }}>Amount (KD)</div>
         </div>
         
         {/* Items */}
-        <div style={{ minHeight: '300px' }}>
-          {(invoice.items || []).map((item, idx) => (
-            <div key={idx} style={{ display: 'flex', borderBottom: idx === (invoice.items.length - 1) ? 'none' : '1px solid #eee' }}>
+        <div style={{ minHeight: '350px', display: 'flex', flexDirection: 'column' }}>
+          {items.map((item, idx) => (
+            <div key={idx} style={{ display: 'flex', borderBottom: '1px solid #eee' }}>
               <div style={{ flex: 1, padding: '15px', borderRight: '1.5px solid #000', whiteSpace: 'pre-wrap' }}>
-                <div style={{ fontWeight: '700' }}>{item.description}</div>
+                <div style={{ fontWeight: '700', fontSize: '14px' }}>{item?.description || '—'}</div>
               </div>
               <div style={{ width: '150px', padding: '15px', textAlign: 'center', fontWeight: '700' }}>
-                {parseFloat(item.amount || 0).toFixed(3)}
+                {parseFloat(item?.amount || 0).toFixed(3)}
               </div>
             </div>
           ))}
-          {/* Filler for empty space if needed */}
-          <div style={{ flex: 1 }}></div>
+          {/* Empty Space Filler */}
+          <div style={{ flex: 1, borderRight: '1.5px solid #000', width: 'calc(100% - 150px)' }}></div>
+          <div style={{ borderTop: '1px solid #000', width: '100%' }}></div>
         </div>
 
         {/* Total Row */}
-        <div style={{ display: 'flex', borderTop: '1.5px solid #000', background: '#fff' }}>
-          <div style={{ flex: 1, padding: '10px 15px', fontWeight: '900', borderRight: '1.5px solid #000' }}>Total</div>
-          <div style={{ width: '150px', padding: '10px 15px', fontWeight: '900', textAlign: 'center' }}>
-            KWD {parseFloat(invoice.amount || 0).toFixed(3)}
+        <div style={{ display: 'flex', borderTop: '0.5px solid #000', background: '#fff' }}>
+          <div style={{ flex: 1, padding: '12px 15px', fontWeight: '900', borderRight: '1.5px solid #000', textAlign: 'right' }}>Total</div>
+          <div style={{ width: '150px', padding: '12px 15px', fontWeight: '900', textAlign: 'center', background: '#f8fafc' }}>
+            KWD {totalAmount}
           </div>
         </div>
 
         {/* Authorized */}
-        <div style={{ padding: '15px', borderTop: '1.5px solid #000', minHeight: '100px' }}>
-          <div style={{ fontWeight: '900', fontSize: '13px', marginBottom: '10px' }}>Authorized:</div>
-          <div style={{ position: 'relative', width: '100px', height: '60px' }}>
-            <img src="/logo.png" alt="Signature" style={{ width: '100%', opacity: 0.8 }} />
-            {/* Signature Overlay Placeholder */}
+        <div style={{ padding: '15px', borderTop: '1.5px solid #000', minHeight: '100px', display: 'flex', flexDirection: 'column', justifyContent: 'flex-end' }}>
+          <div style={{ fontWeight: '900', fontSize: '12px', marginBottom: '5px', color: '#64748b' }}>Authorized:</div>
+          <div style={{ position: 'relative', width: '120px', height: '60px' }}>
+            <img src="/logo.png" alt="Signature" style={{ width: '100%', opacity: 0.7, filter: 'grayscale(0.5)' }} />
             <div style={{ 
-              position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%) rotate(-10deg)',
-              fontFamily: '"Great Vibes", cursive', fontSize: '24px', color: '#1e3a8a', opacity: 0.6,
-              whiteSpace: 'nowrap'
+              position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%) rotate(-12deg)',
+              fontFamily: '"Great Vibes", cursive', fontSize: '28px', color: '#1e3a8a', opacity: 0.4,
+              whiteSpace: 'nowrap', pointerEvents: 'none'
             }}>
               FRAME
             </div>
@@ -88,9 +102,9 @@ export default function BillingPrint({ invoice, getClientName }) {
       </div>
 
       {/* Remarks */}
-      <div style={{ border: '1.5px solid #000', borderRadius: '4px', padding: '12px', minHeight: '120px' }}>
-        <div style={{ fontWeight: '900', fontSize: '13px', marginBottom: '8px' }}>Remarks:</div>
-        <div style={{ fontSize: '13px', whiteSpace: 'pre-wrap', lineHeight: '1.4' }}>
+      <div style={{ border: '1.5px solid #000', borderRadius: '4px', padding: '15px', minHeight: '100px' }}>
+        <div style={{ fontWeight: '900', fontSize: '12px', marginBottom: '8px', color: '#64748b' }}>Remarks:</div>
+        <div style={{ fontSize: '13px', whiteSpace: 'pre-wrap', lineHeight: '1.5', color: '#1e293b' }}>
           {invoice.remarks || 'No additional remarks.'}
         </div>
       </div>
@@ -98,9 +112,19 @@ export default function BillingPrint({ invoice, getClientName }) {
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Great+Vibes&display=swap');
         @media print {
-          body * { visibility: hidden; }
-          #billing-invoice-print, #billing-invoice-print * { visibility: visible; }
-          #billing-invoice-print { position: absolute; left: 0; top: 0; }
+          body * { visibility: hidden !important; }
+          #billing-invoice-print, #billing-invoice-print * { visibility: visible !important; }
+          #billing-invoice-print { 
+            position: fixed !important; 
+            left: 0 !important; 
+            top: 0 !important; 
+            width: 210mm !important;
+            height: 297mm !important;
+            padding: 20mm !important;
+            margin: 0 !important;
+            box-shadow: none !important;
+            border: none !important;
+          }
         }
       `}</style>
     </div>
