@@ -91,14 +91,9 @@ export default function BillingPrint({ invoice }) {
         {/* Authorized */}
         <div style={{ padding: '15px', borderTop: '1.5px solid #000', minHeight: '100px', display: 'flex', flexDirection: 'column', justifyContent: 'flex-end' }}>
           <div style={{ fontWeight: '900', fontSize: '12px', marginBottom: '5px', color: '#64748b' }}>Authorized:</div>
-          <div style={{ position: 'relative', width: '130px', height: '80px' }}>
-            {/* Stamp Image */}
-            <img src="/stamp.png" alt="Stamp" style={{ width: '100%', opacity: 0.9 }} />
-            {/* Signature Overlay */}
-            <img src="/signature.png" alt="Signature" style={{ 
-              position: 'absolute', top: '5%', left: '5%', width: '90%', height: '90%',
-              objectFit: 'contain', opacity: 0.85, pointerEvents: 'none'
-            }} />
+          <div style={{ position: 'relative', width: '130px' }}>
+            {/* Stamp Image Only */}
+            <img src="/stamp.png" alt="Stamp" style={{ width: '100%', opacity: 1 }} />
           </div>
         </div>
       </div>
