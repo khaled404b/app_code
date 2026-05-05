@@ -26,9 +26,31 @@ export default function BillingPage() {
   const [isExporting, setIsExporting] = useState(false);
   const [loadingAttachment, setLoadingAttachment] = useState(false);
 
+  // Helper to fetch full invoice with attachments
+  const fetchWithAttachments = async (inv) => {
+    if (inv.attachments) return inv; // Already has them
+    try {
+      const snap = await get(ref(db, `attachments/${inv.id}`));
+      if (snap.exists()) {
+        return { ...inv, attachments: parseAttachment(snap.val()) };
+      }
+    } catch (err) {
+      console.error("Error fetching attachments:", err);
+    }
+    return { ...inv, attachments: [] };
+  };
+
+  const handleSelectForView = async (inv) => {
+    setSelected(inv); // Show immediate state
+    setView('detail');
+    const full = await fetchWithAttachments(inv);
+    setSelected(full);
+  };
+
   // Safe Print Handler
-  const handlePrint = (inv) => {
-    setSelected(inv);
+  const handlePrint = async (inv) => {
+    const full = await fetchWithAttachments(inv);
+    setSelected(full);
     setView('print');
     setTimeout(() => {
       window.print();
@@ -39,25 +61,31 @@ export default function BillingPage() {
   const handleExportPDF = async (inv) => {
     if (!inv) return;
     setIsExporting(true);
-    try {
-      const html2pdf = (await import('html2pdf.js')).default;
-      const element = document.getElementById('billing-invoice-print');
-      if (!element) throw new Error('قالب الطباعة غير موجود');
-      
-      const opt = {
-        margin: 0,
-        filename: `Invoice-${inv.invoice_no || 'Draft'}.pdf`,
-        image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: { scale: 2, useCORS: true, letterRendering: true },
-        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
-      };
+    const full = await fetchWithAttachments(inv);
+    setSelected(full);
+    
+    // Wait for state update and images to load
+    setTimeout(async () => {
+      try {
+        const html2pdf = (await import('html2pdf.js')).default;
+        const element = document.getElementById('billing-invoice-print');
+        if (!element) throw new Error('قالب الطباعة غير موجود');
+        
+        const opt = {
+          margin: 0,
+          filename: `Invoice-${inv.invoice_no || 'Draft'}.pdf`,
+          image: { type: 'jpeg', quality: 0.98 },
+          html2canvas: { scale: 2, useCORS: true, letterRendering: true },
+          jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+        };
 
-      await html2pdf().from(element).set(opt).save();
-    } catch (err) {
-      console.error(err);
-      alert('فشل تصدير PDF: ' + err.message);
-    }
-    setIsExporting(false);
+        await html2pdf().from(element).set(opt).save();
+      } catch (err) {
+        console.error(err);
+        alert('فشل تصدير PDF: ' + err.message);
+      }
+      setIsExporting(false);
+    }, 800);
   };
 
   // Safe Attachment Viewer
@@ -119,7 +147,7 @@ export default function BillingPage() {
             billingInvoices={filtered} 
             onEdit={openEdit} 
             onDelete={handleDelete} 
-            onPrint={(inv) => { setSelected(inv); setView('detail'); }} 
+            onPrint={handleSelectForView} 
           />
         </>
       )}

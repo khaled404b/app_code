@@ -91,26 +91,42 @@ export default function BillingPrint({ invoice }) {
         {/* Authorized */}
         <div style={{ padding: '15px', borderTop: '1.5px solid #000', minHeight: '100px', display: 'flex', flexDirection: 'column', justifyContent: 'flex-end' }}>
           <div style={{ fontWeight: '900', fontSize: '12px', marginBottom: '5px', color: '#64748b' }}>Authorized:</div>
-          <div style={{ position: 'relative', width: '120px', height: '60px' }}>
-            <img src="/logo.png" alt="Signature" style={{ width: '100%', opacity: 0.7, filter: 'grayscale(0.5)' }} />
-            <div style={{ 
-              position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%) rotate(-12deg)',
-              fontFamily: '"Great Vibes", cursive', fontSize: '28px', color: '#1e3a8a', opacity: 0.4,
-              whiteSpace: 'nowrap', pointerEvents: 'none'
-            }}>
-              FRAME
-            </div>
+          <div style={{ position: 'relative', width: '130px', height: '80px' }}>
+            {/* Stamp Image */}
+            <img src="/stamp.png" alt="Stamp" style={{ width: '100%', opacity: 0.9 }} />
+            {/* Signature Overlay */}
+            <img src="/signature.png" alt="Signature" style={{ 
+              position: 'absolute', top: '5%', left: '5%', width: '90%', height: '90%',
+              objectFit: 'contain', opacity: 0.85, pointerEvents: 'none'
+            }} />
           </div>
         </div>
       </div>
 
       {/* Remarks */}
-      <div style={{ border: '1.5px solid #000', borderRadius: '4px', padding: '15px', minHeight: '100px' }}>
+      <div style={{ border: '1.5px solid #000', borderRadius: '4px', padding: '15px', minHeight: '100px', marginBottom: '20px' }}>
         <div style={{ fontWeight: '900', fontSize: '12px', marginBottom: '8px', color: '#64748b' }}>Remarks:</div>
         <div style={{ fontSize: '13px', whiteSpace: 'pre-wrap', lineHeight: '1.5', color: '#1e293b' }}>
           {invoice.remarks || 'No additional remarks.'}
         </div>
       </div>
+
+      {/* Attachments Section (Visible in Print/PDF) */}
+      {invoice.attachments && invoice.attachments.length > 0 && (
+        <div style={{ marginTop: '30px', pageBreakBefore: 'always' }}>
+          <h3 style={{ fontSize: '16px', fontWeight: 900, marginBottom: '20px', borderBottom: '1px solid #000', paddingBottom: '10px' }}>
+            Attachments / المرفقات
+          </h3>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '30px' }}>
+            {invoice.attachments.map((src, i) => (
+              <div key={i} style={{ border: '1px solid #e2e8f0', padding: '10px', borderRadius: '8px', pageBreakInside: 'avoid' }}>
+                <div style={{ fontSize: '12px', color: '#64748b', marginBottom: '10px' }}>Attachment {i + 1}</div>
+                <img src={src} style={{ width: '100%', display: 'block', borderRadius: '4px' }} />
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Great+Vibes&display=swap');
