@@ -31,7 +31,8 @@ export default function ReceiptPrint({ receipt }) {
       position: 'relative',
       boxSizing: 'border-box',
       border: '2px solid #000',
-      borderRadius: '8px'
+      borderRadius: '8px',
+      pageBreakInside: 'avoid'
     }}>
       {/* Header with Logo */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
@@ -128,7 +129,7 @@ export default function ReceiptPrint({ receipt }) {
         {/* Accountant Sig */}
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '5px', position: 'relative' }}>
           {receipt.accountant_sig && (
-            <img src={receipt.accountant_sig} alt="Accountant Signature" style={{ height: '50px', objectFit: 'contain', position: 'absolute', bottom: '20px', left: '100px' }} />
+            <img src={receipt.accountant_sig} alt="Accountant Signature" style={{ height: '80px', objectFit: 'contain', position: 'absolute', bottom: '15px', left: '100px' }} />
           )}
           <div style={{ display: 'flex', alignItems: 'flex-end', gap: '5px' }}>
             <span style={{ fontWeight: 'bold', fontSize: '14px' }}>Accountant Sig:</span>
@@ -140,7 +141,7 @@ export default function ReceiptPrint({ receipt }) {
         {/* Receiver Sig */}
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '5px', position: 'relative' }}>
           {receipt.receiver_sig && (
-            <img src={receipt.receiver_sig} alt="Receiver Signature" style={{ height: '50px', objectFit: 'contain', position: 'absolute', bottom: '20px', right: '100px' }} />
+            <img src={receipt.receiver_sig} alt="Receiver Signature" style={{ height: '80px', objectFit: 'contain', position: 'absolute', bottom: '15px', right: '100px' }} />
           )}
           <div style={{ display: 'flex', alignItems: 'flex-end', gap: '5px' }}>
             <span style={{ fontWeight: 'bold', fontSize: '14px' }}>Receiver Sig:</span>

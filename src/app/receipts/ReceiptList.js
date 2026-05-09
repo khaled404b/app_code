@@ -1,8 +1,8 @@
 import React from 'react';
 import { Card } from '@/components/ui';
-import { Printer, Edit, Trash2 } from 'lucide-react';
+import { Printer, Edit, Trash2, FileText } from 'lucide-react';
 
-export default function ReceiptList({ receipts, onEdit, onDelete, onPrint }) {
+export default function ReceiptList({ receipts, onEdit, onDelete, onPrint, onExportPDF }) {
   if (!receipts.length) {
     return (
       <div style={{ textAlign: 'center', padding: '40px', color: '#64748b' }}>
@@ -37,6 +37,13 @@ export default function ReceiptList({ receipts, onEdit, onDelete, onPrint }) {
                   title="طباعة"
                 >
                   <Printer size={18} />
+                </button>
+                <button 
+                  onClick={() => onExportPDF(rec)} 
+                  style={{ background: '#ecfdf5', border: '1px solid #a7f3d0', color: '#059669', padding: '8px', borderRadius: '8px', cursor: 'pointer' }}
+                  title="تصدير PDF"
+                >
+                  <FileText size={18} />
                 </button>
                 <button 
                   onClick={() => onEdit(rec)} 

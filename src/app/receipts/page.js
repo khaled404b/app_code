@@ -33,6 +33,31 @@ export default function ReceiptsPage() {
     }, 500);
   };
 
+  const handleExportPDF = async (rec) => {
+    const full = await getFullReceipt(rec);
+    setSelected(full);
+    setView('print');
+    setTimeout(async () => {
+      const element = document.getElementById('receipt-print');
+      if (!element) return;
+      
+      const opt = {
+        margin: 10,
+        filename: `Receipt-${rec.receipt_no || 'Draft'}.pdf`,
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { scale: 2, useCORS: true, letterRendering: true },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+      };
+      
+      try {
+        await window.html2pdf().from(element).set(opt).save();
+      } catch (err) {
+        console.error('PDF export failed:', err);
+      }
+      setView('list');
+    }, 500);
+  };
+
   if (isLoading) return (
     <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg)' }}>
       <Loader2 className="animate-spin" size={32} color="var(--blue)" />
@@ -53,6 +78,7 @@ export default function ReceiptsPage() {
             onEdit={openEdit} 
             onDelete={handleDelete} 
             onPrint={handlePrint} 
+            onExportPDF={handleExportPDF}
           />
         </>
       )}
