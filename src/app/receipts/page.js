@@ -50,7 +50,8 @@ export default function ReceiptsPage() {
       };
       
       try {
-        await window.html2pdf().from(element).set(opt).save();
+        const html2pdf = (await import('html2pdf.js')).default;
+        await html2pdf().from(element).set(opt).save();
       } catch (err) {
         console.error('PDF export failed:', err);
       }

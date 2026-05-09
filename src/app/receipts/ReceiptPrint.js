@@ -156,11 +156,11 @@ export default function ReceiptPrint({ receipt }) {
           body * { visibility: hidden !important; }
           #receipt-print, #receipt-print * { visibility: visible !important; }
           #receipt-print { 
-            position: fixed !important; 
+            position: absolute !important; 
             left: 0 !important; 
             top: 0 !important; 
             width: 210mm !important;
-            padding: 20mm !important;
+            padding: 15mm !important;
             margin: 0 !important;
             box-shadow: none !important;
             border: none !important;
