@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react';
 import { useData } from '@/hooks/useData';
 import { useAuth } from '@/hooks/useAuth';
 import { v4 as uuidv4 } from 'uuid';
-import { ref, update } from 'firebase/database';
+import { ref, update, get } from 'firebase/database';
 import { db } from '@/lib/firebase';
 
 export function useReceiptController() {
@@ -45,9 +45,12 @@ export function useReceiptController() {
     if (e) e.preventDefault();
     const recId = selected ? selected.id : uuidv4();
     
-    // Build payload
+    // Extract signatures to save separately
+    const { accountant_sig, receiver_sig, ...restForm } = form;
+
+    // Build payload without signatures
     const rawPayload = {
-      ...form,
+      ...restForm,
       id: recId,
       amount_kd: parseFloat(form.amount_kd || 0),
       amount_fils: parseInt(form.amount_fils || 0),
@@ -66,7 +69,13 @@ export function useReceiptController() {
       
       const cleanList = JSON.parse(JSON.stringify(newList.filter(Boolean)));
 
+      // Save main list
       await update(ref(db), { receipts: cleanList });
+      
+      // Save signatures if any exist
+      if (accountant_sig || receiver_sig) {
+        await update(ref(db), { [`receipt_signatures/${recId}`]: { accountant_sig: accountant_sig || null, receiver_sig: receiver_sig || null } });
+      }
 
       setView('list');
       setSelected(null);
@@ -93,10 +102,19 @@ export function useReceiptController() {
     setView('form');
   };
 
-  const openEdit = (rec) => {
+  const openEdit = async (rec) => {
     setForm({ ...rec });
     setSelected(rec);
     setView('form');
+    
+    try {
+      const snap = await get(ref(db, `receipt_signatures/${rec.id}`));
+      if (snap.exists()) {
+        setForm(prev => ({ ...prev, ...snap.val() }));
+      }
+    } catch (err) {
+      console.error('Failed to fetch signatures:', err);
+    }
   };
 
   const handleDelete = async (id) => {
@@ -106,8 +124,20 @@ export function useReceiptController() {
     setView('list');
   };
 
+  const getFullReceipt = async (rec) => {
+    try {
+      const snap = await get(ref(db, `receipt_signatures/${rec.id}`));
+      if (snap.exists()) {
+        return { ...rec, ...snap.val() };
+      }
+    } catch (err) {
+      console.error('Failed to fetch signatures:', err);
+    }
+    return rec;
+  };
+
   return {
     state: { view, selected, search, form, receipts, clients, filtered, isLoading, canEdit },
-    actions: { setView, setSelected, setSearch, setForm, handleSave, openNew, openEdit, handleDelete }
+    actions: { setView, setSelected, setSearch, setForm, handleSave, openNew, openEdit, handleDelete, getFullReceipt }
   };
 }

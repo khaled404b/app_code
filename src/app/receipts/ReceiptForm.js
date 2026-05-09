@@ -2,6 +2,16 @@ import React from 'react';
 import { Card } from '@/components/ui';
 
 export default function ReceiptForm({ form, setForm, handleSave }) {
+  const handleFileChange = (e, field) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setForm({ ...form, [field]: reader.result });
+    };
+    reader.readAsDataURL(file);
+  };
+
   return (
     <Card padded>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '20px' }}>
@@ -73,6 +83,30 @@ export default function ReceiptForm({ form, setForm, handleSave }) {
       <div className="form-group" style={{ marginBottom: '25px' }}>
         <label className="form-label">وذلك عن (Being For)</label>
         <textarea className="form-input" rows={3} placeholder="سبب الدفع أو الوصف..." value={form.being_for || ''} onChange={e => setForm({ ...form, being_for: e.target.value })} />
+      </div>
+
+      {/* Signatures Upload */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '25px', padding: '15px', background: '#f8fafc', borderRadius: '8px' }}>
+        <div className="form-group">
+          <label className="form-label" style={{ color: '#0f172a', fontWeight: 800 }}>توقيع المحاسب (Accountant Sig)</label>
+          <input type="file" accept="image/*" onChange={e => handleFileChange(e, 'accountant_sig')} style={{ fontSize: '13px' }} />
+          {form.accountant_sig && (
+            <div style={{ marginTop: '10px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <img src={form.accountant_sig} alt="Accountant Signature" style={{ height: '40px', objectFit: 'contain', border: '1px solid #e2e8f0', borderRadius: '4px' }} />
+              <button type="button" onClick={() => setForm({ ...form, accountant_sig: null })} style={{ color: '#dc2626', fontSize: '12px', background: 'none', border: 'none', cursor: 'pointer' }}>حذف</button>
+            </div>
+          )}
+        </div>
+        <div className="form-group">
+          <label className="form-label" style={{ color: '#0f172a', fontWeight: 800 }}>توقيع المستلم (Receiver Sig)</label>
+          <input type="file" accept="image/*" onChange={e => handleFileChange(e, 'receiver_sig')} style={{ fontSize: '13px' }} />
+          {form.receiver_sig && (
+            <div style={{ marginTop: '10px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <img src={form.receiver_sig} alt="Receiver Signature" style={{ height: '40px', objectFit: 'contain', border: '1px solid #e2e8f0', borderRadius: '4px' }} />
+              <button type="button" onClick={() => setForm({ ...form, receiver_sig: null })} style={{ color: '#dc2626', fontSize: '12px', background: 'none', border: 'none', cursor: 'pointer' }}>حذف</button>
+            </div>
+          )}
+        </div>
       </div>
 
       <div style={{ marginTop: '30px', padding: '15px', borderTop: '1px solid #e2e8f0', display: 'flex', justifyContent: 'flex-end' }}>

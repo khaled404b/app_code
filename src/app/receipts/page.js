@@ -17,14 +17,15 @@ export default function ReceiptsPage() {
   
   const { 
     setView, setSelected, setSearch, setForm, 
-    handleSave, openNew, openEdit, handleDelete 
+    handleSave, openNew, openEdit, handleDelete, getFullReceipt 
   } = actions;
 
   const [isExporting, setIsExporting] = useState(false);
 
   // Safe Print Handler
-  const handlePrint = (rec) => {
-    setSelected(rec);
+  const handlePrint = async (rec) => {
+    const full = await getFullReceipt(rec);
+    setSelected(full);
     setView('print');
     setTimeout(() => {
       window.print();
