@@ -111,35 +111,61 @@ export default function BillingPage() {
     if (!inv || !inv.id) return;
     setLoadingAttachment(true);
     try {
-      const snap = await get(ref(db, `attachments/${inv.id}`));
-      if (!snap.exists()) {
+      // Fetch attachments and stamp in parallel
+      const [attachSnap, stampSnap] = await Promise.all([
+        get(ref(db, `attachments/${inv.id}`)),
+        get(ref(db, `stamps/${inv.id}`))
+      ]);
+
+      if (!attachSnap.exists()) {
         alert('لا توجد مرفقات لهذه الفاتورة');
         setLoadingAttachment(false);
         return;
       }
       
-      const files = parseAttachment(snap.val());
+      const files = parseAttachment(attachSnap.val());
       if (files.length === 0) {
         alert('صيغة المرفقات غير مدعومة');
         setLoadingAttachment(false);
         return;
       }
 
+      const stampSrc = stampSnap.exists() ? stampSnap.val() : null;
+      const logoUrl = window.location.origin + '/logo.png';
+
+      const stampHtml = stampSrc
+        ? `<div style="text-align:center;">
+            <div style="font-size:11px; color:#64748b; margin-bottom:6px;">Authorized:</div>
+            <img src="${stampSrc}" style="height:70px; object-fit:contain;" />
+           </div>`
+        : '';
+
       const imgTags = files.map((src, i) => `
-        <div style="background:white; border-radius:8px; padding:16px; box-shadow:0 2px 12px rgba(0,0,0,0.15); max-width:860px; width:100%; margin-bottom: 20px;">
-          <div style="font-size:12px; color:#64748b; margin-bottom:10px;">مرفق ${i+1}</div>
-          <img src="${src}" style="width:100%; display:block; border-radius:4px;" />
+        <div style="background:white; border-radius:8px; padding:20px; box-shadow:0 2px 12px rgba(0,0,0,0.12); max-width:860px; width:100%; margin-bottom:30px;">
+          <!-- Header: Logo + Invoice Info -->
+          <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:2px solid #0f172a; padding-bottom:12px; margin-bottom:16px;">
+            <img src="${logoUrl}" style="height:50px; object-fit:contain;" onerror="this.style.display='none'" />
+            <div style="text-align:right;">
+              <div style="font-size:11px; color:#64748b;">Attachment ${i+1} of ${files.length}</div>
+              <div style="font-size:18px; font-weight:900; letter-spacing:1px;">${inv.invoice_no || '—'}</div>
+              <div style="font-size:11px; color:#64748b;">${inv.client_name || ''} ${inv.plot_no ? '| Plot: ' + inv.plot_no : ''}</div>
+            </div>
+          </div>
+          <!-- Attachment Image -->
+          <img src="${src}" style="width:100%; display:block; border-radius:4px; border:1px solid #e2e8f0;" />
+          <!-- Footer: Signature -->
+          ${stampHtml ? `<div style="display:flex; justify-content:flex-end; margin-top:16px; padding-top:12px; border-top:1px solid #e2e8f0;">${stampHtml}</div>` : ''}
         </div>`
       ).join('');
       
-      const html = `<!DOCTYPE html><html dir="rtl"><head><meta charset="UTF-8"><title>مرفقات - ${inv.invoice_no}</title>
-        <style>body{margin:0; background:#f1f5f9; display:flex; flex-direction:column; align-items:center; padding:30px; font-family:sans-serif;}</style>
+      const html = `<!DOCTYPE html><html dir="ltr"><head><meta charset="UTF-8"><title>Attachments - ${inv.invoice_no}</title>
+        <style>body{margin:0; background:#f1f5f9; display:flex; flex-direction:column; align-items:center; padding:30px; font-family:Arial,sans-serif;}</style>
         </head><body>${imgTags}</body></html>`;
       
       const blob = new Blob([html], { type: 'text/html' });
       const url = URL.createObjectURL(blob);
       window.open(url, '_blank');
-      setTimeout(() => URL.revokeObjectURL(url), 5000);
+      setTimeout(() => URL.revokeObjectURL(url), 10000);
     } catch (err) {
       alert('خطأ في جلب الملف');
     }

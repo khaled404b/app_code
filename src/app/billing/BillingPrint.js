@@ -29,7 +29,7 @@ export default function BillingPrint({ invoice }) {
       boxSizing: 'border-box'
     }}>
       {/* Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '50px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '20px' }}>
         <div style={{ width: '120px' }}>
           <img src="/logo.png" alt="Logo" style={{ width: '100%', display: 'block' }} />
         </div>
@@ -39,6 +39,12 @@ export default function BillingPrint({ invoice }) {
           <div>T: +965 22451010</div>
           <div>Bnaid Algar, Deema Complex, 2nd floor, office 3</div>
         </div>
+      </div>
+
+      {/* Invoice Number Banner */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#0f172a', color: 'white', padding: '10px 16px', borderRadius: '6px', marginBottom: '30px' }}>
+        <div style={{ fontSize: '12px', opacity: 0.7, letterSpacing: '1px' }}>INVOICE NO.</div>
+        <div style={{ fontSize: '20px', fontWeight: 900, letterSpacing: '2px' }}>{invoice.invoice_no || '—'}</div>
       </div>
 
       {/* Metadata */}
@@ -109,18 +115,33 @@ export default function BillingPrint({ invoice }) {
 
       {/* Attachments Section (Visible in Print/PDF) */}
       {invoice.attachments && invoice.attachments.length > 0 && (
-        <div style={{ marginTop: '30px', pageBreakBefore: 'always' }}>
-          <h3 style={{ fontSize: '16px', fontWeight: 900, marginBottom: '20px', borderBottom: '1px solid #000', paddingBottom: '10px' }}>
-            Attachments / المرفقات
-          </h3>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '30px' }}>
-            {invoice.attachments.map((src, i) => (
-              <div key={i} style={{ border: '1px solid #e2e8f0', padding: '10px', borderRadius: '8px', pageBreakInside: 'avoid' }}>
-                <div style={{ fontSize: '12px', color: '#64748b', marginBottom: '10px' }}>Attachment {i + 1}</div>
-                <img src={src} style={{ width: '100%', display: 'block', borderRadius: '4px' }} />
+        <div style={{ marginTop: '30px' }}>
+          {invoice.attachments.map((src, i) => (
+            <div key={i} style={{ pageBreakBefore: 'always', paddingTop: '30px' }}>
+              {/* Attachment page header: logo + invoice number */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '2px solid #0f172a', paddingBottom: '12px', marginBottom: '20px' }}>
+                <img src="/logo.png" alt="Logo" style={{ height: '50px', objectFit: 'contain' }} />
+                <div style={{ textAlign: 'right' }}>
+                  <div style={{ fontSize: '11px', color: '#64748b' }}>Attachment {i + 1} of {invoice.attachments.length}</div>
+                  <div style={{ fontSize: '16px', fontWeight: 900 }}>{invoice.invoice_no || '—'}</div>
+                  <div style={{ fontSize: '11px', color: '#64748b' }}>{invoice.client_name || ''} {invoice.plot_no ? `| Plot: ${invoice.plot_no}` : ''}</div>
+                </div>
               </div>
-            ))}
-          </div>
+
+              {/* Attachment image */}
+              <img src={src} style={{ width: '100%', display: 'block', borderRadius: '4px', border: '1px solid #e2e8f0' }} />
+
+              {/* Attachment page footer: signature */}
+              {invoice.stamp_image && (
+                <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'flex-end', marginTop: '20px', borderTop: '1px solid #e2e8f0', paddingTop: '12px' }}>
+                  <div style={{ textAlign: 'center' }}>
+                    <div style={{ fontSize: '11px', color: '#64748b', marginBottom: '6px' }}>Authorized:</div>
+                    <img src={invoice.stamp_image} alt="Stamp" style={{ height: '70px', objectFit: 'contain' }} />
+                  </div>
+                </div>
+              )}
+            </div>
+          ))}
         </div>
       )}
 
