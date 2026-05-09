@@ -69,9 +69,11 @@ export function useData() {
 
   const updateData = useCallback(async (entity, action, payload, id = null) => {
     const current = dataRef.current || {};
+    // Helper: strip undefined values Firebase rejects
+    const clean = (obj) => JSON.parse(JSON.stringify(obj));
     try {
       if (entity === 'settings') {
-        await update(ref(db, '/'), { settings: { ...(current.settings || {}), ...payload } });
+        await update(ref(db, '/'), { settings: clean({ ...(current.settings || {}), ...payload }) });
       } else {
         const arr = Array.isArray(current[entity]) ? current[entity] : Object.values(current[entity] || {});
         let newArr;
@@ -80,11 +82,14 @@ export function useData() {
         else if (action === 'delete') newArr = arr.filter(item => item.id !== id);
         else newArr = arr;
 
-        setData(prev => ({ ...prev, [entity]: newArr }));
-        await update(ref(db, '/'), { [entity]: newArr });
+        // Clean entire array before saving — removes nulls, undefineds, circular refs
+        const cleanArr = clean(newArr.filter(Boolean));
+        setData(prev => ({ ...prev, [entity]: cleanArr }));
+        await update(ref(db, '/'), { [entity]: cleanArr });
       }
     } catch (err) {
       console.error('Update failed:', err);
+      alert('فشل الحفظ: ' + err.message);
     }
   }, []);
 

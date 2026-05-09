@@ -58,7 +58,7 @@ function SupervisionContent() {
       free_months: parseInt(form.free_months || 0),
       suspension_days: parseInt(form.suspension_days || 0),
       collected_amount: parseFloat(form.collected_amount || 0),
-      has_file: tempFiles.length > 0 || form.has_file,
+      has_file: !!(tempFiles.length > 0 || form.has_file),
     };
 
     try {
