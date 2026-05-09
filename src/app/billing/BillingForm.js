@@ -39,6 +39,22 @@ export default function BillingForm({ form, setForm, clients, handleSave, tempFi
     } catch (err) { alert('فشل المعالجة: ' + err.message); }
   };
 
+  const handleStampUpload = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      alert('يرجى اختيار صورة فقط (PNG, JPG, ...)'); 
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      setForm(p => ({ ...p, stamp_image: ev.target.result }));
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const removeStamp = () => setForm(p => ({ ...p, stamp_image: null }));
+
   return (
     <Card padded>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '20px' }}>
@@ -113,6 +129,35 @@ export default function BillingForm({ form, setForm, clients, handleSave, tempFi
       <div className="form-group">
         <label className="form-label">ملاحظات إضافية (Remarks)</label>
         <textarea className="form-input" rows={3} value={form.remarks || ''} onChange={e => setForm({ ...form, remarks: e.target.value })} placeholder="اكتب أي شروط أو ملاحظات هنا..." />
+      </div>
+
+      {/* Stamp / Signature Upload */}
+      <div style={{ marginTop: '20px', padding: '16px', background: '#fafafa', borderRadius: '16px', border: '1.5px dashed #cbd5e1' }}>
+        <label className="form-label">الختم / التوقيع (Stamp / Signature)</label>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginTop: '10px' }}>
+          {form.stamp_image ? (
+            <div style={{ position: 'relative', display: 'inline-block' }}>
+              <img src={form.stamp_image} alt="stamp" style={{ height: '80px', maxWidth: '180px', objectFit: 'contain', borderRadius: '8px', border: '1px solid #e2e8f0' }} />
+              <button
+                type="button"
+                onClick={removeStamp}
+                style={{ position: 'absolute', top: -8, right: -8, background: '#ef4444', color: '#fff', border: 'none', borderRadius: '50%', width: '20px', height: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: '12px' }}
+              >
+                <X size={12} />
+              </button>
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={() => document.getElementById('billing-stamp').click()}
+              style={{ padding: '10px 20px', borderRadius: '10px', border: '2px dashed #cbd5e1', background: '#fff', color: '#64748b', cursor: 'pointer', fontSize: '13px', fontWeight: 700 }}
+            >
+              + رفع الختم / التوقيع
+            </button>
+          )}
+          <input type="file" id="billing-stamp" hidden accept="image/*" onChange={handleStampUpload} />
+          <span style={{ fontSize: '12px', color: '#94a3b8' }}>PNG أو JPG شفاف مفضّل</span>
+        </div>
       </div>
 
       <div style={{ marginTop: '20px', padding: '16px', background: '#f8fafc', borderRadius: '16px', border: '1.5px dashed #cbd5e1' }}>

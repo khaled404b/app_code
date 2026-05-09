@@ -91,10 +91,11 @@ export default function BillingPrint({ invoice }) {
         {/* Authorized */}
         <div style={{ padding: '15px', borderTop: '1.5px solid #000', minHeight: '100px', display: 'flex', flexDirection: 'column', justifyContent: 'flex-end' }}>
           <div style={{ fontWeight: '900', fontSize: '12px', marginBottom: '5px', color: '#64748b' }}>Authorized:</div>
-          <div style={{ position: 'relative', width: '130px' }}>
-            {/* Stamp Image Only */}
-            <img src="/stamp.png" alt="Stamp" style={{ width: '100%', opacity: 1 }} />
-          </div>
+          {invoice.stamp_image && (
+            <div style={{ position: 'relative', width: '130px' }}>
+              <img src={invoice.stamp_image} alt="Stamp" style={{ width: '100%', objectFit: 'contain' }} />
+            </div>
+          )}
         </div>
       </div>
 

@@ -43,29 +43,46 @@ export function useBillingController() {
   const handleSave = async (e) => {
     if (e) e.preventDefault();
     const invId = selected ? selected.id : uuidv4();
-    
-    const payload = {
-      ...form,
+
+    // Extract stamp separately — don't store large base64 in main list
+    const stampImage = form.stamp_image || null;
+
+    // Build payload WITHOUT stamp_image (stored separately)
+    const { stamp_image: _removed, ...formWithoutStamp } = form;
+    const rawPayload = {
+      ...formWithoutStamp,
       id: invId,
       amount: parseFloat(form.amount || 0),
       date: form.date || new Date().toISOString().split('T')[0],
       client_name: clients.find(c => c.id === form.client_id)?.name || '—',
-      has_file: tempFiles.length > 0 || form.has_file,
+      has_file: !!(tempFiles.length > 0 || form.has_file),
+      has_stamp: !!stampImage,
       created_by: selected ? (selected.created_by || '—') : user?.name || '—',
       updated_at: new Date().toISOString()
     };
+
+    // Strip all undefined values recursively to avoid Firebase errors
+    const payload = JSON.parse(JSON.stringify(rawPayload));
 
     try {
       // Save to billingInvoices list
       const newList = selected 
         ? billingInvoices.map(i => i.id === selected.id ? payload : i)
         : [...billingInvoices, payload];
-      
-      await update(ref(db), { billingInvoices: newList });
+
+      // Clean the entire list before saving (remove any nulls/undefineds)
+      const cleanList = JSON.parse(JSON.stringify(newList.filter(Boolean)));
+
+      await update(ref(db), { billingInvoices: cleanList });
 
       // Save attachments separately
       if (tempFiles.length > 0) {
         await set(ref(db, `attachments/${invId}`), JSON.stringify(tempFiles));
+      }
+
+      // Save stamp image separately
+      if (stampImage) {
+        await set(ref(db, `stamps/${invId}`), stampImage);
       }
 
       setView('list');
@@ -73,7 +90,7 @@ export function useBillingController() {
       setTempFiles([]);
     } catch (err) {
       console.error(err);
-      alert("فشل الحفظ: " + err.message);
+      alert('فشل الحفظ: ' + err.message);
     }
   };
 

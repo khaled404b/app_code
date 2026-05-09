@@ -26,18 +26,23 @@ export default function BillingPage() {
   const [isExporting, setIsExporting] = useState(false);
   const [loadingAttachment, setLoadingAttachment] = useState(false);
 
-  // Helper to fetch full invoice with attachments
+  // Helper to fetch full invoice with attachments + stamp
   const fetchWithAttachments = async (inv) => {
-    if (inv.attachments) return inv; // Already has them
+    if (inv.attachments && inv.stamp_image !== undefined) return inv; // Already loaded
     try {
-      const snap = await get(ref(db, `attachments/${inv.id}`));
-      if (snap.exists()) {
-        return { ...inv, attachments: parseAttachment(snap.val()) };
-      }
+      const [attachSnap, stampSnap] = await Promise.all([
+        get(ref(db, `attachments/${inv.id}`)),
+        get(ref(db, `stamps/${inv.id}`))
+      ]);
+      return {
+        ...inv,
+        attachments: attachSnap.exists() ? parseAttachment(attachSnap.val()) : [],
+        stamp_image: stampSnap.exists() ? stampSnap.val() : null
+      };
     } catch (err) {
-      console.error("Error fetching attachments:", err);
+      console.error("Error fetching attachments/stamp:", err);
     }
-    return { ...inv, attachments: [] };
+    return { ...inv, attachments: [], stamp_image: null };
   };
 
   const handleSelectForView = async (inv) => {
@@ -45,6 +50,19 @@ export default function BillingPage() {
     setView('detail');
     const full = await fetchWithAttachments(inv);
     setSelected(full);
+  };
+
+  // Open edit form — also load stamp so user can see/replace it
+  const handleEdit = async (inv) => {
+    // Open form right away with what we have
+    openEdit(inv);
+    // Then load stamp in background and inject into form
+    try {
+      const snap = await get(ref(db, `stamps/${inv.id}`));
+      if (snap.exists()) {
+        setForm(prev => ({ ...prev, stamp_image: snap.val() }));
+      }
+    } catch (_) {}
   };
 
   // Safe Print Handler
@@ -145,7 +163,7 @@ export default function BillingPage() {
           <SearchBar value={search} onChange={setSearch} placeholder="بحث برقم الفاتورة، اسم العميل..." />
           <BillingList 
             billingInvoices={filtered} 
-            onEdit={openEdit} 
+            onEdit={handleEdit} 
             onDelete={handleDelete} 
             onPrint={handleSelectForView} 
           />
