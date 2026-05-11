@@ -28,7 +28,8 @@ export function useOfferController() {
   const rawClients = data?.clients || [];
   const clients = (Array.isArray(rawClients) ? rawClients : Object.values(rawClients)).filter(Boolean);
   
-  const services = data?.settings?.services || ['تصميم معماري', 'إشراف هندسي', 'استشارات هندسية'];
+  const services = (data?.settings?.services || ['تصميم معماري', 'إشراف هندسي', 'استشارات هندسية'])
+    .filter(s => !['ننن', 'نخم', 'االل'].includes(s));
 
   // Helper
   const getClientName = (id) => clients.find(c => c.id === id)?.name || 'غير معروف';
