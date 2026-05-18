@@ -72,11 +72,17 @@ export function ContractorForm({ state, actions }) {
             <input 
               required 
               type="text" 
+              list="contract-names"
               className="form-input" 
-              placeholder="مثال: صحي، تكييف، كهرباء، هيكل أسود..." 
+              placeholder="اختر من القائمة أو اكتب تخصصاً جديداً..." 
               value={form.contract_name || ''} 
               onChange={e => setForm({ ...form, contract_name: e.target.value })} 
             />
+            <datalist id="contract-names">
+              {state.uniqueContractNames?.map((name, i) => (
+                <option key={i} value={name} />
+              ))}
+            </datalist>
           </div>
 
           <div style={{ marginBottom: '20px' }}>

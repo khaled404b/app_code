@@ -95,8 +95,22 @@ export function useContractorsController() {
     }
   };
 
+  // Extract unique contract names for the datalist (auto-learning dropdown)
+  const uniqueContractNames = useMemo(() => {
+    const names = new Set([
+      'أعمال الإطفاء', 'أعمال الصحي', 'أعمال التكييف', 
+      'أعمال الكهرباء', 'هيكل أسود', 'تشطيبات'
+    ]);
+    contractors.forEach(c => {
+      if (c.contract_name && c.contract_name.trim()) {
+        names.add(c.contract_name.trim());
+      }
+    });
+    return Array.from(names);
+  }, [contractors]);
+
   return {
-    state: { isLoading, canEdit, view, form, search, clients, selectedClient, selectedPlot, groupedContractors },
+    state: { isLoading, canEdit, view, form, search, clients, selectedClient, selectedPlot, groupedContractors, uniqueContractNames },
     actions: { setView, setForm, setSearch, setSelectedClient, setSelectedPlot, openNew, openEdit, handleSave, handleDelete }
   };
 }
