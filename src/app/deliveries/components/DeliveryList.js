@@ -1,6 +1,7 @@
 import React from 'react';
 import { Search, ChevronLeft, Send, Printer, FileText, Trash2, Edit, ArrowRight } from 'lucide-react';
 import { Badge, Card } from '@/components/ui';
+import { DeliveryPrint } from './DeliveryPrint';
 
 export function DeliveryList({ state, actions }) {
   const { filteredDeliveries, search, canEdit, deliveries } = state;
@@ -102,27 +103,7 @@ export function DeliveryDetail({ state, actions }) {
       };
 
       const pdfWorker = html2pdf().from(element).set(opt);
-      
-      if (selected.has_file) {
-        const mainPdfArrayBuffer = await pdfWorker.outputPdf('arraybuffer');
-        const attachmentB64 = await getAttachment(selected.id);
-        
-        if (attachmentB64) {
-          const { mergePdfs } = await import('@/lib/pdfUtils');
-          const mergedPdfBytes = await mergePdfs(mainPdfArrayBuffer, [attachmentB64]);
-          const blob = new Blob([mergedPdfBytes], { type: 'application/pdf' });
-          const url = URL.createObjectURL(blob);
-          const a = document.createElement('a');
-          a.href = url;
-          a.download = `${userFileName}.pdf`;
-          a.click();
-          URL.revokeObjectURL(url);
-        } else {
-          await pdfWorker.save();
-        }
-      } else {
-        await pdfWorker.save();
-      }
+      await pdfWorker.save();
       
       element.style.display = 'none';
     } catch (e) {
@@ -182,7 +163,9 @@ export function DeliveryDetail({ state, actions }) {
       </button>
 
       {/* The actual component used for printing */}
-      <div id="print-container"></div>
+      <div id="print-container">
+        <DeliveryPrint data={selected} attachments={attachmentPages} />
+      </div>
     </div>
   );
 }

@@ -21,7 +21,7 @@ async function loadPdfJs() {
 // Render one PDF page to a base64 JPEG
 async function renderPageToBase64(page) {
   try {
-    const viewport = page.getViewport({ scale: 1.0 }); // Slightly lower scale for performance
+    const viewport = page.getViewport({ scale: 2.0 }); // Higher scale for clarity
     const canvas = document.createElement('canvas');
     canvas.width = viewport.width;
     canvas.height = viewport.height;
@@ -29,7 +29,7 @@ async function renderPageToBase64(page) {
     ctx.fillStyle = 'white';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     await page.render({ canvasContext: ctx, viewport }).promise;
-    return canvas.toDataURL('image/jpeg', 0.5); // Lower quality (0.5) to save memory/DB space
+    return canvas.toDataURL('image/jpeg', 0.85); // Higher quality for clear attachments
   } catch (err) {
     console.error("Page render error:", err);
     throw new Error('فشل معالجة صفحة من المستند');

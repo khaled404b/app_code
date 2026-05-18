@@ -1,6 +1,6 @@
 import React from 'react';
 
-export function DeliveryPrint({ data }) {
+export function DeliveryPrint({ data, attachments }) {
   if (!data) return null;
 
   const isChecked = (group, label) => {
@@ -25,7 +25,7 @@ export function DeliveryPrint({ data }) {
     <div id="delivery-print-template" style={{
       display: 'none',
       width: '210mm',
-      height: '297mm',
+      minHeight: '296mm',
       padding: '5mm',
       background: 'white',
       direction: 'rtl',
@@ -280,6 +280,23 @@ export function DeliveryPrint({ data }) {
           </div>
         ))}
       </div>
+
+      {/* Attachments Section (Visible in Print/PDF) */}
+      {attachments && attachments.length > 0 && (
+        <div style={{ marginTop: '30mm', pageBreakBefore: 'always' }}>
+          <h3 style={{ fontSize: '14px', fontWeight: 'bold', marginBottom: '15px', borderBottom: '1px solid #000', paddingBottom: '8px' }}>
+            المرفقات / Attachments
+          </h3>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+            {attachments.map((src, i) => (
+              <div key={i} style={{ border: '1px solid #999', padding: '10px', pageBreakInside: 'avoid' }}>
+                <div style={{ fontSize: '10px', color: '#666', marginBottom: '8px' }}>مرفق رقم {i + 1}</div>
+                <img src={src} style={{ width: '100%', display: 'block' }} />
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
