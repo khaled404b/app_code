@@ -76,43 +76,49 @@ export function ContractorList({ state, actions }) {
                   const clientName = clients.find(cl => cl.id === c.client_id)?.name || 'غير محدد';
                   return (
                     <Card key={c.id} style={{ padding: '16px', borderLeft: '4px solid #2563eb' }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
                         <div>
                           <div style={{ fontSize: '16px', fontWeight: 900, color: '#0f172a' }}>{c.company_name}</div>
-                          <div style={{ fontSize: '13px', color: '#64748b', marginTop: '4px', display: 'flex', alignItems: 'center', gap: '5px' }}>
-                            <User size={14} /> {c.contact_name || 'بدون اسم مندوب'}
-                          </div>
                           {(!selectedClient || !selectedPlot) && (
-                            <div style={{ fontSize: '11px', color: '#94a3b8', marginTop: '8px', background: '#f1f5f9', padding: '4px 8px', borderRadius: '4px', display: 'inline-block' }}>
+                            <div style={{ fontSize: '11px', color: '#94a3b8', marginTop: '6px', background: '#f1f5f9', padding: '4px 8px', borderRadius: '4px', display: 'inline-block' }}>
                               {clientName} • قسيمة {c.plot_no || 'غير محدد'}
                             </div>
                           )}
                         </div>
                         
-                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '10px' }}>
-                          <a 
-                            href={`tel:${c.phone}`} 
-                            style={{ 
-                              display: 'flex', alignItems: 'center', gap: '6px', 
-                              background: '#ecfdf5', color: '#059669', 
-                              padding: '8px 12px', borderRadius: '20px', 
-                              textDecoration: 'none', fontWeight: 800, fontSize: '13px',
-                              boxShadow: '0 2px 4px rgba(5, 150, 105, 0.1)'
-                            }}
-                          >
-                            <Phone size={14} />
-                            اتصال
-                          </a>
-                          
-                          {canEdit && (
-                            <div style={{ display: 'flex', gap: '8px' }}>
-                              <button onClick={() => openEdit(c)} style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', padding: '4px' }}><Edit size={16} /></button>
-                              <button onClick={() => handleDelete(c.id)} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', padding: '4px' }}><Trash2 size={16} /></button>
+                        {canEdit && (
+                          <div style={{ display: 'flex', gap: '8px' }}>
+                            <button onClick={() => openEdit(c)} style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', padding: '4px' }}><Edit size={16} /></button>
+                            <button onClick={() => handleDelete(c.id)} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', padding: '4px' }}><Trash2 size={16} /></button>
+                          </div>
+                        )}
+                      </div>
+
+                      <div style={{ borderTop: '1px solid #e2e8f0', paddingTop: '12px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                        {(c.contacts || (c.contact_name ? [{ id: 1, name: c.contact_name, phone: c.phone }] : [])).map((contact, idx) => (
+                          <div key={contact.id || idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#f8fafc', padding: '8px 12px', borderRadius: '8px' }}>
+                            <div style={{ fontSize: '13px', color: '#475569', display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 600 }}>
+                              <User size={14} color="#94a3b8" /> 
+                              {contact.name || 'بدون اسم'}
                             </div>
-                          )}
-                        </div>
+                            <a 
+                              href={`tel:${contact.phone}`} 
+                              style={{ 
+                                display: 'flex', alignItems: 'center', gap: '6px', 
+                                background: '#ecfdf5', color: '#059669', 
+                                padding: '6px 12px', borderRadius: '20px', 
+                                textDecoration: 'none', fontWeight: 800, fontSize: '12px',
+                                boxShadow: '0 1px 2px rgba(5, 150, 105, 0.1)'
+                              }}
+                            >
+                              <Phone size={13} />
+                              اتصال
+                            </a>
+                          </div>
+                        ))}
                       </div>
                     </Card>
+
                   );
                 })}
               </div>

@@ -50,15 +50,28 @@ export function useContractorsController() {
       client_id: selectedClient || '',
       plot_no: selectedPlot || '',
       company_name: '',
-      contact_name: '',
-      phone: '',
-      contract_name: ''
+      contract_name: '',
+      contacts: [{ id: uuidv4(), name: '', phone: '' }]
     });
     setView('form');
   };
 
   const openEdit = (contractor) => {
-    setForm({ ...contractor });
+    const editForm = { ...contractor };
+    // Convert legacy data to contacts array if needed
+    if (!editForm.contacts || editForm.contacts.length === 0) {
+      editForm.contacts = [];
+      if (editForm.contact_name || editForm.phone) {
+        editForm.contacts.push({ 
+          id: uuidv4(), 
+          name: editForm.contact_name || '', 
+          phone: editForm.phone || '' 
+        });
+      } else {
+        editForm.contacts.push({ id: uuidv4(), name: '', phone: '' });
+      }
+    }
+    setForm(editForm);
     setView('form');
   };
 
