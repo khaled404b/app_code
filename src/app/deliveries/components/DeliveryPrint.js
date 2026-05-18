@@ -25,7 +25,6 @@ export function DeliveryPrint({ data, attachments }) {
     <div id="delivery-print-template" style={{
       display: 'none',
       width: '210mm',
-      minHeight: '296mm',
       padding: '5mm',
       background: 'white',
       direction: 'rtl',
@@ -291,7 +290,7 @@ export function DeliveryPrint({ data, attachments }) {
             </h3>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
               {attachments.map((src, i) => (
-                <div key={i} style={{ border: '1px solid #999', padding: '10px' }}>
+                <div key={i} style={{ border: '1px solid #999', padding: '10px', pageBreakInside: 'avoid' }}>
                   <div style={{ fontSize: '10px', color: '#666', marginBottom: '8px' }}>مرفق رقم {i + 1}</div>
                   <img src={src} style={{ width: '100%', display: 'block' }} />
                 </div>
