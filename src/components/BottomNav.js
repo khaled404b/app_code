@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { 
   Home, Users, Briefcase, FileText, Settings, Eye, 
-  ClipboardList, Send, LayoutGrid, X 
+  ClipboardList, Send, LayoutGrid, X, Building 
 } from 'lucide-react';
 
 function BottomNavContent() {
@@ -22,6 +22,7 @@ function BottomNavContent() {
 
   const moreItems = [
     { href: '/billing', icon: FileText, label: 'فواتير المكتب' },
+    { href: '/contractors', icon: Building, label: 'دليل الشركات' },
     { href: '/receipts', icon: FileText, label: 'سندات القبض' },
     { href: '/offers', icon: ClipboardList, label: 'العروض' },
     { href: '/deliveries', icon: Send, label: 'التسليم' },
