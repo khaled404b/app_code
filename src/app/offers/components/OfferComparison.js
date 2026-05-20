@@ -57,7 +57,7 @@ export function OfferComparison({ state, actions }) {
         if (attachElement && attachElement.innerHTML.trim() !== '') {
            attachElement.style.display = 'block';
            const pdfWorker2 = html2pdf().from(attachElement).set({
-             margin: 10,
+             margin: 0,
              filename: 'attachments.pdf',
              html2canvas: { scale: 2, useCORS: true, logging: false },
              jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
@@ -261,22 +261,23 @@ export function OfferComparison({ state, actions }) {
         </div>
 
         {/* Portrait Attachments Section - ordered by comparisonOffers (lowest price first) */}
-        {comparisonOffers.some(o => pdfAttachments[o.id] && !pdfAttachments[o.id].startsWith('data:application/pdf')) && (
-          <div id="comparison-report-attachments" style={{ display: 'none', background: 'white', padding: '20px', direction: 'rtl', width: '700px', margin: '0 auto' }}>
-            <h3 style={{ borderBottom: '2px solid #000', paddingBottom: '10px', marginBottom: '20px' }}>المرفقات وعروض الأسعار الأصلية (مرتبة من الأقل سعراً)</h3>
-            {comparisonOffers.filter(o => pdfAttachments[o.id] && !pdfAttachments[o.id].startsWith('data:application/pdf')).flatMap(o => {
+        {comparisonOffers.some(o => pdfAttachments[o.id] && typeof pdfAttachments[o.id] === 'string' && !pdfAttachments[o.id].startsWith('data:application/pdf')) && (
+          <div id="comparison-report-attachments" style={{ display: 'none', background: 'white', direction: 'rtl', width: '210mm', margin: '0 auto' }}>
+            {comparisonOffers.filter(o => pdfAttachments[o.id] && typeof pdfAttachments[o.id] === 'string' && !pdfAttachments[o.id].startsWith('data:application/pdf')).flatMap(o => {
               const images = parseAttachment(pdfAttachments[o.id]);
               return images.map((imgSrc, pageIndex) => ({ o, imgSrc, pageIndex, totalImages: images.length }));
             }).map(({ o, imgSrc, pageIndex, totalImages }, index) => (
-                <div key={`attach-${o.id}-page-${pageIndex}`} style={{ marginBottom: '30px' }}>
+                <div key={`attach-${o.id}-page-${pageIndex}`}>
                   {index > 0 && <div className="html2pdf__page-break"></div>}
-                  <div style={{ background: '#1e293b', color: 'white', padding: '10px', borderRadius: '8px', marginBottom: '15px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <strong>م{o.rank} - {o.company_name} ({parseFloat(o.price || 0).toFixed(2)} د.ك)</strong>
-                    <span style={{ fontSize: '11px', opacity: 0.8 }}>
-                      {totalImages > 1 ? `صفحة ${pageIndex + 1} / ${totalImages}` : 'مرفق عرض السعر'}
-                    </span>
+                  <div style={{ height: '297mm', width: '210mm', padding: '15mm', boxSizing: 'border-box', display: 'flex', flexDirection: 'column', pageBreakInside: 'avoid' }}>
+                    <div style={{ background: '#1e293b', color: 'white', padding: '10px', borderRadius: '8px', marginBottom: '15px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0 }}>
+                      <strong>م{o.rank} - {o.company_name} ({parseFloat(o.price || 0).toFixed(2)} د.ك)</strong>
+                      <span style={{ fontSize: '11px', opacity: 0.8 }}>
+                        {totalImages > 1 ? `صفحة ${pageIndex + 1} / ${totalImages}` : 'مرفق عرض السعر'}
+                      </span>
+                    </div>
+                    <img src={imgSrc} style={{ width: '100%', height: 'calc(100% - 50px)', objectFit: 'contain', border: '1px solid #e2e8f0', display: 'block', margin: '0 auto' }} alt={`مرفق-${o.rank}-${pageIndex + 1}`} />
                   </div>
-                  <img src={imgSrc} style={{ width: '100%', objectFit: 'contain', border: '1px solid #e2e8f0', display: 'block', margin: '0 auto' }} alt={`مرفق-${o.rank}-${pageIndex + 1}`} />
                 </div>
             ))}
           </div>
