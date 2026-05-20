@@ -65,18 +65,18 @@ export function OfferComparison({ state, actions }) {
         const legacyPdfs = Object.values(results).filter(b64 => b64.startsWith('data:application/pdf'));
         pdfFilesToMerge = [...pdfFilesToMerge, ...legacyPdfs];
 
+        let finalPdfBytes = mainPdfArrayBuffer;
         if (pdfFilesToMerge.length > 0) {
-          const mergedPdfBytes = await mergePdfs(mainPdfArrayBuffer, pdfFilesToMerge);
-          const blob = new Blob([mergedPdfBytes], { type: 'application/pdf' });
-          const url = URL.createObjectURL(blob);
-          const a = document.createElement('a');
-          a.href = url;
-          a.download = `${userFileName}.pdf`;
-          a.click();
-          URL.revokeObjectURL(url);
-        } else {
-          await pdfWorker1.save(`${userFileName}.pdf`);
+          finalPdfBytes = await mergePdfs(mainPdfArrayBuffer, pdfFilesToMerge);
         }
+        
+        const blob = new Blob([finalPdfBytes], { type: 'application/pdf' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${userFileName}.pdf`;
+        a.click();
+        URL.revokeObjectURL(url);
         
         element.style.display = 'none';
       } catch (e) { 
