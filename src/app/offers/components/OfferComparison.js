@@ -56,13 +56,13 @@ export function OfferComparison({ state, actions }) {
              jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
              pagebreak: { mode: ['css', 'legacy'] }
            });
-           const attachPdfBase64 = await pdfWorker2.outputPdf('datauristring');
-           pdfFilesToMerge.push(attachPdfBase64);
+           const attachPdfBuffer = await pdfWorker2.outputPdf('arraybuffer');
+           pdfFilesToMerge.push(attachPdfBuffer);
            attachElement.style.display = 'none';
         }
         
         // Add any legacy raw PDFs from the DB that couldn't be rendered as images
-        const legacyPdfs = Object.values(results).filter(b64 => b64.startsWith('data:application/pdf'));
+        const legacyPdfs = Object.values(results).filter(b64 => typeof b64 === 'string' && b64.startsWith('data:application/pdf'));
         pdfFilesToMerge = [...pdfFilesToMerge, ...legacyPdfs];
 
         let finalPdfBytes = mainPdfArrayBuffer;
@@ -80,8 +80,8 @@ export function OfferComparison({ state, actions }) {
         
         element.style.display = 'none';
       } catch (e) { 
-        console.error(e);
-        alert('فشل التصدير'); 
+        console.error("PDF Export Error: ", e);
+        alert('فشل التصدير: ' + (e?.message || 'خطأ غير معروف')); 
       }
       setIsExporting(false);
     }, 1500);

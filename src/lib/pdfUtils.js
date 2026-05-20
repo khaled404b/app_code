@@ -35,7 +35,14 @@ export async function mergePdfs(mainPdfBytes, attachmentInputs) {
 
     for (const base64Str of flattened) {
       try {
-        if (typeof base64Str !== 'string') continue;
+        if (typeof base64Str !== 'string') {
+          if (base64Str instanceof ArrayBuffer || base64Str instanceof Uint8Array) {
+            const attachedDoc = await PDFDocument.load(base64Str);
+            const copiedPages = await mainDoc.copyPages(attachedDoc, attachedDoc.getPageIndices());
+            copiedPages.forEach((page) => mainDoc.addPage(page));
+          }
+          continue;
+        }
 
         if (base64Str.startsWith('data:application/pdf')) {
           const rawBase64 = base64Str.split(',')[1];
