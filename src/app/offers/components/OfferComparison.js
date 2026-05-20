@@ -1,99 +1,118 @@
 import { ArrowRight, Download, Filter, Loader2 } from 'lucide-react';
 import { Card } from '@/components/ui';
 import { useState } from 'react';
-import { mergePdfs } from '@/lib/pdfUtils';
 import { parseAttachment } from '@/lib/fileHelper';
 
 export function OfferComparison({ state, actions }) {
   const { clients, services, compClient, compPlot, compWorkType, comparisonOffers, comparisonStats, canEdit } = state;
   const { goBack, setCompClient, setCompPlot, setCompWorkType, getClientName, markAsSelected, getAttachment } = actions;
   const [isExporting, setIsExporting] = useState(false);
-  const [pdfAttachments, setPdfAttachments] = useState({});
 
   const handleExportPDF = async () => {
     if (comparisonOffers.length === 0) return;
     setIsExporting(true);
-    
-    // Fetch all attachments (from offer object first, fallback to DB for legacy)
-    const results = {};
-    for (const o of comparisonOffers) {
-      if (o.has_file) {
-        try {
-          const data = o.attachment_data || await getAttachment(o.id);
-          if (data) results[o.id] = data;
-        } catch (e) { console.error("Error fetching attachment", e); }
+
+    try {
+      // Fetch all attachments
+      const results = {};
+      for (const o of comparisonOffers) {
+        if (o.has_file) {
+          try {
+            const data = o.attachment_data || await getAttachment(o.id);
+            if (data) results[o.id] = data;
+          } catch (e) { console.error('Error fetching attachment', e); }
+        }
       }
+
+      const userFileName = prompt('أدخل اسم الملف:', `مقارنة-عروض-${getClientName(compClient)}`);
+      if (!userFileName) { setIsExporting(false); return; }
+
+      const html2pdf = (await import('html2pdf.js')).default;
+      const { PDFDocument } = await import('pdf-lib');
+
+      // Step 1: Render the hidden table element
+      const element = document.getElementById('comparison-report');
+      element.style.display = 'block';
+      await new Promise(r => setTimeout(r, 800));
+
+      // Step 2: Generate comparison TABLE as Landscape PDF
+      const tableElement = document.getElementById('comparison-report-table');
+      const mainPdfBytes = await html2pdf().from(tableElement).set({
+        margin: 10,
+        html2canvas: { scale: 2, useCORS: true, logging: false },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' }
+      }).outputPdf('arraybuffer');
+
+      element.style.display = 'none';
+
+      // Step 3: Load table PDF and embed attachments directly as A4 pages using pdf-lib
+      const finalDoc = await PDFDocument.load(mainPdfBytes);
+      const A4_W = 595.28;
+      const A4_H = 841.89;
+
+      for (const o of comparisonOffers) {
+        if (!results[o.id]) continue;
+        const attachData = results[o.id];
+
+        // PDF attachments: copy pages directly
+        if (typeof attachData === 'string' && attachData.startsWith('data:application/pdf')) {
+          try {
+            const rawBase64 = attachData.split(',')[1];
+            const attachedDoc = await PDFDocument.load(rawBase64);
+            const copiedPages = await finalDoc.copyPages(attachedDoc, attachedDoc.getPageIndices());
+            copiedPages.forEach(p => finalDoc.addPage(p));
+          } catch (e) { console.error('Failed to copy PDF pages', e); }
+          continue;
+        }
+
+        // Image attachments: embed each image as a clean full-page A4
+        const images = parseAttachment(attachData);
+        for (const imgSrc of images) {
+          try {
+            const resp = await fetch(imgSrc);
+            const imgBytes = await resp.arrayBuffer();
+            let embeddedImg;
+            try {
+              embeddedImg = await finalDoc.embedJpg(imgBytes);
+            } catch {
+              embeddedImg = await finalDoc.embedPng(imgBytes);
+            }
+
+            // Scale to fit A4 with padding
+            const padding = 20;
+            const scaleX = (A4_W - padding * 2) / embeddedImg.width;
+            const scaleY = (A4_H - padding * 2) / embeddedImg.height;
+            const scale = Math.min(scaleX, scaleY);
+            const drawW = embeddedImg.width * scale;
+            const drawH = embeddedImg.height * scale;
+
+            const page = finalDoc.addPage([A4_W, A4_H]);
+            page.drawImage(embeddedImg, {
+              x: (A4_W - drawW) / 2,
+              y: (A4_H - drawH) / 2,
+              width: drawW,
+              height: drawH
+            });
+          } catch (e) { console.error('Failed to embed image', e); }
+        }
+      }
+
+      // Step 4: Save and download
+      const finalBytes = await finalDoc.save();
+      const blob = new Blob([finalBytes], { type: 'application/pdf' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${userFileName}.pdf`;
+      a.click();
+      URL.revokeObjectURL(url);
+
+    } catch (e) {
+      console.error('PDF Export Error:', e);
+      alert('فشل التصدير: ' + (e?.message || 'خطأ غير معروف'));
     }
-    setPdfAttachments(results);
-
-    // Wait a bit for images to render in DOM
-    setTimeout(async () => {
-      try {
-        const html2pdf = (await import('html2pdf.js')).default;
-        const element = document.getElementById('comparison-report');
-        element.style.display = 'block';
-        
-        const userFileName = prompt('أدخل اسم الملف:', `مقارنة-عروض-${getClientName(compClient)}-${Date.now()}`);
-        if (!userFileName) { 
-           setIsExporting(false); 
-           element.style.display = 'none';
-           return; 
-        }
-
-        // 1. Generate Table PDF (Landscape)
-        const tableElement = document.getElementById('comparison-report-table');
-        const pdfWorker1 = html2pdf().from(tableElement).set({ 
-          margin: 10, 
-          filename: 'table.pdf', 
-          html2canvas: { scale: 2, useCORS: true, logging: false },
-          jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' } 
-        });
-        const mainPdfArrayBuffer = await pdfWorker1.outputPdf('arraybuffer');
-        
-        let pdfFilesToMerge = [];
-
-        // 2. Generate Attachments PDF (Portrait) if there are image attachments
-        const attachElement = document.getElementById('comparison-report-attachments');
-        if (attachElement && attachElement.innerHTML.trim() !== '') {
-           attachElement.style.display = 'block';
-           const pdfWorker2 = html2pdf().from(attachElement).set({
-             margin: 0,
-             filename: 'attachments.pdf',
-             html2canvas: { scale: 2, useCORS: true, logging: false },
-             jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
-             pagebreak: { mode: ['css', 'legacy'] }
-           });
-           const attachPdfBuffer = await pdfWorker2.outputPdf('arraybuffer');
-           pdfFilesToMerge.push(attachPdfBuffer);
-           attachElement.style.display = 'none';
-        }
-        
-        // Add any legacy raw PDFs from the DB that couldn't be rendered as images
-        const legacyPdfs = Object.values(results).filter(b64 => typeof b64 === 'string' && b64.startsWith('data:application/pdf'));
-        pdfFilesToMerge = [...pdfFilesToMerge, ...legacyPdfs];
-
-        let finalPdfBytes = mainPdfArrayBuffer;
-        if (pdfFilesToMerge.length > 0) {
-          finalPdfBytes = await mergePdfs(mainPdfArrayBuffer, pdfFilesToMerge);
-        }
-        
-        const blob = new Blob([finalPdfBytes], { type: 'application/pdf' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `${userFileName}.pdf`;
-        a.click();
-        URL.revokeObjectURL(url);
-        
-        element.style.display = 'none';
-      } catch (e) { 
-        console.error("PDF Export Error: ", e);
-        alert('فشل التصدير: ' + (e?.message || 'خطأ غير معروف')); 
-      }
-      setIsExporting(false);
-    }, 1500);
+    setIsExporting(false);
   };
-
 
   return (
     <div className="page">
@@ -109,10 +128,7 @@ export function OfferComparison({ state, actions }) {
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '15px' }}>
           <div className="form-group" style={{ marginBottom: 0 }}>
             <label className="form-label" style={{ fontSize: '12px' }}><Filter size={12} style={{ display: 'inline', marginLeft: '4px' }} />اسم العميل</label>
-            <select className="form-select" value={compClient} onChange={e => {
-              setCompClient(e.target.value);
-              setCompPlot('all');
-            }}>
+            <select className="form-select" value={compClient} onChange={e => { setCompClient(e.target.value); setCompPlot('all'); }}>
               <option value="all">اختر العميل من القائمة</option>
               {clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
             </select>
@@ -207,81 +223,56 @@ export function OfferComparison({ state, actions }) {
         </div>
       )}
 
-      {/* Hidden PDF Templates */}
+      {/* Hidden PDF Template - Table Only */}
       <div id="comparison-report" style={{ display: 'none' }}>
-        
-        {/* Landscape Table Section */}
         <div id="comparison-report-table" style={{ background: 'white', padding: '30px', direction: 'rtl', width: '1000px', margin: '0 auto' }}>
-           <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '2px solid #000', paddingBottom: '10px', marginBottom: '20px' }}>
-              <div style={{ width: '120px' }}><img src="/logo.png" style={{ width: '100px' }} /></div>
-              <div style={{ textAlign: 'center' }}>
-                 <h2 style={{ textDecoration: 'underline', margin: 0, fontSize: '18px' }}>مقارنة عروض الأسعار</h2>
-                 <div style={{ fontSize: '12px', marginTop: '5px' }}>العميل: {getClientName(compClient)} | القسيمة: {compPlot === 'all' ? 'الكل' : compPlot} | نوع العمل: {compWorkType}</div>
-              </div>
-              <div style={{ textAlign: 'left', fontSize: '11px' }}><div>التاريخ: {new Date().toLocaleDateString('ar-EG')}</div></div>
-           </div>
-           {comparisonStats && (
-              <div style={{ display: 'flex', gap: '20px', marginBottom: '20px', background: '#f8fafc', padding: '15px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
-                 <div><strong>عدد العروض:</strong> {comparisonStats.count}</div>
-                 <div><strong>أقل سعر:</strong> {comparisonStats.lowest.toFixed(2)} د.ك</div>
-                 <div><strong>أعلى سعر:</strong> {comparisonStats.highest.toFixed(2)} د.ك</div>
-                 <div><strong>فرق الأسعار:</strong> {comparisonStats.diff.toFixed(2)} د.ك</div>
-              </div>
-           )}
-           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px', textAlign: 'center', marginBottom: '30px' }}>
-              <thead>
-                 <tr style={{ background: '#4f46e5', color: 'white' }}>
-                    <th style={{ border: '1px solid #000', padding: '8px' }}>م</th>
-                    <th style={{ border: '1px solid #000', padding: '8px' }}>اسم الشركة</th>
-                    <th style={{ border: '1px solid #000', padding: '8px' }}>القسيمة</th>
-                    <th style={{ border: '1px solid #000', padding: '8px' }}>رقم العرض</th>
-                    <th style={{ border: '1px solid #000', padding: '8px' }}>قيمة العرض</th>
-                    <th style={{ border: '1px solid #000', padding: '8px' }}>صلاحية العرض</th>
-                    <th style={{ border: '1px solid #000', padding: '8px' }}>الفرق عن الأقل</th>
-                    <th style={{ border: '1px solid #000', padding: '8px' }}>مختار</th>
-                    <th style={{ border: '1px solid #000', padding: '8px' }}>ملاحظات</th>
-                 </tr>
-              </thead>
-              <tbody>
-                 {comparisonOffers.map((o) => (
-                    <tr key={o.id} style={{ background: o.is_selected ? '#f0fdf4' : 'transparent' }}>
-                       <td style={{ border: '1px solid #000', padding: '8px' }}>{o.rank}</td>
-                       <td style={{ border: '1px solid #000', padding: '8px', textAlign: 'right' }}>{o.company_name}</td>
-                       <td style={{ border: '1px solid #000', padding: '8px' }}>{o.plot_no || '—'}</td>
-                       <td style={{ border: '1px solid #000', padding: '8px' }}>{o.offer_number || '—'}</td>
-                       <td style={{ border: '1px solid #000', padding: '8px', fontWeight: 800 }}>{parseFloat(o.price || 0).toFixed(2)}</td>
-                       <td style={{ border: '1px solid #000', padding: '8px' }}>{o.validity_date || '—'}</td>
-                       <td style={{ border: '1px solid #000', padding: '8px', direction: 'ltr' }}>{o.price_diff === 0 ? '-' : `(${o.price_diff.toFixed(2)})`}</td>
-                       <td style={{ border: '1px solid #000', padding: '8px', fontWeight: o.is_selected ? 800 : 400 }}>{o.is_selected ? 'نعم' : 'لا'}</td>
-                       <td style={{ border: '1px solid #000', padding: '8px', textAlign: 'right' }}>{o.notes || '—'}</td>
-                    </tr>
-                 ))}
-              </tbody>
-           </table>
-        </div>
-
-        {/* Portrait Attachments Section - ordered by comparisonOffers (lowest price first) */}
-        {comparisonOffers.some(o => pdfAttachments[o.id] && typeof pdfAttachments[o.id] === 'string' && !pdfAttachments[o.id].startsWith('data:application/pdf')) && (
-          <div id="comparison-report-attachments" style={{ display: 'none', background: 'white', direction: 'rtl', width: '210mm', margin: '0 auto' }}>
-            {comparisonOffers.filter(o => pdfAttachments[o.id] && typeof pdfAttachments[o.id] === 'string' && !pdfAttachments[o.id].startsWith('data:application/pdf')).flatMap(o => {
-              const images = parseAttachment(pdfAttachments[o.id]);
-              return images.map((imgSrc, pageIndex) => ({ o, imgSrc, pageIndex, totalImages: images.length }));
-            }).map(({ o, imgSrc, pageIndex, totalImages }, index) => (
-                <div key={`attach-${o.id}-page-${pageIndex}`}>
-                  {index > 0 && <div className="html2pdf__page-break"></div>}
-                  <div style={{ height: '297mm', width: '210mm', padding: '15mm', boxSizing: 'border-box', display: 'flex', flexDirection: 'column', pageBreakInside: 'avoid' }}>
-                    <div style={{ background: '#1e293b', color: 'white', padding: '10px', borderRadius: '8px', marginBottom: '15px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0 }}>
-                      <strong>م{o.rank} - {o.company_name} ({parseFloat(o.price || 0).toFixed(2)} د.ك)</strong>
-                      <span style={{ fontSize: '11px', opacity: 0.8 }}>
-                        {totalImages > 1 ? `صفحة ${pageIndex + 1} / ${totalImages}` : 'مرفق عرض السعر'}
-                      </span>
-                    </div>
-                    <img src={imgSrc} style={{ width: '100%', height: 'calc(100% - 50px)', objectFit: 'contain', border: '1px solid #e2e8f0', display: 'block', margin: '0 auto' }} alt={`مرفق-${o.rank}-${pageIndex + 1}`} />
-                  </div>
-                </div>
-            ))}
+          <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '2px solid #000', paddingBottom: '10px', marginBottom: '20px' }}>
+            <div style={{ width: '120px' }}><img src="/logo.png" style={{ width: '100px' }} /></div>
+            <div style={{ textAlign: 'center' }}>
+              <h2 style={{ textDecoration: 'underline', margin: 0, fontSize: '18px' }}>مقارنة عروض الأسعار</h2>
+              <div style={{ fontSize: '12px', marginTop: '5px' }}>العميل: {getClientName(compClient)} | القسيمة: {compPlot === 'all' ? 'الكل' : compPlot} | نوع العمل: {compWorkType}</div>
+            </div>
+            <div style={{ textAlign: 'left', fontSize: '11px' }}><div>التاريخ: {new Date().toLocaleDateString('ar-EG')}</div></div>
           </div>
-        )}
+          {comparisonStats && (
+            <div style={{ display: 'flex', gap: '20px', marginBottom: '20px', background: '#f8fafc', padding: '15px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+              <div><strong>عدد العروض:</strong> {comparisonStats.count}</div>
+              <div><strong>أقل سعر:</strong> {comparisonStats.lowest.toFixed(2)} د.ك</div>
+              <div><strong>أعلى سعر:</strong> {comparisonStats.highest.toFixed(2)} د.ك</div>
+              <div><strong>فرق الأسعار:</strong> {comparisonStats.diff.toFixed(2)} د.ك</div>
+            </div>
+          )}
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px', textAlign: 'center' }}>
+            <thead>
+              <tr style={{ background: '#4f46e5', color: 'white' }}>
+                <th style={{ border: '1px solid #000', padding: '8px' }}>م</th>
+                <th style={{ border: '1px solid #000', padding: '8px' }}>اسم الشركة</th>
+                <th style={{ border: '1px solid #000', padding: '8px' }}>القسيمة</th>
+                <th style={{ border: '1px solid #000', padding: '8px' }}>رقم العرض</th>
+                <th style={{ border: '1px solid #000', padding: '8px' }}>قيمة العرض</th>
+                <th style={{ border: '1px solid #000', padding: '8px' }}>صلاحية العرض</th>
+                <th style={{ border: '1px solid #000', padding: '8px' }}>الفرق عن الأقل</th>
+                <th style={{ border: '1px solid #000', padding: '8px' }}>مختار</th>
+                <th style={{ border: '1px solid #000', padding: '8px' }}>ملاحظات</th>
+              </tr>
+            </thead>
+            <tbody>
+              {comparisonOffers.map((o) => (
+                <tr key={o.id} style={{ background: o.is_selected ? '#f0fdf4' : 'transparent' }}>
+                  <td style={{ border: '1px solid #000', padding: '8px' }}>{o.rank}</td>
+                  <td style={{ border: '1px solid #000', padding: '8px', textAlign: 'right' }}>{o.company_name}</td>
+                  <td style={{ border: '1px solid #000', padding: '8px' }}>{o.plot_no || '—'}</td>
+                  <td style={{ border: '1px solid #000', padding: '8px' }}>{o.offer_number || '—'}</td>
+                  <td style={{ border: '1px solid #000', padding: '8px', fontWeight: 800 }}>{parseFloat(o.price || 0).toFixed(2)}</td>
+                  <td style={{ border: '1px solid #000', padding: '8px' }}>{o.validity_date || '—'}</td>
+                  <td style={{ border: '1px solid #000', padding: '8px', direction: 'ltr' }}>{o.price_diff === 0 ? '-' : `(${o.price_diff.toFixed(2)})`}</td>
+                  <td style={{ border: '1px solid #000', padding: '8px', fontWeight: o.is_selected ? 800 : 400 }}>{o.is_selected ? 'نعم' : 'لا'}</td>
+                  <td style={{ border: '1px solid #000', padding: '8px', textAlign: 'right' }}>{o.notes || '—'}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   );
