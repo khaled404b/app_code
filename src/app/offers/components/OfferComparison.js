@@ -33,6 +33,13 @@ export function OfferComparison({ state, actions }) {
         const element = document.getElementById('comparison-report');
         element.style.display = 'block';
         
+        const userFileName = prompt('أدخل اسم الملف:', `مقارنة-عروض-${getClientName(compClient)}-${Date.now()}`);
+        if (!userFileName) { 
+           setIsExporting(false); 
+           element.style.display = 'none';
+           return; 
+        }
+
         // 1. Generate Table PDF (Landscape)
         const tableElement = document.getElementById('comparison-report-table');
         const pdfWorker1 = html2pdf().from(tableElement).set({ 
