@@ -23,9 +23,7 @@ export default function BillingPrint({ invoice }) {
       color: '#000',
       width: '100%',
       maxWidth: '210mm',
-      minHeight: '297mm',
       margin: '0 auto',
-      position: 'relative',
       boxSizing: 'border-box'
     }}>
       {/* Header */}
@@ -66,7 +64,7 @@ export default function BillingPrint({ invoice }) {
       <div style={{ border: '1.5px solid #000', borderRadius: '4px', overflow: 'hidden', marginBottom: '20px' }}>
         <div style={{ display: 'flex', borderBottom: '1.5px solid #000', background: '#f8fafc' }}>
           <div style={{ flex: 1, padding: '12px', fontWeight: '900', borderRight: '1.5px solid #000' }}>SERVICE DESCRIPTION</div>
-          <div style={{ width: '150px', padding: '12px', fontWeight: '900', textAlign: 'center' }}>Amount (KD)</div>
+          <div dir="ltr" style={{ width: '150px', padding: '12px', fontWeight: '900', textAlign: 'center' }}>Amount (KD)</div>
         </div>
         
         {/* Items */}
@@ -145,24 +143,7 @@ export default function BillingPrint({ invoice }) {
         </div>
       )}
 
-      <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Great+Vibes&display=swap');
-        @media print {
-          body * { visibility: hidden !important; }
-          #billing-invoice-print, #billing-invoice-print * { visibility: visible !important; }
-          #billing-invoice-print { 
-            position: fixed !important; 
-            left: 0 !important; 
-            top: 0 !important; 
-            width: 210mm !important;
-            height: 297mm !important;
-            padding: 20mm !important;
-            margin: 0 !important;
-            box-shadow: none !important;
-            border: none !important;
-          }
-        }
-      `}</style>
+
     </div>
   );
 }

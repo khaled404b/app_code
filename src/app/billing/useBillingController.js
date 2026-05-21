@@ -54,7 +54,7 @@ export function useBillingController() {
       id: invId,
       amount: parseFloat(form.amount || 0),
       date: form.date || new Date().toISOString().split('T')[0],
-      client_name: clients.find(c => c.id === form.client_id)?.name || '—',
+      client_name: form.client_name || clients.find(c => c.id === form.client_id)?.name || '—',
       has_file: !!(tempFiles.length > 0 || form.has_file),
       has_stamp: !!stampImage,
       created_by: selected ? (selected.created_by || '—') : user?.name || '—',

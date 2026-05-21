@@ -70,11 +70,18 @@ export default function BillingForm({ form, setForm, clients, handleSave, tempFi
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '25px' }}>
         <div className="form-group">
-          <label className="form-label">العميل المرسل إليه (To)</label>
-          <select className="form-select" value={form.client_id || ''} onChange={e => setForm({ ...form, client_id: e.target.value, plot_no: '' })}>
-            <option value="">اختر العميل...</option>
-            {clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-          </select>
+          <label className="form-label">اسم العميل (To)</label>
+          <input
+            type="text"
+            list="billing-clients-list"
+            className="form-input"
+            placeholder="اكتب اسم العميل أو اختر من القائمة..."
+            value={form.client_name || ''}
+            onChange={e => setForm({ ...form, client_name: e.target.value, client_id: '' })}
+          />
+          <datalist id="billing-clients-list">
+            {clients.map(c => <option key={c.id} value={c.name} />)}
+          </datalist>
         </div>
         <div className="form-group">
           <label className="form-label">القسيمة</label>
