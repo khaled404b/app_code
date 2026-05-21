@@ -44,11 +44,11 @@ export default function BillingPrint({ invoice }) {
       </div>
 
       {/* كلمة فاتورة فوق الشريط */}
-      <div style={{ textAlign: 'center', fontWeight: '900', fontSize: '18px', marginBottom: '6px', color: '#0f172a', letterSpacing: '1px' }}>فاتورة</div>
+      <div style={{ textAlign: 'center', fontWeight: '900', fontSize: '18px', marginBottom: '6px', color: '#0f172a', letterSpacing: '1px' }}>فاتوره</div>
 
       {/* شريط رقم الفاتورة: رقم الفاتورة يمين – الرقم يسار */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#0f172a', color: 'white', padding: '14px 20px', borderRadius: '6px', marginBottom: '10px' }}>
-        <div style={{ fontSize: '16px', fontWeight: '700', opacity: 0.85 }}>رقم الفاتورة</div>
+        <div style={{ fontSize: '16px', fontWeight: '700', opacity: 0.85 }}>رقم الفاتوره</div>
         <div style={{ fontSize: '22px', fontWeight: 900, letterSpacing: '3px', direction: 'ltr' }}>{displayInvoiceNo}</div>
       </div>
 
