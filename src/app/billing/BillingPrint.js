@@ -50,7 +50,7 @@ export default function BillingPrint({ invoice }) {
 
       {/* إلى / التاريخ – إلى يمين والتاريخ يسار */}
       {/* إلى / التاريخ – الاسم يمين / التاريخ يسار */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '40px', marginTop: '10px', fontSize: '14px', borderBottom: '1px solid #e2e8f0', paddingTop: '18px', paddingBottom: '26px', direction: 'rtl' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '40px', marginTop: '10px', fontSize: '14px', borderBottom: '1px solid #e2e8f0', paddingTop: '45px', paddingBottom: '55px', direction: 'rtl' }}>
         {/* اسم العميل – في RTL هذا أول عنصر يظهر على اليمين */}
         <div style={{ display: 'flex', alignItems: 'baseline', gap: '6px' }}>
           <span style={{ color: '#64748b', fontWeight: '700', fontSize: '13px' }}>إلى</span>
