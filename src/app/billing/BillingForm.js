@@ -77,7 +77,11 @@ export default function BillingForm({ form, setForm, clients, handleSave, tempFi
             className="form-input"
             placeholder="اكتب اسم العميل أو اختر من القائمة..."
             value={form.client_name || ''}
-            onChange={e => setForm({ ...form, client_name: e.target.value, client_id: '' })}
+            onChange={e => {
+              const typedName = e.target.value;
+              const matched = clients.find(c => c.name === typedName);
+              setForm({ ...form, client_name: typedName, client_id: matched?.id || '', plot_no: '' });
+            }}
           />
           <datalist id="billing-clients-list">
             {clients.map(c => <option key={c.id} value={c.name} />)}
