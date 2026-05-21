@@ -43,31 +43,34 @@ export default function BillingPrint({ invoice }) {
         </div>
       </div>
 
-      {/* شريط رقم الفاتورة */}
-      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', background: '#0f172a', color: 'white', padding: '14px 20px', borderRadius: '6px', marginBottom: '30px' }}>
-        <div style={{ fontSize: '24px', fontWeight: 900, letterSpacing: '3px' }}>{displayInvoiceNo}</div>
+      {/* كلمة فاتورة فوق الشريط */}
+      <div style={{ textAlign: 'right', fontWeight: '900', fontSize: '18px', marginBottom: '6px', color: '#0f172a', letterSpacing: '1px' }}>فاتورة</div>
+
+      {/* شريط رقم الفاتورة: رقم الفاتورة يمين – الرقم يسار */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#0f172a', color: 'white', padding: '14px 20px', borderRadius: '6px', marginBottom: '10px' }}>
+        <div style={{ fontSize: '22px', fontWeight: 900, letterSpacing: '3px', direction: 'ltr' }}>{displayInvoiceNo}</div>
+        <div style={{ fontSize: '16px', fontWeight: '700', opacity: 0.85 }}>رقم الفاتورة</div>
       </div>
 
-      {/* إلى / التاريخ – إلى يمين والتاريخ يسار */}
-      {/* إلى / التاريخ – الاسم يمين / التاريخ يسار */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '40px', marginTop: '10px', fontSize: '14px', borderBottom: '1px solid #e2e8f0', paddingTop: '45px', paddingBottom: '55px', direction: 'rtl' }}>
-        {/* اسم العميل – في RTL هذا أول عنصر يظهر على اليمين */}
+      {/* إلى / التاريخ */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '30px', marginTop: '20px', fontSize: '14px', borderBottom: '1px solid #e2e8f0', paddingBottom: '20px', direction: 'rtl' }}>
+        {/* إلى + الاسم – على اليمين */}
         <div style={{ display: 'flex', alignItems: 'baseline', gap: '6px' }}>
           <span style={{ color: '#64748b', fontWeight: '700', fontSize: '13px' }}>إلى</span>
           <span style={{ fontWeight: '900', fontSize: '17px' }}>{invoice.client_name || '—'}{invoice.plot_no ? ` | قسيمة: ${invoice.plot_no}` : ''}</span>
         </div>
-        {/* التاريخ – ثاني عنصر يظهر على اليسار */}
+        {/* التاريخ + القيمة – على اليسار */}
         <div style={{ display: 'flex', alignItems: 'baseline', gap: '6px' }}>
-          <span style={{ fontWeight: '700', fontSize: '14px' }}>{safeDate(invoice.date)}</span>
           <span style={{ color: '#64748b', fontWeight: '700', fontSize: '13px' }}>التاريخ</span>
+          <span style={{ fontWeight: '700', fontSize: '14px' }}>{safeDate(invoice.date)}</span>
         </div>
       </div>
 
       {/* الجدول */}
       <div style={{ border: '1.5px solid #000', borderRadius: '4px', overflow: 'hidden', marginBottom: '20px' }}>
         <div style={{ display: 'flex', borderBottom: '1.5px solid #000', background: '#f8fafc' }}>
-          <div style={{ flex: 1, padding: '16px 14px', fontWeight: '900', fontSize: '15px', borderLeft: '1.5px solid #000', textAlign: 'right' }}>وصف الخدمة</div>
-          <div style={{ width: '150px', padding: '16px 14px', fontWeight: '900', fontSize: '14px', textAlign: 'center' }}>المبلغ <span style={{ display: 'inline-block', direction: 'ltr' }}>(د.ك)</span></div>
+          <div style={{ flex: 1, padding: '14px 16px', fontWeight: '900', fontSize: '16px', borderLeft: '1.5px solid #000', textAlign: 'right' }}>وصف الخدمة</div>
+          <div style={{ width: '150px', padding: '14px 16px', fontWeight: '900', fontSize: '15px', textAlign: 'center' }}>المبلغ <span style={{ display: 'inline-block', direction: 'ltr' }}>(د.ك)</span></div>
         </div>
         
         {/* البنود */}
@@ -75,7 +78,7 @@ export default function BillingPrint({ invoice }) {
           {items.map((item, idx) => (
             <div key={idx} style={{ display: 'flex', borderBottom: '1px solid #eee', minHeight: '80px' }}>
               <div style={{ flex: 1, padding: '25px 18px', borderLeft: '1.5px solid #000', whiteSpace: 'pre-wrap', textAlign: 'right', display: 'flex', alignItems: 'center' }}>
-                <div style={{ fontWeight: '700', fontSize: '15px', lineHeight: '1.7' }}>{item?.description || '—'}</div>
+                <div style={{ fontWeight: '400', fontSize: '14px', lineHeight: '1.7' }}>{item?.description || '—'}</div>
               </div>
               <div style={{ width: '150px', padding: '25px 10px', textAlign: 'center', fontWeight: '700', fontSize: '15px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 {parseFloat(item?.amount || 0).toFixed(3)}
@@ -95,10 +98,10 @@ export default function BillingPrint({ invoice }) {
         </div>
 
         {/* الاعتماد */}
-        <div style={{ padding: '20px', borderTop: '1.5px solid #000', display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
-          <div style={{ fontWeight: '900', fontSize: '13px', marginBottom: '10px', color: '#64748b' }}>الاعتماد:</div>
+        <div style={{ padding: '14px 20px', borderTop: '1.5px solid #000', display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
+          <div style={{ fontWeight: '900', fontSize: '12px', marginBottom: '8px', color: '#64748b' }}>الاعتماد:</div>
           {invoice.stamp_image && (
-            <div style={{ position: 'relative', width: '200px' }}>
+            <div style={{ position: 'relative', width: '130px' }}>
               <img src={invoice.stamp_image} alt="Stamp" style={{ width: '100%', objectFit: 'contain' }} />
             </div>
           )}
