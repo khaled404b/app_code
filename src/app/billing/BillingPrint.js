@@ -50,7 +50,7 @@ export default function BillingPrint({ invoice }) {
 
       {/* إلى / التاريخ – إلى يمين والتاريخ يسار */}
       {/* إلى / التاريخ – الاسم يمين / التاريخ يسار */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '40px', fontSize: '14px', borderBottom: '1px solid #e2e8f0', paddingBottom: '20px', direction: 'rtl' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '40px', marginTop: '10px', fontSize: '14px', borderBottom: '1px solid #e2e8f0', paddingTop: '18px', paddingBottom: '26px', direction: 'rtl' }}>
         {/* اسم العميل – في RTL هذا أول عنصر يظهر على اليمين */}
         <div style={{ display: 'flex', alignItems: 'baseline', gap: '6px' }}>
           <span style={{ color: '#64748b', fontWeight: '700', fontSize: '13px' }}>إلى</span>
@@ -106,12 +106,10 @@ export default function BillingPrint({ invoice }) {
       </div>
 
       {/* الملاحظات – تظهر فقط إذا كانت موجودة */}
-      {invoice.remarks && (
-        <div style={{ border: '1.5px solid #000', borderRadius: '4px', padding: '15px', marginBottom: '20px' }}>
-          <div style={{ fontWeight: '900', fontSize: '12px', marginBottom: '8px', color: '#64748b' }}>ملاحظات:</div>
-          <div style={{ fontSize: '13px', whiteSpace: 'pre-wrap', lineHeight: '1.5', color: '#1e293b' }}>{invoice.remarks}</div>
-        </div>
-      )}
+      <div style={{ border: '1.5px solid #000', borderRadius: '4px', padding: '15px', marginBottom: '20px' }}>
+        <div style={{ fontWeight: '900', fontSize: '12px', marginBottom: '8px', color: '#64748b' }}>ملاحظات:</div>
+        <div style={{ fontSize: '13px', whiteSpace: 'pre-wrap', lineHeight: '1.5', color: '#1e293b' }}>{invoice.remarks || 'لا يوجد'}</div>
+      </div>
 
       {/* المرفقات (تظهر عند الطباعة) */}
       {invoice.attachments && invoice.attachments.length > 0 && (
