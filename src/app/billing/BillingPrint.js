@@ -35,7 +35,7 @@ export default function BillingPrint({ invoice }) {
         <div style={{ textAlign: 'right', fontSize: '14px', lineHeight: '2' }}>
           <div style={{ fontWeight: '900', fontSize: '20px', marginBottom: '6px' }}>فريم للإستشارات الهندسية</div>
           <div><span style={{ fontWeight: '700', marginLeft: '8px' }}>الإيميل:</span><span style={{ color: '#2563eb', textDecoration: 'underline' }}>info@frame.com.kw</span></div>
-          <div><span style={{ fontWeight: '700', marginLeft: '8px' }}>الرقم:</span>+965 22451010</div>
+          <div><span style={{ fontWeight: '700', marginLeft: '8px' }}>الرقم:</span>22451010</div>
           <div><span style={{ fontWeight: '700', marginLeft: '8px' }}>العنوان:</span>بنيد القار، مجمع ديمة، الدور الثاني، مكتب 3</div>
         </div>
         <div style={{ width: '120px' }}>
@@ -68,7 +68,7 @@ export default function BillingPrint({ invoice }) {
       <div style={{ border: '1.5px solid #000', borderRadius: '4px', overflow: 'hidden', marginBottom: '20px' }}>
         <div style={{ display: 'flex', borderBottom: '1.5px solid #000', background: '#f8fafc' }}>
           <div style={{ flex: 1, padding: '12px', fontWeight: '900', borderLeft: '1.5px solid #000', textAlign: 'right' }}>وصف الخدمة</div>
-          <div dir="ltr" style={{ width: '150px', padding: '12px', fontWeight: '900', textAlign: 'center' }}>المبلغ (د.ك)</div>
+          <div style={{ width: '150px', padding: '12px', fontWeight: '900', textAlign: 'center' }}>المبلغ <span dir="ltr">(د.ك)</span></div>
         </div>
         
         {/* البنود */}
