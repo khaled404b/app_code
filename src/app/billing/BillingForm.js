@@ -71,21 +71,32 @@ export default function BillingForm({ form, setForm, clients, handleSave, tempFi
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '25px' }}>
         <div className="form-group">
           <label className="form-label">اسم العميل (To)</label>
-          <input
-            type="text"
-            list="billing-clients-list"
-            className="form-input"
-            placeholder="اكتب اسم العميل أو اختر من القائمة..."
-            value={form.client_name || ''}
+          <select
+            className="form-select"
+            value={form.client_id || ''}
             onChange={e => {
-              const typedName = e.target.value;
-              const matched = clients.find(c => c.name === typedName);
-              setForm({ ...form, client_name: typedName, client_id: matched?.id || '', plot_no: '' });
+              if (e.target.value === '__manual__') {
+                setForm({ ...form, client_id: '', client_name: '', plot_no: '' });
+              } else {
+                const matched = clients.find(c => c.id === e.target.value);
+                setForm({ ...form, client_id: e.target.value, client_name: matched?.name || '', plot_no: '' });
+              }
             }}
-          />
-          <datalist id="billing-clients-list">
-            {clients.map(c => <option key={c.id} value={c.name} />)}
-          </datalist>
+          >
+            <option value="">— اختر العميل —</option>
+            <option value="__manual__">✏️ كتابة يدوياً</option>
+            {clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+          </select>
+          {!form.client_id && (
+            <input
+              type="text"
+              className="form-input"
+              placeholder="اكتب اسم العميل..."
+              value={form.client_name || ''}
+              onChange={e => setForm({ ...form, client_name: e.target.value })}
+              style={{ marginTop: '8px' }}
+            />
+          )}
         </div>
         <div className="form-group">
           <label className="form-label">القسيمة</label>
