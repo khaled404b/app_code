@@ -32,35 +32,35 @@ export default function BillingPrint({ invoice }) {
     }}>
       {/* Header – الشعار يسار، معلومات الشركة يمين */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '20px' }}>
-        <div style={{ textAlign: 'right', fontSize: '13px', lineHeight: '1.8' }}>
-          <div style={{ fontWeight: '900', fontSize: '16px', marginBottom: '4px' }}>فريم للإستشارات الهندسية</div>
-          <div><span style={{ fontWeight: '700', marginLeft: '6px' }}>الإيميل:</span><span style={{ color: '#2563eb', textDecoration: 'underline' }}>info@frame.com.kw</span></div>
-          <div><span style={{ fontWeight: '700', marginLeft: '6px' }}>الرقم:</span>+965 22451010</div>
-          <div><span style={{ fontWeight: '700', marginLeft: '6px' }}>العنوان:</span>بنيد القار، مجمع ديمة، الدور الثاني، مكتب 3</div>
+        <div style={{ textAlign: 'right', fontSize: '14px', lineHeight: '2' }}>
+          <div style={{ fontWeight: '900', fontSize: '20px', marginBottom: '6px' }}>فريم للإستشارات الهندسية</div>
+          <div><span style={{ fontWeight: '700', marginLeft: '8px' }}>الإيميل:</span><span style={{ color: '#2563eb', textDecoration: 'underline' }}>info@frame.com.kw</span></div>
+          <div><span style={{ fontWeight: '700', marginLeft: '8px' }}>الرقم:</span>+965 22451010</div>
+          <div><span style={{ fontWeight: '700', marginLeft: '8px' }}>العنوان:</span>بنيد القار، مجمع ديمة، الدور الثاني، مكتب 3</div>
         </div>
         <div style={{ width: '120px' }}>
           <img src="/logo.png" alt="Logo" style={{ width: '100%', display: 'block' }} />
         </div>
       </div>
 
-      {/* شريط رقم الفاتورة */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#0f172a', color: 'white', padding: '10px 16px', borderRadius: '6px', marginBottom: '30px' }}>
-        <div style={{ fontSize: '20px', fontWeight: 900, letterSpacing: '2px' }}>{displayInvoiceNo}</div>
-        <div style={{ fontSize: '12px', opacity: 0.7, letterSpacing: '1px' }}>رقم الفاتورة</div>
+      {/* شريط رقم الفاتورة – التسمية يمين، الرقم يسار */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#0f172a', color: 'white', padding: '12px 20px', borderRadius: '6px', marginBottom: '30px' }}>
+        <div style={{ fontSize: '12px', opacity: 0.7, letterSpacing: '1px' }}>{displayInvoiceNo}</div>
+        <div style={{ fontSize: '22px', fontWeight: 900, letterSpacing: '2px' }}>رقم الفاتورة</div>
       </div>
 
-      {/* التاريخ والعميل */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '40px', fontSize: '14px' }}>
-        <div>
-          <span style={{ color: '#94a3b8', marginLeft: '10px' }}>إلى</span>
-          <span style={{ fontWeight: '900', fontSize: '15px' }}>
+      {/* التاريخ والعميل – المحاذاة على آخر حرف */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '40px', fontSize: '14px', borderBottom: '1px solid #e2e8f0', paddingBottom: '20px' }}>
+        <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}>
+          <span style={{ color: '#64748b', fontWeight: '700', fontSize: '13px', whiteSpace: 'nowrap' }}>التاريخ</span>
+          <span style={{ fontWeight: '700', fontSize: '14px' }}>{safeDate(invoice.date)}</span>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}>
+          <span style={{ fontWeight: '900', fontSize: '16px' }}>
             {invoice.client_name || '—'} 
             {invoice.plot_no ? ` | قسيمة: ${invoice.plot_no}` : ''}
           </span>
-        </div>
-        <div>
-          <span style={{ color: '#94a3b8', marginLeft: '40px' }}>التاريخ</span>
-          <span style={{ fontWeight: '700' }}>{safeDate(invoice.date)}</span>
+          <span style={{ color: '#64748b', fontWeight: '700', fontSize: '13px', whiteSpace: 'nowrap' }}>إلى</span>
         </div>
       </div>
 
@@ -75,10 +75,10 @@ export default function BillingPrint({ invoice }) {
         <div style={{ display: 'flex', flexDirection: 'column' }}>
           {items.map((item, idx) => (
             <div key={idx} style={{ display: 'flex', borderBottom: '1px solid #eee' }}>
-              <div style={{ flex: 1, padding: '15px', borderLeft: '1.5px solid #000', whiteSpace: 'pre-wrap', textAlign: 'right' }}>
-                <div style={{ fontWeight: '700', fontSize: '14px' }}>{item?.description || '—'}</div>
+              <div style={{ flex: 1, padding: '20px 15px', minHeight: '60px', borderLeft: '1.5px solid #000', whiteSpace: 'pre-wrap', textAlign: 'right' }}>
+                <div style={{ fontWeight: '700', fontSize: '15px', lineHeight: '1.6' }}>{item?.description || '—'}</div>
               </div>
-              <div style={{ width: '150px', padding: '15px', textAlign: 'center', fontWeight: '700' }}>
+              <div style={{ width: '150px', padding: '20px 15px', textAlign: 'center', fontWeight: '700', fontSize: '15px' }}>
                 {parseFloat(item?.amount || 0).toFixed(3)}
               </div>
             </div>
@@ -96,10 +96,10 @@ export default function BillingPrint({ invoice }) {
         </div>
 
         {/* الاعتماد */}
-        <div style={{ padding: '15px', borderTop: '1.5px solid #000', display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
-          <div style={{ fontWeight: '900', fontSize: '12px', marginBottom: '5px', color: '#64748b' }}>الاعتماد:</div>
+        <div style={{ padding: '20px', borderTop: '1.5px solid #000', display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
+          <div style={{ fontWeight: '900', fontSize: '13px', marginBottom: '10px', color: '#64748b' }}>الاعتماد:</div>
           {invoice.stamp_image && (
-            <div style={{ position: 'relative', width: '130px' }}>
+            <div style={{ position: 'relative', width: '200px' }}>
               <img src={invoice.stamp_image} alt="Stamp" style={{ width: '100%', objectFit: 'contain' }} />
             </div>
           )}
