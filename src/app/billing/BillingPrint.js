@@ -43,32 +43,33 @@ export default function BillingPrint({ invoice }) {
         </div>
       </div>
 
-      {/* شريط رقم الفاتورة – التسمية يمين، الرقم يسار */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#0f172a', color: 'white', padding: '12px 20px', borderRadius: '6px', marginBottom: '30px' }}>
-        <div style={{ fontSize: '12px', opacity: 0.7, letterSpacing: '1px' }}>{displayInvoiceNo}</div>
-        <div style={{ fontSize: '22px', fontWeight: 900, letterSpacing: '2px' }}>رقم الفاتورة</div>
+      {/* شريط رقم الفاتورة */}
+      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', background: '#0f172a', color: 'white', padding: '14px 20px', borderRadius: '6px', marginBottom: '30px' }}>
+        <div style={{ fontSize: '24px', fontWeight: 900, letterSpacing: '3px' }}>{displayInvoiceNo}</div>
       </div>
 
-      {/* التاريخ والعميل – المحاذاة على آخر حرف */}
+      {/* إلى / التاريخ – إلى يمين والتاريخ يسار */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '40px', fontSize: '14px', borderBottom: '1px solid #e2e8f0', paddingBottom: '20px' }}>
+        {/* إلى – يظهر على اليمين في RTL */}
         <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}>
-          <span style={{ color: '#64748b', fontWeight: '700', fontSize: '13px', whiteSpace: 'nowrap' }}>التاريخ</span>
-          <span style={{ fontWeight: '700', fontSize: '14px' }}>{safeDate(invoice.date)}</span>
-        </div>
-        <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}>
+          <span style={{ color: '#64748b', fontWeight: '700', fontSize: '13px', whiteSpace: 'nowrap' }}>إلى</span>
           <span style={{ fontWeight: '900', fontSize: '16px' }}>
             {invoice.client_name || '—'} 
             {invoice.plot_no ? ` | قسيمة: ${invoice.plot_no}` : ''}
           </span>
-          <span style={{ color: '#64748b', fontWeight: '700', fontSize: '13px', whiteSpace: 'nowrap' }}>إلى</span>
+        </div>
+        {/* التاريخ – يظهر على اليسار في RTL */}
+        <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}>
+          <span style={{ fontWeight: '700', fontSize: '14px' }}>{safeDate(invoice.date)}</span>
+          <span style={{ color: '#64748b', fontWeight: '700', fontSize: '13px', whiteSpace: 'nowrap' }}>التاريخ</span>
         </div>
       </div>
 
       {/* الجدول */}
       <div style={{ border: '1.5px solid #000', borderRadius: '4px', overflow: 'hidden', marginBottom: '20px' }}>
         <div style={{ display: 'flex', borderBottom: '1.5px solid #000', background: '#f8fafc' }}>
-          <div style={{ flex: 1, padding: '12px', fontWeight: '900', borderLeft: '1.5px solid #000', textAlign: 'right' }}>وصف الخدمة</div>
-          <div style={{ width: '150px', padding: '12px', fontWeight: '900', textAlign: 'center' }}>المبلغ <span dir="ltr">(د.ك)</span></div>
+          <div style={{ flex: 1, padding: '16px 14px', fontWeight: '900', fontSize: '15px', borderLeft: '1.5px solid #000', textAlign: 'right' }}>وصف الخدمة</div>
+          <div style={{ width: '150px', padding: '16px 14px', fontWeight: '900', fontSize: '14px', textAlign: 'center' }}>المبلغ <span style={{ display: 'inline-block', direction: 'ltr' }}>(د.ك)</span></div>
         </div>
         
         {/* البنود */}
