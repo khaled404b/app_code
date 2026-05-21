@@ -68,7 +68,7 @@ export default function BillingPrint({ invoice }) {
         </div>
         
         {/* Items */}
-        <div style={{ minHeight: '350px', display: 'flex', flexDirection: 'column' }}>
+        <div style={{ display: 'flex', flexDirection: 'column' }}>
           {items.map((item, idx) => (
             <div key={idx} style={{ display: 'flex', borderBottom: '1px solid #eee' }}>
               <div style={{ flex: 1, padding: '15px', borderRight: '1.5px solid #000', whiteSpace: 'pre-wrap' }}>
@@ -93,7 +93,7 @@ export default function BillingPrint({ invoice }) {
         </div>
 
         {/* Authorized */}
-        <div style={{ padding: '15px', borderTop: '1.5px solid #000', minHeight: '100px', display: 'flex', flexDirection: 'column', justifyContent: 'flex-end' }}>
+        <div style={{ padding: '15px', borderTop: '1.5px solid #000', display: 'flex', flexDirection: 'column', justifyContent: 'flex-end' }}>
           <div style={{ fontWeight: '900', fontSize: '12px', marginBottom: '5px', color: '#64748b' }}>Authorized:</div>
           {invoice.stamp_image && (
             <div style={{ position: 'relative', width: '130px' }}>
@@ -104,7 +104,7 @@ export default function BillingPrint({ invoice }) {
       </div>
 
       {/* Remarks */}
-      <div style={{ border: '1.5px solid #000', borderRadius: '4px', padding: '15px', minHeight: '100px', marginBottom: '20px' }}>
+      <div style={{ border: '1.5px solid #000', borderRadius: '4px', padding: '15px', marginBottom: '20px' }}>
         <div style={{ fontWeight: '900', fontSize: '12px', marginBottom: '8px', color: '#64748b' }}>Remarks:</div>
         <div style={{ fontSize: '13px', whiteSpace: 'pre-wrap', lineHeight: '1.5', color: '#1e293b' }}>
           {invoice.remarks || 'No additional remarks.'}
