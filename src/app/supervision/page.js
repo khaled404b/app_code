@@ -36,14 +36,16 @@ function SupervisionContent() {
     return supervision.filter(p => {
       const c = clients.find(cl => cl.id === p.client_id);
       const matchesSearch = (p.project_name || '').toLowerCase().includes(search.toLowerCase()) ||
-        (c?.name || '').toLowerCase().includes(search.toLowerCase());
+        (c?.name || '').toLowerCase().includes(search.toLowerCase()) ||
+        (p.contract_no || '').toLowerCase().includes(search.toLowerCase());
       const matchesClient = clientFilter === 'all' || p.client_id === clientFilter;
 
       const stats = calculateSupervisionStats(p);
       const matchesStatus = statusFilter === 'all' ||
         (statusFilter === 'active' && !stats.isExpired) ||
         (statusFilter === 'expired' && stats.isExpired) ||
-        (statusFilter === 'due' && stats.remaining > 0);
+        (statusFilter === 'due' && stats.remaining > 0) ||
+        (statusFilter === 'paid' && stats.remaining <= 0);
 
       return matchesSearch && matchesClient && matchesStatus;
     });
@@ -58,6 +60,9 @@ function SupervisionContent() {
       free_months: parseInt(form.free_months || 0),
       suspension_days: parseInt(form.suspension_days || 0),
       collected_amount: parseFloat(form.collected_amount || 0),
+      contract_no: form.contract_no || '',
+      signing_date: form.signing_date || '',
+      contract_notes: form.contract_notes || '',
       has_file: !!(tempFiles.length > 0 || form.has_file),
     };
 
@@ -136,7 +141,7 @@ function SupervisionContent() {
     return (
       <div className="page">
         <PageHeader
-          title="تفاصيل الإشراف"
+          title="تفاصيل الإشراف والعقد"
           actions={<button onClick={() => setView('list')} className="icon-btn"><ArrowRight size={20} /></button>}
         />
 
@@ -146,12 +151,19 @@ function SupervisionContent() {
               <div style={{ fontSize: '12px', opacity: 0.7 }}>{client.name || '—'} {selected.plot_no && `(قسيمة ${selected.plot_no})`}</div>
               <h2 style={{ fontSize: '24px', fontWeight: 900, marginTop: '4px' }}>{selected.project_name}</h2>
             </div>
-            {stats.isExpired && <Badge status="منتهي" customCfg={{ bg: '#ef4444', color: '#fff' }} />}
+            <div style={{ display: 'flex', gap: '8px' }}>
+              {stats.remaining <= 0 ? (
+                <Badge status="تم سداد ما عليه" customCfg={{ bg: '#059669', color: '#fff' }} />
+              ) : (
+                <Badge status="لم يسدد ما عليه" customCfg={{ bg: '#dc2626', color: '#fff' }} />
+              )}
+              {stats.isExpired && <Badge status="منتهي" customCfg={{ bg: '#78716c', color: '#fff' }} />}
+            </div>
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginTop: '24px' }}>
             <div>
-              <div style={{ fontSize: '11px', opacity: 0.6 }}>إجمالي المستحق</div>
+              <div style={{ fontSize: '11px', opacity: 0.6 }}>إجمالي المستحق (مقدم)</div>
               <div style={{ fontSize: '20px', fontWeight: 900 }}>{stats.totalDue.toFixed(3)} د.ك</div>
             </div>
             <div>
@@ -169,19 +181,73 @@ function SupervisionContent() {
         </Card>
 
         <Card padded style={{ marginBottom: '16px' }}>
-          <div className="section-label" style={{ marginTop: 0 }}>بيانات العقد</div>
+          <div className="section-label" style={{ marginTop: 0 }}>بيانات عقد الإشراف</div>
+          <div className="detail-row"><Hash size={16} /><span className="detail-label">رقم العقد</span><span className="detail-value" style={{ fontWeight: 800 }}>{selected.contract_no || 'غير متوفر'}</span></div>
+          <div className="detail-row"><Calendar size={16} /><span className="detail-label">تاريخ توقيع العقد</span><span className="detail-value">{selected.signing_date || '—'}</span></div>
           <div className="detail-row"><DollarSign size={16} /><span className="detail-label">قيمة العقد (شهري)</span><span className="detail-value">{selected.contract_value} د.ك</span></div>
-          <div className="detail-row"><Calendar size={16} /><span className="detail-label">تاريخ البدء</span><span className="detail-value">{selected.start_date}</span></div>
-          <div className="detail-row"><Calendar size={16} /><span className="detail-label">تاريخ النهاية</span><span className="detail-value">{selected.end_date || 'مفتوح'}</span></div>
+          <div className="detail-row"><Calendar size={16} /><span className="detail-label">تاريخ البدء للفوترة</span><span className="detail-value">{selected.start_date}</span></div>
+          <div className="detail-row"><Calendar size={16} /><span className="detail-label">تاريخ نهاية الإشراف</span><span className="detail-value">{selected.end_date || 'مفتوح'}</span></div>
           <div className="detail-row"><Clock size={16} /><span className="detail-label">أشهر مجانية</span><span className="detail-value">{selected.free_months} شهر</span></div>
           <div className="detail-row" style={{ border: 0 }}><AlertCircle size={16} /><span className="detail-label">أيام الإيقاف</span><span className="detail-value">{selected.suspension_days} يوم</span></div>
+          {selected.contract_notes && (
+            <div style={{ marginTop: '15px', padding: '12px', background: 'var(--surface-2)', borderRadius: '12px', fontSize: '12px', borderLeft: '3px solid var(--blue)' }}>
+              <div style={{ fontWeight: 800, color: 'var(--text-2)', marginBottom: '4px' }}>شروط وملاحظات العقد:</div>
+              <div style={{ color: 'var(--text)', whiteSpace: 'pre-wrap' }}>{selected.contract_notes}</div>
+            </div>
+          )}
         </Card>
 
-        <Card padded style={{ borderRight: '4px solid #059669' }}>
-          <div className="section-label" style={{ marginTop: 0, color: '#059669' }}>الحالة المالية</div>
-          <div className="detail-row"><TrendingUp size={16} /><span className="detail-label">الأيام المحتسبة</span><span className="detail-value">{stats.billingDays} يوم</span></div>
-          <div className="detail-row"><DollarSign size={16} /><span className="detail-label">الرسوم المحصلة</span><span className="detail-value">{(selected.collected_amount || 0).toFixed(3)} د.ك</span></div>
-          <div className="detail-row" style={{ border: 0 }}><AlertCircle size={16} /><span className="detail-label">الرصيد المتبقي</span><span className="detail-value" style={{ fontWeight: 900, color: stats.remaining > 0 ? '#dc2626' : '#059669' }}>{stats.remaining.toFixed(3)} د.ك</span></div>
+        {/* حالة السداد ومتابعة الدفع */}
+        <Card padded style={{ borderRight: stats.remaining > 0 ? '4px solid #dc2626' : '4px solid #059669', marginBottom: '16px' }}>
+          <div className="section-label" style={{ marginTop: 0, color: stats.remaining > 0 ? '#dc2626' : '#059669', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span>حالة سداد العقد والمطالبات</span>
+            <Badge 
+              status={stats.remaining <= 0 ? 'مسدد بالكامل' : 'مستحق السداد'} 
+              customCfg={stats.remaining <= 0 ? { bg: '#ecfdf5', color: '#059669' } : { bg: '#fef2f2', color: '#dc2626' }} 
+            />
+          </div>
+          
+          <div className="detail-row">
+            <CheckCircle size={16} color={stats.remaining <= 0 ? '#059669' : '#dc2626'} />
+            <span className="detail-label">هل دفع ما عليه؟</span>
+            <span className="detail-value" style={{ fontWeight: 900, color: stats.remaining <= 0 ? '#059669' : '#dc2626' }}>
+              {stats.remaining <= 0 ? 'نعم، تم سداد كامل المستحقات' : `لا، لم يسدد ما عليه ومتبقي: ${stats.remaining.toFixed(3)} د.ك`}
+            </span>
+          </div>
+
+          <div className="detail-row">
+            <TrendingUp size={16} /><span className="detail-label">الفترة المحتسبة (مقدم)</span>
+            <span className="detail-value">{(stats.billingDays / 30).toFixed(0)} شهر ({stats.billingDays} يوم)</span>
+          </div>
+
+          <div className="detail-row">
+            <DollarSign size={16} /><span className="detail-label">إجمالي المستحق</span>
+            <span className="detail-value">{stats.totalDue.toFixed(3)} د.ك</span>
+          </div>
+
+          <div className="detail-row" style={{ borderBottom: 'none' }}>
+            <DollarSign size={16} /><span className="detail-label">المبلغ المدفوع (المحصل)</span>
+            <span className="detail-value" style={{ color: '#059669', fontWeight: 800 }}>{(selected.collected_amount || 0).toFixed(3)} د.ك</span>
+          </div>
+
+          {/* شريط تقدم السداد */}
+          <div style={{ marginTop: '20px', padding: '10px 0' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', fontWeight: 800, color: 'var(--text-3)', marginBottom: '8px' }}>
+              <span>نسبة سداد العقد من المستحق الفعلي:</span>
+              <span>{stats.totalDue > 0 ? Math.min(100, ((selected.collected_amount || 0) / stats.totalDue) * 100).toFixed(1) : '0.0'}%</span>
+            </div>
+            <div style={{ width: '100%', height: '10px', background: 'var(--surface-2)', borderRadius: '5px', overflow: 'hidden', border: '1px solid var(--border)' }}>
+              <div 
+                style={{ 
+                  height: '100%', 
+                  width: `${stats.totalDue > 0 ? Math.min(100, ((selected.collected_amount || 0) / stats.totalDue) * 100) : 0}%`, 
+                  background: stats.remaining <= 0 ? 'linear-gradient(90deg, #059669, #34d399)' : 'linear-gradient(90deg, #d97706, #fbbf24)',
+                  borderRadius: '5px',
+                  transition: 'width 0.5s ease-out'
+                }} 
+              />
+            </div>
+          </div>
         </Card>
 
         {selected.has_file && (
@@ -206,7 +272,7 @@ function SupervisionContent() {
 
     return (
       <div className="page">
-        <PageHeader title={selected ? "تعديل إشراف" : "إضافة إشراف جديد"} actions={<button onClick={() => setView('list')} className="icon-btn"><ArrowRight size={20} /></button>} />
+        <PageHeader title={selected ? "تعديل الإشراف والعقد" : "إضافة إشراف وعقد جديد"} actions={<button onClick={() => setView('list')} className="icon-btn"><ArrowRight size={20} /></button>} />
         <form onSubmit={handleSave}>
           <Card padded>
             <div className="form-group"><label className="form-label">المشروع / العقار</label><input className="form-input" required value={form.project_name || ''} onChange={e => setForm({ ...form, project_name: e.target.value })} placeholder="مثال: مطلع" /></div>
@@ -229,17 +295,35 @@ function SupervisionContent() {
               </select>
               {form.client_id && availablePlots.length === 0 && <div style={{ fontSize: '11px', color: '#dc2626', marginTop: '4px' }}>هذا العميل ليس لديه قسايم مسجلة. أضف قسايم من صفحة العملاء أولاً.</div>}
             </div>
+
+            {/* بيانات العقد الإضافية */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
+              <div className="form-group">
+                <label className="form-label">رقم عقد الإشراف</label>
+                <input className="form-input" value={form.contract_no || ''} onChange={e => setForm({ ...form, contract_no: e.target.value })} placeholder="مثال: Frame-2026-001" />
+              </div>
+              <div className="form-group">
+                <label className="form-label">تاريخ توقيع العقد</label>
+                <input type="date" className="form-input" value={form.signing_date || ''} onChange={e => setForm({ ...form, signing_date: e.target.value })} />
+              </div>
+            </div>
+
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
               <div className="form-group"><label className="form-label">قيمة العقد (شهرياً)</label><input type="number" className="form-input" required value={form.contract_value || ''} onChange={e => setForm({ ...form, contract_value: e.target.value })} /></div>
-              <div className="form-group"><label className="form-label">الأشهر المجانية</label><input type="number" className="form-input" value={form.free_months || ''} onChange={e => setForm({ ...form, free_months: e.target.value })} /></div>
+              <div className="form-group"><label className="form-label">الأشهر المجانية (بدون فوترة)</label><input type="number" className="form-input" value={form.free_months || ''} onChange={e => setForm({ ...form, free_months: e.target.value })} /></div>
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
-              <div className="form-group"><label className="form-label">تاريخ البدء</label><input type="date" className="form-input" required value={form.start_date || ''} onChange={e => setForm({ ...form, start_date: e.target.value })} /></div>
-              <div className="form-group"><label className="form-label">تاريخ الانتهاء (اختياري)</label><input type="date" className="form-input" value={form.end_date || ''} onChange={e => setForm({ ...form, end_date: e.target.value })} /></div>
+              <div className="form-group"><label className="form-label">تاريخ بدء الفوترة</label><input type="date" className="form-input" required value={form.start_date || ''} onChange={e => setForm({ ...form, start_date: e.target.value })} /></div>
+              <div className="form-group"><label className="form-label">تاريخ نهاية الإشراف (اختياري)</label><input type="date" className="form-input" value={form.end_date || ''} onChange={e => setForm({ ...form, end_date: e.target.value })} /></div>
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
-              <div className="form-group"><label className="form-label">أيام الإيقاف</label><input type="number" className="form-input" value={form.suspension_days || ''} onChange={e => setForm({ ...form, suspension_days: e.target.value })} /></div>
-              <div className="form-group"><label className="form-label">المبلغ المحصل</label><input type="number" step="0.001" className="form-input" value={form.collected_amount || ''} onChange={e => setForm({ ...form, collected_amount: e.target.value })} /></div>
+              <div className="form-group"><label className="form-label">أيام الإيقاف للمشروع</label><input type="number" className="form-input" value={form.suspension_days || ''} onChange={e => setForm({ ...form, suspension_days: e.target.value })} /></div>
+              <div className="form-group"><label className="form-label">المبلغ المحصل (المدفوع)</label><input type="number" step="0.001" className="form-input" value={form.collected_amount || ''} onChange={e => setForm({ ...form, collected_amount: e.target.value })} /></div>
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">شروط وملاحظات العقد</label>
+              <textarea className="form-input" rows={3} value={form.contract_notes || ''} onChange={e => setForm({ ...form, contract_notes: e.target.value })} placeholder="اكتب أي شروط خاصة أو ملاحظات إضافية حول العقد..." />
             </div>
 
             <div style={{ marginTop: '20px', padding: '16px', background: '#f8fafc', borderRadius: '16px', border: '1px dashed #cbd5e1' }}>
@@ -284,18 +368,19 @@ function SupervisionContent() {
   return (
     <div className="page">
       <PageHeader
-        title="نظام الإشراف"
-        actions={<><button onClick={handleExportPDF} className="icon-btn" disabled={isExporting}><Download size={20} /></button>{canEdit && <button onClick={() => { setForm({ start_date: new Date().toISOString().split('T')[0], free_months: 0, suspension_days: 0, collected_amount: 0 }); setSelected(null); setView('form'); }} className="btn btn-sm" style={{ width: 'auto' }}>+ جديد</button>}</>}
+        title="نظام الإشراف والعقود"
+        actions={<><button onClick={handleExportPDF} className="icon-btn" disabled={isExporting}><Download size={20} /></button>{canEdit && <button onClick={() => { setForm({ start_date: new Date().toISOString().split('T')[0], free_months: 0, suspension_days: 0, collected_amount: 0, contract_no: '', signing_date: '', contract_notes: '' }); setSelected(null); setView('form'); }} className="btn btn-sm" style={{ width: 'auto' }}>+ جديد</button>}</>}
       />
 
-      <SearchBar value={search} onChange={setSearch} placeholder="بحث عن مشروع أو عميل..." />
+      <SearchBar value={search} onChange={setSearch} placeholder="بحث عن مشروع، عميل، أو رقم عقد..." />
 
       <div style={{ display: 'flex', gap: '10px', marginBottom: '20px', overflowX: 'auto', paddingBottom: '5px' }}>
         <select className="form-select btn-sm" style={{ width: 'auto', flexShrink: 0 }} value={statusFilter} onChange={e => setStatusFilter(e.target.value)}>
           <option value="all">كل الحالات</option>
           <option value="active">نشط حالياً</option>
           <option value="expired">منتهي</option>
-          <option value="due">عليه مستحقات</option>
+          <option value="due">لم يسدد ما عليه (عليه مستحقات)</option>
+          <option value="paid">مسدد بالكامل</option>
         </select>
         <select className="form-select btn-sm" style={{ width: 'auto', flexShrink: 0 }} value={clientFilter} onChange={e => setClientFilter(e.target.value)}>
           <option value="all">كل العملاء</option>
@@ -312,7 +397,9 @@ function SupervisionContent() {
               <div style={{ padding: '16px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                   <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: '11px', color: '#64748b', fontWeight: 800 }}>{client.name} {p.plot_no && `• قسيمة ${p.plot_no}`}</div>
+                    <div style={{ fontSize: '11px', color: '#64748b', fontWeight: 800 }}>
+                      {client.name} {p.plot_no && `• قسيمة ${p.plot_no}`} {p.contract_no && `• عقد رقم: ${p.contract_no}`}
+                    </div>
                     <div style={{ fontSize: '16px', fontWeight: 900, marginTop: '4px' }}>{p.project_name}</div>
                   </div>
                   <div style={{ textAlign: 'left' }}>
@@ -321,11 +408,16 @@ function SupervisionContent() {
                   </div>
                 </div>
 
-                <div style={{ marginTop: '16px', display: 'flex', gap: '15px' }}>
+                <div style={{ marginTop: '16px', display: 'flex', gap: '12px', flexWrap: 'wrap', alignItems: 'center' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12px', color: '#64748b' }}>
-                    <TrendingUp size={14} /> {stats.billingDays} يوم محتسب
+                    <TrendingUp size={14} /> {(stats.billingDays / 30).toFixed(0)} أشهر محتسبة ({stats.billingDays} يوم)
                   </div>
-                  {stats.isExpired && <Badge status="منتهي" customCfg={{ bg: '#fee2e2', color: '#dc2626' }} />}
+                  {stats.remaining <= 0 ? (
+                    <Badge status="تم سداد ما عليه" customCfg={{ bg: '#ecfdf5', color: '#059669' }} />
+                  ) : (
+                    <Badge status="لم يسدد ما عليه" customCfg={{ bg: '#fef2f2', color: '#dc2626' }} />
+                  )}
+                  {stats.isExpired && <Badge status="منتهي" customCfg={{ bg: '#78716c', color: '#fff' }} />}
                 </div>
               </div>
             </Card>
@@ -359,20 +451,21 @@ function SupervisionContent() {
         <table className="rep-table">
           <thead>
             <tr style={{ background: '#f1f5f9' }}>
-              <th style={{ width: '25px' }}>م</th>
-              <th style={{ width: '80px' }}>العميل</th>
-              <th style={{ width: '60px' }}>القسيمة</th>
-              <th style={{ width: '70px' }}>المشروع</th>
-              <th style={{ width: '45px' }}>العقد</th>
-              <th style={{ width: '60px' }}>البدء</th>
-              <th style={{ width: '60px' }}>النهاية</th>
-              <th style={{ width: '35px' }}>إيقاف</th>
-              <th style={{ width: '40px' }}>الأيام</th>
-              <th style={{ width: '40px' }}>اليومي</th>
-              <th style={{ width: '60px' }}>المستحق</th>
-              <th style={{ width: '60px' }}>المحصل</th>
-              <th style={{ width: '60px' }}>المتبقي</th>
-              <th style={{ width: '40px' }}>الحالة</th>
+              <th style={{ width: '20px' }}>م</th>
+              <th style={{ width: '70px' }}>العميل</th>
+              <th style={{ width: '45px' }}>القسيمة</th>
+              <th style={{ width: '60px' }}>رقم العقد</th>
+              <th style={{ width: '65px' }}>المشروع</th>
+              <th style={{ width: '40px' }}>قيمة العقد</th>
+              <th style={{ width: '55px' }}>البدء</th>
+              <th style={{ width: '55px' }}>النهاية</th>
+              <th style={{ width: '30px' }}>إيقاف</th>
+              <th style={{ width: '35px' }}>الأشهر</th>
+              <th style={{ width: '55px' }}>المستحق</th>
+              <th style={{ width: '55px' }}>المحصل</th>
+              <th style={{ width: '55px' }}>المتبقي</th>
+              <th style={{ width: '45px' }}>السداد</th>
+              <th style={{ width: '35px' }}>الحالة</th>
             </tr>
           </thead>
           <tbody>
@@ -384,16 +477,19 @@ function SupervisionContent() {
                   <td>{i + 1}</td>
                   <td style={{ fontWeight: 700 }}>{cl.name}</td>
                   <td>{p.plot_no || '—'}</td>
+                  <td style={{ fontWeight: 700 }}>{p.contract_no || '—'}</td>
                   <td>{p.project_name}</td>
-                  <td>{p.contract_value}</td>
+                  <td>{p.contract_value} د.ك</td>
                   <td>{p.start_date}</td>
                   <td>{p.end_date || 'مفتوح'}</td>
-                  <td>{p.suspension_days}</td>
-                  <td>{s.billingDays}</td>
-                  <td>{s.dailyRate.toFixed(2)}</td>
+                  <td>{p.suspension_days} يوم</td>
+                  <td>{(s.billingDays / 30).toFixed(0)} شهر</td>
                   <td style={{ fontWeight: 700 }}>{s.totalDue.toFixed(3)}</td>
                   <td>{(p.collected_amount || 0).toFixed(3)}</td>
                   <td style={{ fontWeight: 900, color: s.remaining > 0 ? '#dc2626' : '#059669' }}>{s.remaining.toFixed(3)}</td>
+                  <td style={{ fontWeight: 700, color: s.remaining > 0 ? '#dc2626' : '#059669', fontSize: '8px' }}>
+                    {s.remaining <= 0 ? 'مسدد' : 'غير مسدد'}
+                  </td>
                   <td style={{ fontSize: '7px' }}>{s.isExpired ? 'منتهي' : 'نشط'}</td>
                 </tr>
               );

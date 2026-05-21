@@ -1,4 +1,4 @@
-import { differenceInDays, addMonths, parseISO, isAfter, min, max } from 'date-fns';
+import { differenceInDays, addMonths, parseISO, isAfter, isBefore } from 'date-fns';
 
 export const calculateSupervisionStats = (proj) => {
   if (!proj) return null;
@@ -19,12 +19,17 @@ export const calculateSupervisionStats = (proj) => {
 
   // 3. Current Billing Days
   let billingDays = 0;
-  if (isAfter(today, startBillingDate)) {
+  if (!isBefore(today, startBillingDate)) {
     const calculationEndDate = endDateStr ? parseISO(endDateStr) : today;
     const effectiveEndDate = isAfter(today, calculationEndDate) ? calculationEndDate : today;
     
-    const rawDays = differenceInDays(effectiveEndDate, startBillingDate);
-    billingDays = Math.max(0, rawDays - suspensionDays);
+    const activeDays = differenceInDays(effectiveEndDate, startBillingDate);
+    const rawDays = activeDays - suspensionDays;
+    
+    if (rawDays >= 0) {
+      // الدفع مقدم: بمجرد بدء فترة 30 يوماً، يتم احتسابها كاملة (30 يوماً)
+      billingDays = Math.floor(rawDays / 30) * 30 + 30;
+    }
   }
 
   // 4. Financials
