@@ -84,9 +84,9 @@ export default function Dashboard() {
       late: fTasks.filter(t => t?.status === 'متأخرة').length,
     },
     inv: {
-      paid: fInvoices.filter(i => i?.status === 'مدفوعة').length,
-      pend: fInvoices.filter(i => i?.status === 'معلقة').length,
-      late: fInvoices.filter(i => i?.status === 'متأخرة').length,
+      paid: fBillingInvoices.filter(i => i?.status === 'مدفوعة').length,
+      pend: fBillingInvoices.filter(i => i?.status === 'معلقة').length,
+      late: fBillingInvoices.filter(i => i?.status === 'متأخرة').length,
     },
     supervisionRemaining: supervisionStats.reduce((acc, s) => acc + s.remaining, 0),
     contractsRemaining: contractsStats.reduce((acc, c) => acc + c.remaining, 0),
@@ -184,7 +184,6 @@ export default function Dashboard() {
           <StatCard label="إجمالي التحصيل" value={stats.totalCollected.toLocaleString() + ' د.ك'} color="var(--green)" icon={DollarSign} onClick={() => router.push('/billing')} />
           <StatCard label="مطالبات الإشراف" value={stats.supervisionRemaining.toLocaleString() + ' د.ك'} color="var(--red)" icon={TrendingUp} onClick={() => router.push('/supervision')} />
           <StatCard label="مطالبات العقود" value={stats.contractsRemaining.toLocaleString() + ' د.ك'} color="var(--orange)" icon={TrendingUp} onClick={() => router.push('/contracts')} />
-          <StatCard label="إجمالي الفواتير" value={fInvoices.length} color="var(--blue)" icon={FileText} onClick={() => router.push('/invoices')} />
         </div>
 
         {/* --- Monitoring Sections --- */}
@@ -198,9 +197,9 @@ export default function Dashboard() {
 
           <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '16px', overflow: 'hidden', boxShadow: 'var(--shadow)' }}>
             <div style={{ padding: '15px 20px', background: 'var(--surface-2)', borderBottom: '1px solid var(--border)', fontWeight: 950, color: 'var(--text)' }}>الحالة المالية</div>
-            <RowItem label="فواتير متأخرة" value={stats.inv.late} color="var(--red)" onClick={() => goTo('/invoices', 'متأخرة')} />
-            <RowItem label="فواتير معلقة" value={stats.inv.pend} color="var(--orange)" onClick={() => goTo('/invoices', 'معلقة')} />
-            <RowItem label="فواتير مسددة" value={stats.inv.paid} color="var(--green)" onClick={() => goTo('/invoices', 'مدفوعة')} />
+            <RowItem label="فواتير متأخرة" value={stats.inv.late} color="var(--red)" onClick={() => goTo('/billing', 'متأخرة')} />
+            <RowItem label="فواتير معلقة" value={stats.inv.pend} color="var(--orange)" onClick={() => goTo('/billing', 'معلقة')} />
+            <RowItem label="فواتير مسددة" value={stats.inv.paid} color="var(--green)" onClick={() => goTo('/billing', 'مدفوعة')} />
           </div>
         </div>
 

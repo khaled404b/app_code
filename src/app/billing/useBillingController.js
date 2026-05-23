@@ -1,4 +1,5 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { useData } from '@/hooks/useData';
 import { useAuth } from '@/hooks/useAuth';
 import { v4 as uuidv4 } from 'uuid';
@@ -9,26 +10,42 @@ export function useBillingController() {
   const { data, isLoading, updateData } = useData();
   const { user, canEdit } = useAuth();
   
+  const searchParams = useSearchParams();
+  const statusParam = searchParams?.get('status') || 'all';
+  const clientParam = searchParams?.get('client') || 'all';
+
   const [view, setView] = useState('list'); // 'list', 'form', 'print'
   const [selected, setSelected] = useState(null);
   const [search, setSearch] = useState('');
   const [form, setForm] = useState({});
+  const [statusFilter, setStatusFilter] = useState(statusParam);
+  const [clientFilter, setClientFilter] = useState(clientParam);
   const [tempFiles, setTempFiles] = useState([]); // Array of base64 strings
   const [loadingFile, setLoadingFile] = useState(false);
+
+  // Sync state if URL search parameters change
+  useEffect(() => {
+    if (statusParam) setStatusFilter(statusParam);
+    if (clientParam) setClientFilter(clientParam);
+  }, [statusParam, clientParam]);
 
   const rawBilling = data?.billingInvoices || [];
   const billingInvoices = (Array.isArray(rawBilling) ? rawBilling : Object.values(rawBilling)).filter(Boolean);
   const clients = (data?.clients || []).filter(Boolean);
 
   const filtered = useMemo(() => {
-    if (!search) return billingInvoices;
-    const lowerSearch = search.toLowerCase();
-    return billingInvoices.filter(inv => 
-      inv.invoice_no?.toLowerCase().includes(lowerSearch) ||
-      inv.client_name?.toLowerCase().includes(lowerSearch) ||
-      inv.subject?.toLowerCase().includes(lowerSearch)
-    );
-  }, [billingInvoices, search]);
+    return billingInvoices.filter(inv => {
+      const matchesSearch = !search || 
+        inv.invoice_no?.toLowerCase().includes(search.toLowerCase()) ||
+        inv.client_name?.toLowerCase().includes(search.toLowerCase()) ||
+        inv.subject?.toLowerCase().includes(search.toLowerCase());
+
+      const matchesStatus = statusFilter === 'all' || inv.status === statusFilter;
+      const matchesClient = clientFilter === 'all' || inv.client_id === clientFilter;
+
+      return matchesSearch && matchesStatus && matchesClient;
+    });
+  }, [billingInvoices, search, statusFilter, clientFilter]);
 
   const generateNextNo = () => {
     const prefix = 'FB'; // Frame Billing
@@ -133,7 +150,7 @@ export function useBillingController() {
   };
 
   return {
-    state: { view, selected, search, form, billingInvoices, clients, supervision, contracts, filtered, tempFiles, loadingFile, isLoading, canEdit },
-    actions: { setView, setSelected, setSearch, setForm, setTempFiles, handleSave, openNew, openEdit, handleDelete }
+    state: { view, selected, search, form, billingInvoices, clients, supervision, contracts, filtered, tempFiles, loadingFile, isLoading, canEdit, statusFilter, clientFilter },
+    actions: { setView, setSelected, setSearch, setForm, setTempFiles, handleSave, openNew, openEdit, handleDelete, setStatusFilter, setClientFilter }
   };
 }

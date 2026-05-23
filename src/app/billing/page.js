@@ -15,12 +15,14 @@ export default function BillingPage() {
   const { state, actions } = useBillingController();
   const { 
     view, selected, search, form, filtered, 
-    tempFiles, loadingFile, isLoading, canEdit, clients, supervision, contracts 
+    tempFiles, loadingFile, isLoading, canEdit, clients, supervision, contracts,
+    statusFilter, clientFilter
   } = state;
   
   const { 
     setView, setSelected, setSearch, setForm, 
-    setTempFiles, handleSave, openNew, openEdit, handleDelete 
+    setTempFiles, handleSave, openNew, openEdit, handleDelete,
+    setStatusFilter, setClientFilter
   } = actions;
 
   const [isExporting, setIsExporting] = useState(false);
@@ -187,6 +189,30 @@ export default function BillingPage() {
             actions={canEdit && <button className="btn btn-sm" style={{ width: 'auto' }} onClick={openNew}>+ فاتورة جديدة</button>} 
           />
           <SearchBar value={search} onChange={setSearch} placeholder="بحث برقم الفاتورة، اسم العميل..." />
+          
+          <div style={{ display: 'flex', gap: '10px', marginBottom: '20px', overflowX: 'auto', paddingBottom: '5px' }}>
+            <select 
+              className="form-select btn-sm" 
+              style={{ width: 'auto', flexShrink: 0, padding: '8px 12px', borderRadius: '8px', border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text)', fontWeight: 700 }} 
+              value={statusFilter} 
+              onChange={e => setStatusFilter(e.target.value)}
+            >
+              <option value="all">كل الحالات</option>
+              <option value="معلقة">معلقة</option>
+              <option value="مدفوعة">مدفوعة</option>
+              <option value="متأخرة">متأخرة</option>
+            </select>
+            <select 
+              className="form-select btn-sm" 
+              style={{ width: 'auto', flexShrink: 0, padding: '8px 12px', borderRadius: '8px', border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text)', fontWeight: 700 }} 
+              value={clientFilter} 
+              onChange={e => setClientFilter(e.target.value)}
+            >
+              <option value="all">كل العملاء</option>
+              {clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+            </select>
+          </div>
+
           <BillingList 
             billingInvoices={filtered} 
             onEdit={handleEdit} 
