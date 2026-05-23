@@ -65,6 +65,7 @@ export default function Dashboard() {
   const selectedClient = useMemo(() => clients.find(c => c?.id === selectedClientId) || null, [clients, selectedClientId]);
   const fTasks = useMemo(() => (selectedClientId === 'all' ? tasks : tasks.filter(t => t?.client_id === selectedClientId)).filter(Boolean), [tasks, selectedClientId]);
   const fInvoices = useMemo(() => (selectedClientId === 'all' ? invoices : invoices.filter(i => i?.client_id === selectedClientId)).filter(Boolean), [invoices, selectedClientId]);
+  const fBillingInvoices = useMemo(() => (selectedClientId === 'all' ? billingInvoices : billingInvoices.filter(i => i?.client_id === selectedClientId)).filter(Boolean), [billingInvoices, selectedClientId]);
   const fSupervision = useMemo(() => (selectedClientId === 'all' ? data?.supervision || [] : (data?.supervision || []).filter(s => s?.client_id === selectedClientId)).filter(Boolean), [data?.supervision, selectedClientId]);
   const fContracts = useMemo(() => (selectedClientId === 'all' ? data?.contracts || [] : (data?.contracts || []).filter(c => c?.client_id === selectedClientId)).filter(Boolean), [data?.contracts, selectedClientId]);
 
@@ -88,7 +89,29 @@ export default function Dashboard() {
       late: fInvoices.filter(i => i?.status === 'متأخرة').length,
     },
     supervisionRemaining: supervisionStats.reduce((acc, s) => acc + s.remaining, 0),
-    contractsRemaining: contractsStats.reduce((acc, c) => acc + c.remaining, 0)
+    contractsRemaining: contractsStats.reduce((acc, c) => acc + c.remaining, 0),
+    totalCollected: (() => {
+      const paidBillingSum = fBillingInvoices
+        .filter(inv => inv.status === 'مدفوعة')
+        .reduce((acc, inv) => acc + parseFloat(inv.amount || 0), 0);
+
+      const legacySupervisionSum = fSupervision
+        .reduce((acc, s) => acc + parseFloat(s.collected_amount || 0), 0);
+
+      const legacyContractsSum = fContracts.reduce((acc, c) => {
+        const installments = c.installments || [];
+        const manualInstallmentsSum = installments
+          .filter(inst => inst.is_paid && !billingInvoices.some(inv => 
+            inv.link_type === 'contract' && 
+            inv.link_installment_id === inst.id && 
+            inv.status === 'مدفوعة'
+          ))
+          .reduce((sum, inst) => sum + parseFloat(inst.amount || 0), 0);
+        return acc + manualInstallmentsSum;
+      }, 0);
+
+      return paidBillingSum + legacySupervisionSum + legacyContractsSum;
+    })()
   };
 
   if (isLoading) return (
@@ -158,6 +181,7 @@ export default function Dashboard() {
           <StatCard label="الأعمال الجارية" value={fTasks.length} color="var(--blue)" icon={Briefcase} onClick={() => router.push('/tasks')} />
           <StatCard label="مشاريع الإشراف" value={fSupervision.length} color="var(--green)" icon={Eye} onClick={() => router.push('/supervision')} />
           <StatCard label="عقود المشاريع" value={fContracts.length} color="var(--purple)" icon={FileText} onClick={() => router.push('/contracts')} />
+          <StatCard label="إجمالي التحصيل" value={stats.totalCollected.toLocaleString() + ' د.ك'} color="var(--green)" icon={DollarSign} onClick={() => router.push('/billing')} />
           <StatCard label="مطالبات الإشراف" value={stats.supervisionRemaining.toLocaleString() + ' د.ك'} color="var(--red)" icon={TrendingUp} onClick={() => router.push('/supervision')} />
           <StatCard label="مطالبات العقود" value={stats.contractsRemaining.toLocaleString() + ' د.ك'} color="var(--orange)" icon={TrendingUp} onClick={() => router.push('/contracts')} />
           <StatCard label="إجمالي الفواتير" value={fInvoices.length} color="var(--blue)" icon={FileText} onClick={() => router.push('/invoices')} />
