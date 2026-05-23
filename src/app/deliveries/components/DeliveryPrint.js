@@ -248,11 +248,15 @@ export function DeliveryPrint({ data, attachments }) {
                 <div className="p-label" style={{ width: 'auto', background: 'none', marginTop: '15px', marginBottom: '2px' }}>تاريخ الاستلام:</div>
                 <div style={{ marginTop: '10px' }}>___________________</div>
               </td>
-              <td className="p-signature-area">
-                {data.signatures?.sender && <img src={data.signatures.sender} className="p-signature-img" />}
+              <td style={{ verticalAlign: 'middle', padding: '5px' }}>
+                <div className="p-signature-area">
+                  {data.signatures?.sender && <img src={data.signatures.sender} className="p-signature-img" />}
+                </div>
               </td>
-              <td className="p-signature-area">
-                {data.signatures?.stamp && <img src={data.signatures.stamp} className="p-signature-img" />}
+              <td style={{ verticalAlign: 'middle', padding: '5px' }}>
+                <div className="p-signature-area">
+                  {data.signatures?.stamp && <img src={data.signatures.stamp} className="p-signature-img" />}
+                </div>
               </td>
             </tr>
             <tr>
