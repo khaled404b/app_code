@@ -124,10 +124,18 @@ export default function BillingForm({ form, setForm, clients, supervision = [], 
         </div>
       </div>
 
-      {form.client_id && (clientSupervision.length > 0 || clientContracts.length > 0) && (
-        <div style={{ padding: '15px', background: 'var(--surface-2)', borderRadius: '16px', border: '1px solid var(--border)', marginBottom: '25px' }}>
-          <div className="form-group" style={{ marginBottom: 0 }}>
-            <label className="form-label" style={{ fontWeight: 800 }}>🔗 ربط الفاتورة بـ (سداد دفعة إشراف أو عقد)</label>
+      <div style={{ padding: '15px', background: 'var(--surface-2)', borderRadius: '16px', border: '1px solid var(--border)', marginBottom: '25px' }}>
+        <div className="form-group" style={{ marginBottom: 0 }}>
+          <label className="form-label" style={{ fontWeight: 800 }}>🔗 ربط الفاتورة بـ (سداد دفعة إشراف أو عقد)</label>
+          {!form.client_id ? (
+            <div style={{ fontSize: '13px', color: '#64748b', padding: '12px', background: 'var(--surface)', borderRadius: '8px', border: '1.5px dashed var(--border)', marginTop: '8px', fontWeight: 700 }}>
+              ⚠️ يرجى اختيار عميل أولاً لعرض مشاريع الإشراف وعقود الدفعات المتاحة للربط.
+            </div>
+          ) : (clientSupervision.length === 0 && clientContracts.length === 0) ? (
+            <div style={{ fontSize: '13px', color: 'var(--red)', padding: '12px', background: 'var(--surface)', borderRadius: '8px', border: '1.5px dashed var(--border)', marginTop: '8px', fontWeight: 700 }}>
+              ⚠️ هذا العميل ليس لديه مشاريع إشراف شهري أو عقود دفعات مسجلة لربطها.
+            </div>
+          ) : (
             <select 
               className="form-select" 
               value={form.link_type && form.link_id ? `${form.link_type}:${form.link_id}` : ''} 
@@ -157,6 +165,7 @@ export default function BillingForm({ form, setForm, clients, supervision = [], 
                   }));
                 }
               }}
+              style={{ marginTop: '8px' }}
             >
               <option value="">لا يوجد (فاتورة عادية)</option>
               {clientSupervision.map(s => (
@@ -166,42 +175,43 @@ export default function BillingForm({ form, setForm, clients, supervision = [], 
                 <option key={c.id} value={`contract:${c.id}`}>📜 عقد دفعات: {c.project_name} {c.contract_no && `(عقد رقم: ${c.contract_no})`}</option>
               ))}
             </select>
-          </div>
-
-          {form.link_type === 'contract' && (
-            <div className="form-group" style={{ marginTop: '15px', marginBottom: 0 }}>
-              <label className="form-label" style={{ fontWeight: 800 }}>اختر دفعة العقد المراد سدادها</label>
-              <select 
-                className="form-select" 
-                required 
-                value={form.link_installment_id || ''} 
-                onChange={e => {
-                  const val = e.target.value;
-                  const selectedContract = contracts.find(c => c.id === form.link_id);
-                  const selectedInst = (selectedContract?.installments || []).find(i => i.id === val);
-                  
-                  // Auto fill item with selected installment
-                  const newItems = selectedInst ? [{ description: `سداد دفعة عقد: ${selectedInst.label}`, amount: selectedInst.amount.toString() }] : form.items;
-                  
-                  setForm(p => ({ 
-                    ...p, 
-                    link_installment_id: val,
-                    items: newItems,
-                    amount: selectedInst ? parseFloat(selectedInst.amount) : p.amount
-                  }));
-                }}
-              >
-                <option value="">اختر الدفعة...</option>
-                {(contracts.find(c => c.id === form.link_id)?.installments || []).map(inst => (
-                  <option key={inst.id} value={inst.id}>
-                    {inst.label} ({parseFloat(inst.amount).toFixed(3)} د.ك) {inst.is_paid ? '• مسددة مسبقاً' : ''}
-                  </option>
-                ))}
-              </select>
-            </div>
           )}
         </div>
-      )}
+
+        {form.client_id && form.link_type === 'contract' && (
+          <div className="form-group" style={{ marginTop: '15px', marginBottom: 0 }}>
+            <label className="form-label" style={{ fontWeight: 800 }}>اختر دفعة العقد المراد سدادها</label>
+            <select 
+              className="form-select" 
+              required 
+              value={form.link_installment_id || ''} 
+              onChange={e => {
+                const val = e.target.value;
+                const selectedContract = contracts.find(c => c.id === form.link_id);
+                const selectedInst = (selectedContract?.installments || []).find(i => i.id === val);
+                
+                // Auto fill item with selected installment
+                const newItems = selectedInst ? [{ description: `سداد دفعة عقد: ${selectedInst.label}`, amount: selectedInst.amount.toString() }] : form.items;
+                
+                setForm(p => ({ 
+                  ...p, 
+                  link_installment_id: val,
+                  items: newItems,
+                  amount: selectedInst ? parseFloat(selectedInst.amount) : p.amount
+                }));
+              }}
+              style={{ marginTop: '8px' }}
+            >
+              <option value="">اختر الدفعة...</option>
+              {(contracts.find(c => c.id === form.link_id)?.installments || []).map(inst => (
+                <option key={inst.id} value={inst.id}>
+                  {inst.label} ({parseFloat(inst.amount).toFixed(3)} د.ك) {inst.is_paid ? '• مسددة مسبقاً' : ''}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+      </div>
 
       <div style={{ marginBottom: '25px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
