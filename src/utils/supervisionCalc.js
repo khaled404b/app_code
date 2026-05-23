@@ -4,12 +4,35 @@ export const calculateSupervisionStats = (proj) => {
   if (!proj) return null;
 
   const today = new Date();
+  const billingType = proj.billing_type || 'supervision';
+  const endDateStr = proj.end_date;
+
+  if (billingType === 'fixed_installments') {
+    const installments = proj.installments || [];
+    const totalDue = installments.reduce((acc, inst) => acc + parseFloat(inst.amount || 0), 0);
+    const collectedAmount = installments
+      .filter(inst => inst.is_paid)
+      .reduce((acc, inst) => acc + parseFloat(inst.amount || 0), 0);
+    const remaining = Math.max(0, totalDue - collectedAmount);
+
+    return {
+      billingType,
+      dailyRate: 0,
+      startBillingDate: proj.start_date ? parseISO(proj.start_date) : today,
+      billingDays: 0,
+      totalDue,
+      remaining,
+      collectedAmount,
+      isExpired: endDateStr ? isAfter(today, parseISO(endDateStr)) : false
+    };
+  }
+
+  // Default: supervision
   const startDate = parseISO(proj.start_date);
   const freeMonths = parseInt(proj.free_months || 0);
   const contractValue = parseFloat(proj.contract_value || 0);
   const suspensionDays = parseInt(proj.suspension_days || 0);
   const collectedAmount = parseFloat(proj.collected_amount || 0);
-  const endDateStr = proj.end_date;
 
   // 1. Daily Rate (based on 30 days)
   const dailyRate = contractValue / 30;
@@ -37,6 +60,7 @@ export const calculateSupervisionStats = (proj) => {
   const remaining = totalDue - collectedAmount;
 
   return {
+    billingType,
     dailyRate,
     startBillingDate,
     billingDays,

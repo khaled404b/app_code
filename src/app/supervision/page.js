@@ -51,15 +51,82 @@ function SupervisionContent() {
     });
   }, [supervision, search, clients, clientFilter, statusFilter]);
 
+  const handleToggleInstallmentPay = async (installmentId, isPaid) => {
+    if (!selected) return;
+    
+    const updatedInstallments = (selected.installments || []).map(inst => {
+      if (inst.id === installmentId) {
+        return { ...inst, is_paid: isPaid };
+      }
+      return inst;
+    });
+
+    const newCollected = updatedInstallments
+      .filter(inst => inst.is_paid)
+      .reduce((acc, inst) => acc + parseFloat(inst.amount || 0), 0);
+
+    const newTotal = updatedInstallments
+      .reduce((acc, inst) => acc + parseFloat(inst.amount || 0), 0);
+
+    const payload = {
+      ...selected,
+      installments: updatedInstallments,
+      collected_amount: newCollected,
+      contract_value: newTotal
+    };
+
+    try {
+      updateData('supervision', 'update', payload, selected.id);
+      setSelected(payload); // update local state to refresh detail view instantly
+      addNotification('supervision', 'تحديث الدفعات', `تم ${isPaid ? 'تسجيل سداد' : 'إلغاء سداد'} دفعة في مشروع ${selected.project_name}`);
+    } catch (err) {
+      alert('خطأ أثناء تحديث حالة السداد: ' + err.message);
+    }
+  };
+
+  const handleQuickPayment = async () => {
+    if (!selected) return;
+    const amountStr = prompt('أدخل قيمة الدفعة المستلمة (د.ك):');
+    if (amountStr === null) return; // user cancelled
+    const amount = parseFloat(amountStr);
+    if (isNaN(amount) || amount <= 0) {
+      alert('الرجاء إدخال رقم صحيح أكبر من الصفر');
+      return;
+    }
+
+    const newCollected = (selected.collected_amount || 0) + amount;
+    const payload = {
+      ...selected,
+      collected_amount: newCollected
+    };
+
+    try {
+      updateData('supervision', 'update', payload, selected.id);
+      setSelected(payload); // update local state
+      addNotification('supervision', 'دفعة جديدة', `تم تسجيل دفعة بقيمة ${amount.toFixed(3)} د.ك لمشروع ${selected.project_name}`);
+    } catch (err) {
+      alert('خطأ أثناء تسجيل الدفعة: ' + err.message);
+    }
+  };
+
   const handleSave = async (e) => {
     e.preventDefault();
+    const billing_type = form.billing_type || 'supervision';
+    const installments = form.installments || [];
+
     const payload = {
       ...form,
       id: selected?.id || uuidv4(),
-      contract_value: parseFloat(form.contract_value || 0),
-      free_months: parseInt(form.free_months || 0),
-      suspension_days: parseInt(form.suspension_days || 0),
-      collected_amount: parseFloat(form.collected_amount || 0),
+      billing_type,
+      installments,
+      contract_value: billing_type === 'fixed_installments' 
+        ? installments.reduce((acc, inst) => acc + parseFloat(inst.amount || 0), 0)
+        : parseFloat(form.contract_value || 0),
+      free_months: billing_type === 'fixed_installments' ? 0 : parseInt(form.free_months || 0),
+      suspension_days: billing_type === 'fixed_installments' ? 0 : parseInt(form.suspension_days || 0),
+      collected_amount: billing_type === 'fixed_installments'
+        ? installments.filter(inst => inst.is_paid).reduce((acc, inst) => acc + parseFloat(inst.amount || 0), 0)
+        : parseFloat(form.collected_amount || 0),
       contract_no: form.contract_no || '',
       signing_date: form.signing_date || '',
       contract_notes: form.contract_notes || '',
@@ -141,7 +208,7 @@ function SupervisionContent() {
     return (
       <div className="page">
         <PageHeader
-          title="تفاصيل الإشراف والعقد"
+          title={stats.billingType === 'fixed_installments' ? "تفاصيل عقد الدفعات" : "تفاصيل الإشراف والعقد"}
           actions={<button onClick={() => setView('list')} className="icon-btn"><ArrowRight size={20} /></button>}
         />
 
@@ -163,12 +230,18 @@ function SupervisionContent() {
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginTop: '24px' }}>
             <div>
-              <div style={{ fontSize: '11px', opacity: 0.6 }}>إجمالي المستحق (مقدم)</div>
+              <div style={{ fontSize: '11px', opacity: 0.6 }}>
+                {stats.billingType === 'fixed_installments' ? 'إجمالي قيمة العقد' : 'إجمالي المستحق (مقدم)'}
+              </div>
               <div style={{ fontSize: '20px', fontWeight: 900 }}>{stats.totalDue.toFixed(3)} د.ك</div>
             </div>
             <div>
-              <div style={{ fontSize: '11px', opacity: 0.6 }}>المعدل اليومي</div>
-              <div style={{ fontSize: '20px', fontWeight: 900 }}>{stats.dailyRate.toFixed(3)} د.ك</div>
+              <div style={{ fontSize: '11px', opacity: 0.6 }}>
+                {stats.billingType === 'fixed_installments' ? 'النوع' : 'المعدل اليومي'}
+              </div>
+              <div style={{ fontSize: '16px', fontWeight: 900, marginTop: '4px' }}>
+                {stats.billingType === 'fixed_installments' ? 'عقد بنود ودفعات' : `${stats.dailyRate.toFixed(3)} د.ك`}
+              </div>
             </div>
           </div>
         </div>
@@ -181,14 +254,26 @@ function SupervisionContent() {
         </Card>
 
         <Card padded style={{ marginBottom: '16px' }}>
-          <div className="section-label" style={{ marginTop: 0 }}>بيانات عقد الإشراف</div>
+          <div className="section-label" style={{ marginTop: 0 }}>بيانات العقد والفوترة</div>
           <div className="detail-row"><Hash size={16} /><span className="detail-label">رقم العقد</span><span className="detail-value" style={{ fontWeight: 800 }}>{selected.contract_no || 'غير متوفر'}</span></div>
           <div className="detail-row"><Calendar size={16} /><span className="detail-label">تاريخ توقيع العقد</span><span className="detail-value">{selected.signing_date || '—'}</span></div>
-          <div className="detail-row"><DollarSign size={16} /><span className="detail-label">قيمة العقد (شهري)</span><span className="detail-value">{selected.contract_value} د.ك</span></div>
-          <div className="detail-row"><Calendar size={16} /><span className="detail-label">تاريخ البدء للفوترة</span><span className="detail-value">{selected.start_date}</span></div>
-          <div className="detail-row"><Calendar size={16} /><span className="detail-label">تاريخ نهاية الإشراف</span><span className="detail-value">{selected.end_date || 'مفتوح'}</span></div>
-          <div className="detail-row"><Clock size={16} /><span className="detail-label">أشهر مجانية</span><span className="detail-value">{selected.free_months} شهر</span></div>
-          <div className="detail-row" style={{ border: 0 }}><AlertCircle size={16} /><span className="detail-label">أيام الإيقاف</span><span className="detail-value">{selected.suspension_days} يوم</span></div>
+          <div className="detail-row"><Building2 size={16} /><span className="detail-label">نوع الفوترة / العقد</span><span className="detail-value" style={{ fontWeight: 800 }}>{stats.billingType === 'fixed_installments' ? '📜 عقد بنود ودفعات مقطوع' : '👷 إشراف شهري مستمر (مقدم)'}</span></div>
+          
+          {stats.billingType !== 'fixed_installments' ? (
+            <>
+              <div className="detail-row"><DollarSign size={16} /><span className="detail-label">قيمة العقد (شهري)</span><span className="detail-value">{selected.contract_value} د.ك</span></div>
+              <div className="detail-row"><Calendar size={16} /><span className="detail-label">تاريخ البدء للفوترة</span><span className="detail-value">{selected.start_date}</span></div>
+              <div className="detail-row"><Calendar size={16} /><span className="detail-label">تاريخ نهاية الإشراف</span><span className="detail-value">{selected.end_date || 'مفتوح'}</span></div>
+              <div className="detail-row"><Clock size={16} /><span className="detail-label">أشهر مجانية</span><span className="detail-value">{selected.free_months} شهر</span></div>
+              <div className="detail-row" style={{ border: 0 }}><AlertCircle size={16} /><span className="detail-label">أيام الإيقاف</span><span className="detail-value">{selected.suspension_days} يوم</span></div>
+            </>
+          ) : (
+            <>
+              <div className="detail-row"><DollarSign size={16} /><span className="detail-label">إجمالي قيمة العقد</span><span className="detail-value" style={{ fontWeight: 800 }}>{stats.totalDue.toFixed(3)} د.ك</span></div>
+              <div className="detail-row"><Calendar size={16} /><span className="detail-label">تاريخ بدء العقد</span><span className="detail-value">{selected.start_date}</span></div>
+              <div className="detail-row" style={{ border: 0 }}><Calendar size={16} /><span className="detail-label">تاريخ نهاية العقد</span><span className="detail-value">{selected.end_date || 'مفتوح'}</span></div>
+            </>
+          )}
           {selected.contract_notes && (
             <div style={{ marginTop: '15px', padding: '12px', background: 'var(--surface-2)', borderRadius: '12px', fontSize: '12px', borderLeft: '3px solid var(--blue)' }}>
               <div style={{ fontWeight: 800, color: 'var(--text-2)', marginBottom: '4px' }}>شروط وملاحظات العقد:</div>
@@ -215,13 +300,15 @@ function SupervisionContent() {
             </span>
           </div>
 
-          <div className="detail-row">
-            <TrendingUp size={16} /><span className="detail-label">الفترة المحتسبة (مقدم)</span>
-            <span className="detail-value">{(stats.billingDays / 30).toFixed(0)} شهر ({stats.billingDays} يوم)</span>
-          </div>
+          {stats.billingType !== 'fixed_installments' && (
+            <div className="detail-row">
+              <TrendingUp size={16} /><span className="detail-label">الفترة المحتسبة (مقدم)</span>
+              <span className="detail-value">{(stats.billingDays / 30).toFixed(0)} شهر ({stats.billingDays} يوم)</span>
+            </div>
+          )}
 
           <div className="detail-row">
-            <DollarSign size={16} /><span className="detail-label">إجمالي المستحق</span>
+            <DollarSign size={16} /><span className="detail-label">إجمالي المستحق الفعلي</span>
             <span className="detail-value">{stats.totalDue.toFixed(3)} د.ك</span>
           </div>
 
@@ -230,10 +317,22 @@ function SupervisionContent() {
             <span className="detail-value" style={{ color: '#059669', fontWeight: 800 }}>{(selected.collected_amount || 0).toFixed(3)} د.ك</span>
           </div>
 
+          {canEdit && stats.billingType !== 'fixed_installments' && (
+            <div style={{ padding: '5px 0' }}>
+              <button 
+                onClick={handleQuickPayment} 
+                className="btn btn-outline btn-sm" 
+                style={{ width: 'auto', display: 'flex', alignItems: 'center', gap: '6px', borderColor: '#059669', color: '#059669', marginTop: '10px' }}
+              >
+                ➕ تسجيل دفعة سريعة
+              </button>
+            </div>
+          )}
+
           {/* شريط تقدم السداد */}
-          <div style={{ marginTop: '20px', padding: '10px 0' }}>
+          <div style={{ marginTop: '20px', padding: '10px 0', borderTop: '1px solid var(--border)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', fontWeight: 800, color: 'var(--text-3)', marginBottom: '8px' }}>
-              <span>نسبة سداد العقد من المستحق الفعلي:</span>
+              <span>نسبة سداد العقد:</span>
               <span>{stats.totalDue > 0 ? Math.min(100, ((selected.collected_amount || 0) / stats.totalDue) * 100).toFixed(1) : '0.0'}%</span>
             </div>
             <div style={{ width: '100%', height: '10px', background: 'var(--surface-2)', borderRadius: '5px', overflow: 'hidden', border: '1px solid var(--border)' }}>
@@ -249,6 +348,59 @@ function SupervisionContent() {
             </div>
           </div>
         </Card>
+
+        {/* متابعة دفعات العقد المقطوع */}
+        {stats.billingType === 'fixed_installments' && (
+          <Card padded style={{ marginBottom: '16px' }}>
+            <div className="section-label" style={{ marginTop: 0 }}>متابعة سداد دفعات العقد</div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginTop: '15px' }}>
+              {(selected.installments || []).length === 0 ? (
+                <div style={{ textAlign: 'center', color: 'var(--text-3)', fontSize: '12px', padding: '10px' }}>لا توجد دفعات أو بنود مسجلة لهذا العقد.</div>
+              ) : (
+                (selected.installments || []).map((inst, idx) => (
+                  <div key={inst.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--surface-2)', padding: '12px 16px', borderRadius: '12px', borderRight: inst.is_paid ? '4px solid #059669' : '4px solid #dc2626' }}>
+                    <div>
+                      <div style={{ fontWeight: 900, fontSize: '13px', color: 'var(--text)' }}>{inst.label || `دفعة #${idx + 1}`}</div>
+                      <div style={{ fontSize: '11px', color: 'var(--text-3)', marginTop: '4px' }}>
+                        المبلغ: {parseFloat(inst.amount || 0).toFixed(3)} د.ك 
+                        {inst.due_date && ` • تاريخ الاستحقاق: ${inst.due_date}`}
+                      </div>
+                    </div>
+                    <div>
+                      {inst.is_paid ? (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                          <Badge status="مدفوعة" customCfg={{ bg: '#ecfdf5', color: '#059669' }} />
+                          {canEdit && (
+                            <button 
+                              onClick={() => handleToggleInstallmentPay(inst.id, false)} 
+                              className="btn btn-sm btn-outline" 
+                              style={{ width: 'auto', padding: '4px 8px', fontSize: '10px', borderColor: '#dc2626', color: '#dc2626' }}
+                            >
+                              ✖ إلغاء الدفع
+                            </button>
+                          )}
+                        </div>
+                      ) : (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                          <Badge status="غير مدفوعة" customCfg={{ bg: '#fef2f2', color: '#dc2626' }} />
+                          {canEdit && (
+                            <button 
+                              onClick={() => handleToggleInstallmentPay(inst.id, true)} 
+                              className="btn btn-sm" 
+                              style={{ width: 'auto', padding: '4px 8px', fontSize: '10px', background: '#059669', color: '#fff', border: 'none' }}
+                            >
+                              ✓ تسجيل كمدفوع
+                            </button>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </Card>
+        )}
 
         {selected.has_file && (
           <button className="btn btn-outline" style={{ marginTop: '15px' }} onClick={() => fetchAndShowFile(selected)} disabled={loadingFile}>
@@ -272,7 +424,7 @@ function SupervisionContent() {
 
     return (
       <div className="page">
-        <PageHeader title={selected ? "تعديل الإشراف والعقد" : "إضافة إشراف وعقد جديد"} actions={<button onClick={() => setView('list')} className="icon-btn"><ArrowRight size={20} /></button>} />
+        <PageHeader title={selected ? "تعديل البيانات" : "إضافة مشروع / عقد جديد"} actions={<button onClick={() => setView('list')} className="icon-btn"><ArrowRight size={20} /></button>} />
         <form onSubmit={handleSave}>
           <Card padded>
             <div className="form-group"><label className="form-label">المشروع / العقار</label><input className="form-input" required value={form.project_name || ''} onChange={e => setForm({ ...form, project_name: e.target.value })} placeholder="مثال: مطلع" /></div>
@@ -299,7 +451,7 @@ function SupervisionContent() {
             {/* بيانات العقد الإضافية */}
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
               <div className="form-group">
-                <label className="form-label">رقم عقد الإشراف</label>
+                <label className="form-label">رقم عقد الإشراف / الاتفاقية</label>
                 <input className="form-input" value={form.contract_no || ''} onChange={e => setForm({ ...form, contract_no: e.target.value })} placeholder="مثال: Frame-2026-001" />
               </div>
               <div className="form-group">
@@ -308,18 +460,151 @@ function SupervisionContent() {
               </div>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
-              <div className="form-group"><label className="form-label">قيمة العقد (شهرياً)</label><input type="number" className="form-input" required value={form.contract_value || ''} onChange={e => setForm({ ...form, contract_value: e.target.value })} /></div>
-              <div className="form-group"><label className="form-label">الأشهر المجانية (بدون فوترة)</label><input type="number" className="form-input" value={form.free_months || ''} onChange={e => setForm({ ...form, free_months: e.target.value })} /></div>
+            {/* اختيار نوع العقد / الفوترة */}
+            <div className="form-group">
+              <label className="form-label">نوع الفوترة / العقد</label>
+              <select 
+                className="form-select" 
+                required 
+                value={form.billing_type || 'supervision'} 
+                onChange={e => {
+                  const val = e.target.value;
+                  setForm({ 
+                    ...form, 
+                    billing_type: val,
+                    installments: val === 'fixed_installments' ? (form.installments || []) : []
+                  });
+                }}
+              >
+                <option value="supervision">👷 إشراف شهري مستمر (دفع مقدم)</option>
+                <option value="fixed_installments">📜 عقد بنود ودفعات محددة (مقطوع)</option>
+              </select>
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
-              <div className="form-group"><label className="form-label">تاريخ بدء الفوترة</label><input type="date" className="form-input" required value={form.start_date || ''} onChange={e => setForm({ ...form, start_date: e.target.value })} /></div>
-              <div className="form-group"><label className="form-label">تاريخ نهاية الإشراف (اختياري)</label><input type="date" className="form-input" value={form.end_date || ''} onChange={e => setForm({ ...form, end_date: e.target.value })} /></div>
-            </div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
-              <div className="form-group"><label className="form-label">أيام الإيقاف للمشروع</label><input type="number" className="form-input" value={form.suspension_days || ''} onChange={e => setForm({ ...form, suspension_days: e.target.value })} /></div>
-              <div className="form-group"><label className="form-label">المبلغ المحصل (المدفوع)</label><input type="number" step="0.001" className="form-input" value={form.collected_amount || ''} onChange={e => setForm({ ...form, collected_amount: e.target.value })} /></div>
-            </div>
+
+            {(!form.billing_type || form.billing_type === 'supervision') ? (
+              <>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
+                  <div className="form-group"><label className="form-label">قيمة العقد (شهرياً)</label><input type="number" className="form-input" required value={form.contract_value || ''} onChange={e => setForm({ ...form, contract_value: e.target.value })} /></div>
+                  <div className="form-group"><label className="form-label">الأشهر المجانية (بدون فوترة)</label><input type="number" className="form-input" value={form.free_months || ''} onChange={e => setForm({ ...form, free_months: e.target.value })} /></div>
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
+                  <div className="form-group"><label className="form-label">تاريخ بدء الفوترة</label><input type="date" className="form-input" required value={form.start_date || ''} onChange={e => setForm({ ...form, start_date: e.target.value })} /></div>
+                  <div className="form-group"><label className="form-label">تاريخ نهاية الإشراف (اختياري)</label><input type="date" className="form-input" value={form.end_date || ''} onChange={e => setForm({ ...form, end_date: e.target.value })} /></div>
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
+                  <div className="form-group"><label className="form-label">أيام الإيقاف للمشروع</label><input type="number" className="form-input" value={form.suspension_days || ''} onChange={e => setForm({ ...form, suspension_days: e.target.value })} /></div>
+                  <div className="form-group"><label className="form-label">المبلغ المحصل (المدفوع)</label><input type="number" step="0.001" className="form-input" value={form.collected_amount || ''} onChange={e => setForm({ ...form, collected_amount: e.target.value })} /></div>
+                </div>
+              </>
+            ) : (
+              <>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
+                  <div className="form-group"><label className="form-label">تاريخ بدء العقد</label><input type="date" className="form-input" required value={form.start_date || ''} onChange={e => setForm({ ...form, start_date: e.target.value })} /></div>
+                  <div className="form-group"><label className="form-label">تاريخ نهاية العقد (اختياري)</label><input type="date" className="form-input" value={form.end_date || ''} onChange={e => setForm({ ...form, end_date: e.target.value })} /></div>
+                </div>
+
+                <div style={{ marginTop: '20px', padding: '16px', background: 'var(--surface-2)', borderRadius: '16px', border: '1px solid var(--border)' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
+                    <div style={{ fontWeight: 800, fontSize: '14px', color: 'var(--text-2)' }}>دفعات وبنود العقد المقطوع</div>
+                    <button 
+                      type="button" 
+                      onClick={() => {
+                        const insts = form.installments || [];
+                        setForm({
+                          ...form,
+                          installments: [...insts, { id: uuidv4(), label: '', amount: '', is_paid: false, due_date: '' }]
+                        });
+                      }} 
+                      className="btn btn-sm" 
+                      style={{ width: 'auto', padding: '6px 12px' }}
+                    >
+                      ➕ إضافة دفعة / بند
+                    </button>
+                  </div>
+
+                  {(form.installments || []).length === 0 ? (
+                    <div style={{ textAlign: 'center', color: 'var(--text-3)', padding: '20px 0', fontSize: '13px' }}>لا توجد دفعات مضافة حالياً. اضغط على الزر بالأعلى لإضافة دفعة.</div>
+                  ) : (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                      {(form.installments || []).map((inst, index) => (
+                        <div key={inst.id} style={{ display: 'flex', gap: '10px', alignItems: 'flex-end', background: 'var(--surface)', padding: '12px', borderRadius: '12px', border: '1px solid var(--border)', flexWrap: 'wrap' }}>
+                          <div style={{ flex: '2 1 200px' }} className="form-group" style={{ marginBottom: 0 }}>
+                            <label className="form-label" style={{ fontSize: '11px' }}>اسم البند / الدفعة</label>
+                            <input 
+                              className="form-input" 
+                              required 
+                              value={inst.label || ''} 
+                              onChange={e => {
+                                const newInsts = [...form.installments];
+                                newInsts[index].label = e.target.value;
+                                setForm({ ...form, installments: newInsts });
+                              }} 
+                              placeholder="مثال: عند التوقيع" 
+                            />
+                          </div>
+                          <div style={{ flex: '1 1 100px' }} className="form-group" style={{ marginBottom: 0 }}>
+                            <label className="form-label" style={{ fontSize: '11px' }}>قيمة الدفعة (د.ك)</label>
+                            <input 
+                              type="number" 
+                              className="form-input" 
+                              required 
+                              value={inst.amount || ''} 
+                              onChange={e => {
+                                const newInsts = [...form.installments];
+                                newInsts[index].amount = e.target.value;
+                                setForm({ ...form, installments: newInsts });
+                              }} 
+                              placeholder="د.ك" 
+                            />
+                          </div>
+                          <div style={{ flex: '1.2 1 130px' }} className="form-group" style={{ marginBottom: 0 }}>
+                            <label className="form-label" style={{ fontSize: '11px' }}>تاريخ الاستحقاق</label>
+                            <input 
+                              type="date" 
+                              className="form-input" 
+                              value={inst.due_date || ''} 
+                              onChange={e => {
+                                const newInsts = [...form.installments];
+                                newInsts[index].due_date = e.target.value;
+                                setForm({ ...form, installments: newInsts });
+                              }} 
+                            />
+                          </div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '5px', paddingBottom: '10px' }}>
+                            <input 
+                              type="checkbox" 
+                              id={`check-${inst.id}`} 
+                              checked={inst.is_paid || false} 
+                              onChange={e => {
+                                const newInsts = [...form.installments];
+                                newInsts[index].is_paid = e.target.checked;
+                                setForm({ ...form, installments: newInsts });
+                              }} 
+                            />
+                            <label htmlFor={`check-${inst.id}`} style={{ fontSize: '11px', fontWeight: 800, cursor: 'pointer' }}>مدفوعة</label>
+                          </div>
+                          <button 
+                            type="button" 
+                            onClick={() => {
+                              const newInsts = form.installments.filter((_, idx) => idx !== index);
+                              setForm({ ...form, installments: newInsts });
+                            }} 
+                            className="btn btn-danger btn-sm" 
+                            style={{ width: 'auto', padding: '8px 10px', height: '38px', display: 'flex', alignItems: 'center' }}
+                          >
+                            حذف
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  <div style={{ marginTop: '15px', textAlign: 'left', fontWeight: 900, fontSize: '14px', color: 'var(--blue)' }}>
+                    إجمالي قيمة العقد المحسوبة: {(form.installments || []).reduce((acc, inst) => acc + parseFloat(inst.amount || 0), 0).toFixed(3)} د.ك
+                  </div>
+                </div>
+              </>
+            )}
 
             <div className="form-group">
               <label className="form-label">شروط وملاحظات العقد</label>
@@ -369,7 +654,7 @@ function SupervisionContent() {
     <div className="page">
       <PageHeader
         title="نظام الإشراف والعقود"
-        actions={<><button onClick={handleExportPDF} className="icon-btn" disabled={isExporting}><Download size={20} /></button>{canEdit && <button onClick={() => { setForm({ start_date: new Date().toISOString().split('T')[0], free_months: 0, suspension_days: 0, collected_amount: 0, contract_no: '', signing_date: '', contract_notes: '' }); setSelected(null); setView('form'); }} className="btn btn-sm" style={{ width: 'auto' }}>+ جديد</button>}</>}
+        actions={<><button onClick={handleExportPDF} className="icon-btn" disabled={isExporting}><Download size={20} /></button>{canEdit && <button onClick={() => { setForm({ start_date: new Date().toISOString().split('T')[0], free_months: 0, suspension_days: 0, collected_amount: 0, contract_no: '', signing_date: '', contract_notes: '', billing_type: 'supervision', installments: [] }); setSelected(null); setView('form'); }} className="btn btn-sm" style={{ width: 'auto' }}>+ جديد</button>}</>}
       />
 
       <SearchBar value={search} onChange={setSearch} placeholder="بحث عن مشروع، عميل، أو رقم عقد..." />
@@ -410,8 +695,21 @@ function SupervisionContent() {
 
                 <div style={{ marginTop: '16px', display: 'flex', gap: '12px', flexWrap: 'wrap', alignItems: 'center' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12px', color: '#64748b' }}>
-                    <TrendingUp size={14} /> {(stats.billingDays / 30).toFixed(0)} أشهر محتسبة ({stats.billingDays} يوم)
+                    <TrendingUp size={14} /> 
+                    {stats.billingType === 'fixed_installments' ? (
+                      <span style={{ fontWeight: 800 }}>
+                        {(p.installments || []).filter(inst => inst.is_paid).length}/{(p.installments || []).length} دفعات مسددة
+                      </span>
+                    ) : (
+                      <span>
+                        {(stats.billingDays / 30).toFixed(0)} أشهر محتسبة ({stats.billingDays} يوم)
+                      </span>
+                    )}
                   </div>
+                  <Badge 
+                    status={stats.billingType === 'fixed_installments' ? 'عقد دفعات' : 'إشراف شهري'} 
+                    customCfg={stats.billingType === 'fixed_installments' ? { bg: '#eff6ff', color: '#2563eb' } : { bg: '#faf5ff', color: '#7c3aed' }} 
+                  />
                   {stats.remaining <= 0 ? (
                     <Badge status="تم سداد ما عليه" customCfg={{ bg: '#ecfdf5', color: '#059669' }} />
                   ) : (
@@ -479,13 +777,18 @@ function SupervisionContent() {
                   <td>{p.plot_no || '—'}</td>
                   <td style={{ fontWeight: 700 }}>{p.contract_no || '—'}</td>
                   <td>{p.project_name}</td>
-                  <td>{p.contract_value} د.ك</td>
+                  <td>{s.totalDue.toFixed(3)} د.ك</td>
                   <td>{p.start_date}</td>
                   <td>{p.end_date || 'مفتوح'}</td>
-                  <td>{p.suspension_days} يوم</td>
-                  <td>{(s.billingDays / 30).toFixed(0)} شهر</td>
+                  <td>{s.billingType === 'fixed_installments' ? '—' : `${p.suspension_days} يوم`}</td>
+                  <td>
+                    {s.billingType === 'fixed_installments' 
+                      ? `${(p.installments || []).filter(inst => inst.is_paid).length}/${(p.installments || []).length} دفعة`
+                      : `${(s.billingDays / 30).toFixed(0)} شهر`
+                    }
+                  </td>
                   <td style={{ fontWeight: 700 }}>{s.totalDue.toFixed(3)}</td>
-                  <td>{(p.collected_amount || 0).toFixed(3)}</td>
+                  <td>{(s.collectedAmount || p.collected_amount || 0).toFixed(3)}</td>
                   <td style={{ fontWeight: 900, color: s.remaining > 0 ? '#dc2626' : '#059669' }}>{s.remaining.toFixed(3)}</td>
                   <td style={{ fontWeight: 700, color: s.remaining > 0 ? '#dc2626' : '#059669', fontSize: '8px' }}>
                     {s.remaining <= 0 ? 'مسدد' : 'غير مسدد'}
