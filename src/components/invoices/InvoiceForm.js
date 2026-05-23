@@ -1,9 +1,7 @@
 import React from 'react';
 import { Card } from '../ui';
 
-export const InvoiceForm = ({ form, setForm, clients, services, customService, setCustomService, fileInputRef, tempFiles, setTempFiles, generateNextNo, supervision = [], contracts = [] }) => {
-  const clientSupervision = supervision.filter(s => s.client_id === form.client_id);
-  const clientContracts = contracts.filter(c => c.client_id === form.client_id);
+export const InvoiceForm = ({ form, setForm, clients, services, customService, setCustomService, fileInputRef, tempFiles, setTempFiles, generateNextNo }) => {
 
   return (
     <div className="card card-padded">
@@ -23,62 +21,6 @@ export const InvoiceForm = ({ form, setForm, clients, services, customService, s
         </select>
       </div>
 
-      {form.client_id && (clientSupervision.length > 0 || clientContracts.length > 0) && (
-        <div style={{ padding: '15px', background: 'var(--surface-2)', borderRadius: '16px', border: '1px solid var(--border)', marginBottom: '15px' }}>
-          <div className="form-group" style={{ marginBottom: 0 }}>
-            <label className="form-label" style={{ fontWeight: 800 }}>🔗 ربط الفاتورة بـ (سداد دفعة إشراف أو عقد)</label>
-            <select 
-              className="form-select" 
-              value={form.link_type && form.link_id ? `${form.link_type}:${form.link_id}` : ''} 
-              onChange={e => {
-                const val = e.target.value;
-                if (!val) {
-                  setForm(p => ({ ...p, link_type: '', link_id: '', link_installment_id: '' }));
-                } else {
-                  const [type, id] = val.split(':');
-                  setForm(p => ({ ...p, link_type: type, link_id: id, link_installment_id: '' }));
-                }
-              }}
-            >
-              <option value="">لا يوجد (فاتورة عادية)</option>
-              {clientSupervision.map(s => (
-                <option key={s.id} value={`supervision:${s.id}`}>👷 إشراف شهري: {s.project_name}</option>
-              ))}
-              {clientContracts.map(c => (
-                <option key={c.id} value={`contract:${c.id}`}>📜 عقد دفعات: {c.project_name} {c.contract_no && `(عقد رقم: ${c.contract_no})`}</option>
-              ))}
-            </select>
-          </div>
-
-          {form.link_type === 'contract' && (
-            <div className="form-group" style={{ marginTop: '15px', marginBottom: 0 }}>
-              <label className="form-label" style={{ fontWeight: 800 }}>اختر دفعة العقد المراد سدادها</label>
-              <select 
-                className="form-select" 
-                required 
-                value={form.link_installment_id || ''} 
-                onChange={e => {
-                  const val = e.target.value;
-                  const selectedContract = contracts.find(c => c.id === form.link_id);
-                  const selectedInst = (selectedContract?.installments || []).find(i => i.id === val);
-                  setForm(p => ({ 
-                    ...p, 
-                    link_installment_id: val,
-                    amount: p.amount ? p.amount : (selectedInst ? selectedInst.amount : p.amount)
-                  }));
-                }}
-              >
-                <option value="">اختر الدفعة...</option>
-                {(contracts.find(c => c.id === form.link_id)?.installments || []).map(inst => (
-                  <option key={inst.id} value={inst.id}>
-                    {inst.label} ({parseFloat(inst.amount).toFixed(3)} د.ك) {inst.is_paid ? '• مسددة مسبقاً' : ''}
-                  </option>
-                ))}
-              </select>
-            </div>
-          )}
-        </div>
-      )}
       <div className="form-group">
         <label className="form-label">رقم القسيمة / الموقع</label>
         <select className="form-select" value={form.plot_no || ''} onChange={e => setForm(p => ({ ...p, plot_no: e.target.value }))}>

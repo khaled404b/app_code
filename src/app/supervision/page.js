@@ -52,31 +52,6 @@ function SupervisionContent() {
     });
   }, [supervision, search, clients, clientFilter, statusFilter, billingInvoices]);
 
-  const handleQuickPayment = async () => {
-    if (!selected) return;
-    const amountStr = prompt('أدخل قيمة الدفعة المستلمة (د.ك):');
-    if (amountStr === null) return; // user cancelled
-    const amount = parseFloat(amountStr);
-    if (isNaN(amount) || amount <= 0) {
-      alert('الرجاء إدخال رقم صحيح أكبر من الصفر');
-      return;
-    }
-
-    const newCollected = (selected.collected_amount || 0) + amount;
-    const payload = {
-      ...selected,
-      collected_amount: newCollected
-    };
-
-    try {
-      await updateData('supervision', 'update', payload, selected.id);
-      setSelected(payload); // update local state
-      addNotification('supervision', 'دفعة إشراف جديدة', `تم تسجيل دفعة بقيمة ${amount.toFixed(3)} د.ك لمشروع ${selected.project_name}`);
-    } catch (err) {
-      alert('خطأ أثناء تسجيل الدفعة: ' + err.message);
-    }
-  };
-
   const handleSave = async (e) => {
     e.preventDefault();
     const payload = {
@@ -260,9 +235,6 @@ function SupervisionContent() {
           <div className="detail-row">
             <DollarSign size={16} /><span className="detail-label">إجمالي المبلغ المحصل</span>
             <span className="detail-value" style={{ color: '#059669', fontWeight: 800 }}>{stats.collectedAmount.toFixed(3)} د.ك</span>
-            <div style={{ fontSize: '11px', color: 'var(--text-3)', display: 'block', width: '100%', marginTop: '5px' }}>
-              (محصل يدوي: {(selected.collected_amount || 0).toFixed(3)} د.ك + فواتير مدفوعة مرتبطة: {(stats.collectedAmount - (selected.collected_amount || 0)).toFixed(3)} د.ك)
-            </div>
           </div>
 
           {/* List linked paid invoices */}
@@ -278,17 +250,7 @@ function SupervisionContent() {
             </div>
           )}
 
-          {canEdit && (
-            <div style={{ padding: '5px 0' }}>
-              <button 
-                onClick={handleQuickPayment} 
-                className="btn btn-outline btn-sm" 
-                style={{ width: 'auto', display: 'flex', alignItems: 'center', gap: '6px', borderColor: '#059669', color: '#059669', marginTop: '10px' }}
-              >
-                ➕ تسجيل دفعة يدوية إضافية
-              </button>
-            </div>
-          )}
+
 
           {/* شريط تقدم السداد */}
           <div style={{ marginTop: '20px', padding: '10px 0', borderTop: '1px solid var(--border)' }}>
@@ -375,9 +337,9 @@ function SupervisionContent() {
               <div className="form-group"><label className="form-label">تاريخ بدء الفوترة</label><input type="date" className="form-input" required value={form.start_date || ''} onChange={e => setForm({ ...form, start_date: e.target.value })} /></div>
               <div className="form-group"><label className="form-label">تاريخ نهاية الإشراف (إن وجد)</label><input type="date" className="form-input" value={form.end_date || ''} onChange={e => setForm({ ...form, end_date: e.target.value })} /></div>
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
-              <div className="form-group"><label className="form-label">أيام الإيقاف للمشروع</label><input type="number" className="form-input" value={form.suspension_days || ''} onChange={e => setForm({ ...form, suspension_days: e.target.value })} /></div>
-              <div className="form-group"><label className="form-label">المبلغ المحصل اليدوي (خارج الفواتير)</label><input type="number" step="0.001" className="form-input" value={form.collected_amount || ''} onChange={e => setForm({ ...form, collected_amount: e.target.value })} /></div>
+            <div className="form-group">
+              <label className="form-label">أيام الإيقاف للمشروع</label>
+              <input type="number" className="form-input" value={form.suspension_days || ''} onChange={e => setForm({ ...form, suspension_days: e.target.value })} />
             </div>
 
             <div className="form-group">

@@ -52,39 +52,6 @@ export default function ContractsPage() {
     });
   }, [contracts, search, clients, clientFilter, statusFilter, billingInvoices]);
 
-  const handleToggleInstallmentPay = async (installmentId, isPaid) => {
-    if (!selected) return;
-    
-    const updatedInstallments = (selected.installments || []).map(inst => {
-      if (inst.id === installmentId) {
-        return { ...inst, is_paid: isPaid };
-      }
-      return inst;
-    });
-
-    const newCollected = updatedInstallments
-      .filter(inst => inst.is_paid || billingInvoices.some(inv => inv.link_type === 'contract' && inv.link_installment_id === inst.id && inv.status === 'مدفوعة'))
-      .reduce((acc, inst) => acc + parseFloat(inst.amount || 0), 0);
-
-    const newTotal = updatedInstallments
-      .reduce((acc, inst) => acc + parseFloat(inst.amount || 0), 0);
-
-    const payload = {
-      ...selected,
-      installments: updatedInstallments,
-      collected_amount: newCollected,
-      contract_value: newTotal
-    };
-
-    try {
-      await updateData('contracts', 'update', payload, selected.id);
-      setSelected(payload); // update local state
-      addNotification('contracts', 'تحديث دفعات العقد', `تم ${isPaid ? 'تسجيل سداد' : 'إلغاء سداد'} دفعة يدوياً في عقد مشروع ${selected.project_name}`);
-    } catch (err) {
-      alert('خطأ أثناء تحديث حالة السداد: ' + err.message);
-    }
-  };
-
   const handleSave = async (e) => {
     e.preventDefault();
     const installments = form.installments || [];
@@ -102,7 +69,7 @@ export default function ContractsPage() {
           inv.link_installment_id === inst.id && 
           inv.status === 'مدفوعة'
         );
-        return inst.is_paid || isPaidViaInvoice;
+        return isPaidViaInvoice;
       }).reduce((acc, inst) => acc + parseFloat(inst.amount || 0), 0),
       contract_no: form.contract_no || '',
       signing_date: form.signing_date || '',
@@ -320,35 +287,9 @@ export default function ContractsPage() {
                     </div>
                     <div>
                       {isPaid ? (
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                          <Badge status="مدفوعة" customCfg={{ bg: '#ecfdf5', color: '#059669' }} />
-                          {canEdit && (
-                            linkedInvoice ? (
-                              <span style={{ fontSize: '11px', color: 'var(--text-3)' }}>تعديل الفاتورة لإلغاء الدفع</span>
-                            ) : (
-                              <button 
-                                onClick={() => handleToggleInstallmentPay(inst.id, false)} 
-                                className="btn btn-sm btn-outline" 
-                                style={{ width: 'auto', padding: '4px 8px', fontSize: '10px', borderColor: '#dc2626', color: '#dc2626' }}
-                              >
-                                ✖ إلغاء الدفع اليدوي
-                              </button>
-                            )
-                          )}
-                        </div>
+                        <Badge status="مدفوعة" customCfg={{ bg: '#ecfdf5', color: '#059669' }} />
                       ) : (
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                          <Badge status="غير مدفوعة" customCfg={{ bg: '#fef2f2', color: '#dc2626' }} />
-                          {canEdit && (
-                            <button 
-                              onClick={() => handleToggleInstallmentPay(inst.id, true)} 
-                              className="btn btn-sm" 
-                              style={{ width: 'auto', padding: '4px 8px', fontSize: '10px', background: '#059669', color: '#fff', border: 'none' }}
-                            >
-                              ✓ تسجيل كمدفوع (يدوياً)
-                            </button>
-                          )}
-                        </div>
+                        <Badge status="غير مدفوعة" customCfg={{ bg: '#fef2f2', color: '#dc2626' }} />
                       )}
                     </div>
                   </div>
@@ -488,19 +429,7 @@ export default function ContractsPage() {
                           }} 
                         />
                       </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '5px', paddingBottom: '10px' }}>
-                        <input 
-                          type="checkbox" 
-                          id={`check-${inst.id}`} 
-                          checked={inst.is_paid || false} 
-                          onChange={e => {
-                            const newInsts = [...form.installments];
-                            newInsts[index].is_paid = e.target.checked;
-                            setForm({ ...form, installments: newInsts });
-                          }} 
-                        />
-                        <label htmlFor={`check-${inst.id}`} style={{ fontSize: '11px', fontWeight: 800, cursor: 'pointer' }}>مدفوعة يدوياً</label>
-                      </div>
+
                       <button 
                         type="button" 
                         onClick={() => {
