@@ -21,6 +21,7 @@ function BottomNavContent() {
   ];
 
   const moreItems = [
+    { href: '/contracts', icon: FileText, label: 'العقود' },
     { href: '/billing', icon: FileText, label: 'فواتير المكتب' },
     { href: '/contractors', icon: Building, label: 'دليل الشركات' },
     { href: '/receipts', icon: FileText, label: 'سندات القبض' },

@@ -67,7 +67,10 @@ function InvoicesContent() {
       has_file: !!(tempFiles.length > 0 || form.has_file),
       created_by: selected ? (selected.created_by || '—') : (user && user.name) || '—', 
       created_at: selected ? (selected.created_at || new Date().toISOString()) : new Date().toISOString(),
-      plot_no: form.plot_no || '—'
+      plot_no: form.plot_no || '—',
+      link_type: form.link_type || '',
+      link_id: form.link_id || '',
+      link_installment_id: form.link_installment_id || ''
     };
 
     try { 
@@ -228,6 +231,20 @@ function InvoicesContent() {
         <div className="detail-row"><Building2 size={18} color="#94a3b8" /><span className="detail-label">الشركة</span><span className="detail-value">{selected.contractor || '—'}</span></div>
         <div className="detail-row"><AlignLeft size={18} color="#94a3b8" /><span className="detail-label">البيان</span><span className="detail-value">{selected.description || '—'}</span></div>
         <div className="detail-row"><Calendar size={18} color="#94a3b8" /><span className="detail-label">التاريخ</span><span className="detail-value">{selected.issue_date}</span></div>
+        {selected.link_type && (
+          <div className="detail-row">
+            <FileText size={18} color="#94a3b8" />
+            <span className="detail-label">الربط بسداد المشروع</span>
+            <span className="detail-value" style={{ fontWeight: 800, color: 'var(--blue)' }}>
+              {selected.link_type === 'supervision' ? '👷 إشراف شهري: ' : '📜 عقد دفعات: '}
+              {selected.link_type === 'supervision' 
+                ? (data?.supervision || []).find(s => s.id === selected.link_id)?.project_name || 'مشروع غير موجود'
+                : (data?.contracts || []).find(c => c.id === selected.link_id)?.project_name || 'عقد غير موجود'
+              }
+              {selected.link_installment_id && ` (دفعة: ${(data?.contracts || []).find(c => c.id === selected.link_id)?.installments?.find(i => i.id === selected.link_installment_id)?.label || 'غير محددة'})`}
+            </span>
+          </div>
+        )}
         <div className="detail-row" style={{ border: 0 }}><span className="detail-label">الحالة</span><Badge status={selected.status} type="INVOICES" /></div>
       </Card>
       {selected.has_file && <button className="btn btn-outline" style={{ marginTop: '15px' }} onClick={() => fetchAndShowFile(selected)}>👁️ عرض المرفق</button>}
@@ -239,7 +256,7 @@ function InvoicesContent() {
     <div className="page">
       <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '24px' }}><button onClick={() => setView(selected ? 'detail' : 'list')} className="icon-btn"><ArrowRight size={20} /></button><h1 className="page-title">{selected ? 'تعديل' : 'إضافة'}</h1></div>
       <form onSubmit={handleSave}>
-        <InvoiceForm {...{ form, setForm, clients, services, customService, setCustomService, fileInputRef, tempFiles, setTempFiles, generateNextNo }} />
+        <InvoiceForm {...{ form, setForm, clients, services, customService, setCustomService, fileInputRef, tempFiles, setTempFiles, generateNextNo, supervision: data?.supervision || [], contracts: data?.contracts || [] }} />
         <input type="file" ref={fileInputRef} style={{ display: 'none' }} multiple onChange={async e => { 
           const files = Array.from(e.target.files); 
           if (files.length > 0) { 

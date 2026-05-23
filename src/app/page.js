@@ -65,6 +65,15 @@ export default function Dashboard() {
   const fTasks = useMemo(() => (selectedClientId === 'all' ? tasks : tasks.filter(t => t?.client_id === selectedClientId)).filter(Boolean), [tasks, selectedClientId]);
   const fInvoices = useMemo(() => (selectedClientId === 'all' ? invoices : invoices.filter(i => i?.client_id === selectedClientId)).filter(Boolean), [invoices, selectedClientId]);
   const fSupervision = useMemo(() => (selectedClientId === 'all' ? data?.supervision || [] : (data?.supervision || []).filter(s => s?.client_id === selectedClientId)).filter(Boolean), [data?.supervision, selectedClientId]);
+  const fContracts = useMemo(() => (selectedClientId === 'all' ? data?.contracts || [] : (data?.contracts || []).filter(c => c?.client_id === selectedClientId)).filter(Boolean), [data?.contracts, selectedClientId]);
+
+  const supervisionStats = useMemo(() => {
+    return fSupervision.map(s => calculateSupervisionStats(s, invoices));
+  }, [fSupervision, invoices]);
+
+  const contractsStats = useMemo(() => {
+    return fContracts.map(c => calculateSupervisionStats(c, invoices));
+  }, [fContracts, invoices]);
 
   const stats = {
     tasks: {
@@ -77,7 +86,8 @@ export default function Dashboard() {
       pend: fInvoices.filter(i => i?.status === 'معلقة').length,
       late: fInvoices.filter(i => i?.status === 'متأخرة').length,
     },
-    totalRemaining: fSupervision.reduce((acc, s) => acc + calculateSupervisionStats(s).remaining, 0)
+    supervisionRemaining: supervisionStats.reduce((acc, s) => acc + s.remaining, 0),
+    contractsRemaining: contractsStats.reduce((acc, c) => acc + c.remaining, 0)
   };
 
   if (isLoading) return (
@@ -146,8 +156,10 @@ export default function Dashboard() {
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '20px', marginBottom: '40px' }}>
           <StatCard label="الأعمال الجارية" value={fTasks.length} color="var(--blue)" icon={Briefcase} onClick={() => router.push('/tasks')} />
           <StatCard label="مشاريع الإشراف" value={fSupervision.length} color="var(--green)" icon={Eye} onClick={() => router.push('/supervision')} />
-          <StatCard label="المطالبات المالية" value={stats.totalRemaining.toLocaleString() + ' د.ك'} color="var(--red)" icon={TrendingUp} onClick={() => router.push('/supervision')} />
-          <StatCard label="إجمالي الفواتير" value={fInvoices.length} color="var(--orange)" icon={FileText} onClick={() => router.push('/invoices')} />
+          <StatCard label="عقود المشاريع" value={fContracts.length} color="var(--purple)" icon={FileText} onClick={() => router.push('/contracts')} />
+          <StatCard label="مطالبات الإشراف" value={stats.supervisionRemaining.toLocaleString() + ' د.ك'} color="var(--red)" icon={TrendingUp} onClick={() => router.push('/supervision')} />
+          <StatCard label="مطالبات العقود" value={stats.contractsRemaining.toLocaleString() + ' د.ك'} color="var(--orange)" icon={TrendingUp} onClick={() => router.push('/contracts')} />
+          <StatCard label="إجمالي الفواتير" value={fInvoices.length} color="var(--blue)" icon={FileText} onClick={() => router.push('/invoices')} />
         </div>
 
         {/* --- Monitoring Sections --- */}
