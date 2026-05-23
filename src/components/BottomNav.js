@@ -16,13 +16,13 @@ function BottomNavContent() {
     { href: '/', icon: Home, label: 'الرئيسية' },
     { href: '/clients', icon: Users, label: 'العملاء' },
     { href: '/tasks', icon: Briefcase, label: 'الأعمال' },
-    { href: '/invoices', icon: FileText, label: 'الفواتير' },
+    { href: '/billing', icon: FileText, label: 'فواتير المكتب' },
     { href: '/supervision', icon: Eye, label: 'الإشراف' },
   ];
 
   const moreItems = [
     { href: '/contracts', icon: FileText, label: 'العقود' },
-    { href: '/billing', icon: FileText, label: 'فواتير المكتب' },
+    { href: '/invoices', icon: FileText, label: 'الفواتير' },
     { href: '/contractors', icon: Building, label: 'دليل الشركات' },
     { href: '/receipts', icon: FileText, label: 'سندات القبض' },
     { href: '/offers', icon: ClipboardList, label: 'العروض' },
