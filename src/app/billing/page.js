@@ -15,7 +15,7 @@ export default function BillingPage() {
   const { state, actions } = useBillingController();
   const { 
     view, selected, search, form, filtered, 
-    tempFiles, loadingFile, isLoading, canEdit, clients 
+    tempFiles, loadingFile, isLoading, canEdit, clients, supervision, contracts 
   } = state;
   
   const { 
@@ -239,6 +239,8 @@ export default function BillingPage() {
               form={form} 
               setForm={setForm} 
               clients={clients} 
+              supervision={supervision}
+              contracts={contracts}
               handleSave={handleSave} 
               tempFiles={tempFiles} 
               setTempFiles={setTempFiles} 

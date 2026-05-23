@@ -3,7 +3,9 @@ import { Plus, Trash2, Paperclip, Loader2, X } from 'lucide-react';
 import { Card } from '@/components/ui';
 import { processAttachment } from '@/lib/fileHelper';
 
-export default function BillingForm({ form, setForm, clients, handleSave, tempFiles, setTempFiles, loadingFile }) {
+export default function BillingForm({ form, setForm, clients, supervision = [], contracts = [], handleSave, tempFiles, setTempFiles, loadingFile }) {
+  const clientSupervision = supervision.filter(s => s.client_id === form.client_id);
+  const clientContracts = contracts.filter(c => c.client_id === form.client_id);
   
   const addItem = () => {
     const items = [...(form.items || []), { description: '', amount: '' }];
@@ -57,7 +59,7 @@ export default function BillingForm({ form, setForm, clients, handleSave, tempFi
 
   return (
     <Card padded>
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '20px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '20px', marginBottom: '20px' }}>
         <div className="form-group">
           <label className="form-label">رقم الفاتورة</label>
           <input className="form-input" value={form.invoice_no || ''} readOnly style={{ background: '#f8fafc' }} />
@@ -65,6 +67,14 @@ export default function BillingForm({ form, setForm, clients, handleSave, tempFi
         <div className="form-group">
           <label className="form-label">التاريخ</label>
           <input type="date" className="form-input" value={form.date || ''} onChange={e => setForm({ ...form, date: e.target.value })} />
+        </div>
+        <div className="form-group">
+          <label className="form-label">الحالة</label>
+          <select className="form-select" value={form.status || 'معلقة'} onChange={e => setForm({ ...form, status: e.target.value })}>
+            <option value="معلقة">معلقة</option>
+            <option value="مدفوعة">مدفوعة</option>
+            <option value="متأخرة">متأخرة</option>
+          </select>
         </div>
       </div>
 
@@ -76,10 +86,10 @@ export default function BillingForm({ form, setForm, clients, handleSave, tempFi
             value={form.client_id || ''}
             onChange={e => {
               if (e.target.value === '__manual__') {
-                setForm({ ...form, client_id: '', client_name: '', plot_no: '' });
+                setForm({ ...form, client_id: '', client_name: '', plot_no: '', link_type: '', link_id: '', link_installment_id: '' });
               } else {
                 const matched = clients.find(c => c.id === e.target.value);
-                setForm({ ...form, client_id: e.target.value, client_name: matched?.name || '', plot_no: '' });
+                setForm({ ...form, client_id: e.target.value, client_name: matched?.name || '', plot_no: '', link_type: '', link_id: '', link_installment_id: '' });
               }
             }}
           >
@@ -113,6 +123,85 @@ export default function BillingForm({ form, setForm, clients, handleSave, tempFi
           </select>
         </div>
       </div>
+
+      {form.client_id && (clientSupervision.length > 0 || clientContracts.length > 0) && (
+        <div style={{ padding: '15px', background: 'var(--surface-2)', borderRadius: '16px', border: '1px solid var(--border)', marginBottom: '25px' }}>
+          <div className="form-group" style={{ marginBottom: 0 }}>
+            <label className="form-label" style={{ fontWeight: 800 }}>🔗 ربط الفاتورة بـ (سداد دفعة إشراف أو عقد)</label>
+            <select 
+              className="form-select" 
+              value={form.link_type && form.link_id ? `${form.link_type}:${form.link_id}` : ''} 
+              onChange={e => {
+                const val = e.target.value;
+                if (!val) {
+                  setForm(p => ({ ...p, link_type: '', link_id: '', link_installment_id: '' }));
+                } else {
+                  const [type, id] = val.split(':');
+                  
+                  // Auto fill if supervision is selected
+                  let items = form.items || [{ description: '', amount: '' }];
+                  if (type === 'supervision') {
+                    const sProj = clientSupervision.find(s => s.id === id);
+                    if (sProj) {
+                      items = [{ description: `رسوم الإشراف الهندسي لمشروع ${sProj.project_name}`, amount: sProj.contract_value.toString() }];
+                    }
+                  }
+                  
+                  setForm(p => ({ 
+                    ...p, 
+                    link_type: type, 
+                    link_id: id, 
+                    link_installment_id: '',
+                    items: type === 'supervision' ? items : p.items,
+                    amount: type === 'supervision' ? parseFloat(items[0].amount) : p.amount
+                  }));
+                }
+              }}
+            >
+              <option value="">لا يوجد (فاتورة عادية)</option>
+              {clientSupervision.map(s => (
+                <option key={s.id} value={`supervision:${s.id}`}>👷 إشراف شهري: {s.project_name}</option>
+              ))}
+              {clientContracts.map(c => (
+                <option key={c.id} value={`contract:${c.id}`}>📜 عقد دفعات: {c.project_name} {c.contract_no && `(عقد رقم: ${c.contract_no})`}</option>
+              ))}
+            </select>
+          </div>
+
+          {form.link_type === 'contract' && (
+            <div className="form-group" style={{ marginTop: '15px', marginBottom: 0 }}>
+              <label className="form-label" style={{ fontWeight: 800 }}>اختر دفعة العقد المراد سدادها</label>
+              <select 
+                className="form-select" 
+                required 
+                value={form.link_installment_id || ''} 
+                onChange={e => {
+                  const val = e.target.value;
+                  const selectedContract = contracts.find(c => c.id === form.link_id);
+                  const selectedInst = (selectedContract?.installments || []).find(i => i.id === val);
+                  
+                  // Auto fill item with selected installment
+                  const newItems = selectedInst ? [{ description: `سداد دفعة عقد: ${selectedInst.label}`, amount: selectedInst.amount.toString() }] : form.items;
+                  
+                  setForm(p => ({ 
+                    ...p, 
+                    link_installment_id: val,
+                    items: newItems,
+                    amount: selectedInst ? parseFloat(selectedInst.amount) : p.amount
+                  }));
+                }}
+              >
+                <option value="">اختر الدفعة...</option>
+                {(contracts.find(c => c.id === form.link_id)?.installments || []).map(inst => (
+                  <option key={inst.id} value={inst.id}>
+                    {inst.label} ({parseFloat(inst.amount).toFixed(3)} د.ك) {inst.is_paid ? '• مسددة مسبقاً' : ''}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+        </div>
+      )}
 
       <div style={{ marginBottom: '25px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>

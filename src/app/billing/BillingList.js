@@ -28,6 +28,7 @@ export default function BillingList({ billingInvoices, onEdit, onDelete, onPrint
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                   <h3 style={{ fontSize: '16px', fontWeight: 950, margin: 0, color: '#0f172a' }}>{inv.invoice_no}</h3>
                   {inv.has_file && <Paperclip size={14} color="#94a3b8" />}
+                  <Badge status={inv.status || 'معلقة'} type="INVOICES" />
                 </div>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', marginTop: '6px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '12px', color: '#64748b', fontWeight: 700 }}>
@@ -36,6 +37,11 @@ export default function BillingList({ billingInvoices, onEdit, onDelete, onPrint
                   <div style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '12px', color: '#64748b', fontWeight: 700 }}>
                     <Calendar size={14} /> {inv.date}
                   </div>
+                  {inv.link_type && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12px', color: 'var(--blue)', fontWeight: 800 }}>
+                      <span>🔗</span> {inv.link_type === 'supervision' ? 'إشراف شهري' : 'عقد دفعات'}
+                    </div>
+                  )}
                 </div>
               </div>
             </div>

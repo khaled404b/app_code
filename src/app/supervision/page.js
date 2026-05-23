@@ -21,7 +21,7 @@ function SupervisionContent() {
 
   const supervision = data?.supervision || [];
   const clients = data?.clients || [];
-  const invoices = data?.invoices || [];
+  const billingInvoices = data?.billingInvoices || [];
 
   const [view, setView] = useState('list');
   const [selected, setSelected] = useState(null);
@@ -41,7 +41,7 @@ function SupervisionContent() {
         (p.contract_no || '').toLowerCase().includes(search.toLowerCase());
       const matchesClient = clientFilter === 'all' || p.client_id === clientFilter;
 
-      const stats = calculateSupervisionStats(p, invoices);
+      const stats = calculateSupervisionStats(p, billingInvoices);
       const matchesStatus = statusFilter === 'all' ||
         (statusFilter === 'active' && !stats.isExpired) ||
         (statusFilter === 'expired' && stats.isExpired) ||
@@ -50,7 +50,7 @@ function SupervisionContent() {
 
       return matchesSearch && matchesClient && matchesStatus;
     });
-  }, [supervision, search, clients, clientFilter, statusFilter, invoices]);
+  }, [supervision, search, clients, clientFilter, statusFilter, billingInvoices]);
 
   const handleQuickPayment = async () => {
     if (!selected) return;
@@ -164,7 +164,7 @@ function SupervisionContent() {
   };
 
   if (view === 'detail' && selected) {
-    const stats = calculateSupervisionStats(selected, invoices);
+    const stats = calculateSupervisionStats(selected, billingInvoices);
     const client = getClient(selected.client_id);
     return (
       <div className="page">
@@ -266,10 +266,10 @@ function SupervisionContent() {
           </div>
 
           {/* List linked paid invoices */}
-          {invoices.filter(inv => inv.link_type === 'supervision' && inv.link_id === selected.id && inv.status === 'مدفوعة').length > 0 && (
+          {billingInvoices.filter(inv => inv.link_type === 'supervision' && inv.link_id === selected.id && inv.status === 'مدفوعة').length > 0 && (
             <div style={{ marginTop: '15px', background: 'var(--surface-2)', padding: '12px', borderRadius: '12px' }}>
               <div style={{ fontSize: '12px', fontWeight: 'bold', color: 'var(--text-2)', marginBottom: '8px' }}>🔗 فواتير مسددة مرتبطة تلقائياً:</div>
-              {invoices.filter(inv => inv.link_type === 'supervision' && inv.link_id === selected.id && inv.status === 'مدفوعة').map(inv => (
+              {billingInvoices.filter(inv => inv.link_type === 'supervision' && inv.link_id === selected.id && inv.status === 'مدفوعة').map(inv => (
                 <div key={inv.id} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11.5px', padding: '4px 0', borderBottom: '1px solid var(--border)' }}>
                   <span>فاتورة رقم {inv.invoice_no} ({inv.issue_date})</span>
                   <span style={{ color: 'var(--green)', fontWeight: 'bold' }}>+{parseFloat(inv.amount).toFixed(3)} د.ك</span>
@@ -475,7 +475,7 @@ function SupervisionContent() {
 
       <div className="list-group">
         {filtered.map(p => {
-          const stats = calculateSupervisionStats(p, invoices);
+          const stats = calculateSupervisionStats(p, billingInvoices);
           const client = getClient(p.client_id);
           return (
             <Card key={p.id} style={{ marginBottom: '16px', borderRight: stats.remaining > 0 ? '5px solid #dc2626' : '5px solid #059669' }} onClick={() => { setSelected(p); setView('detail'); }}>
@@ -536,9 +536,9 @@ function SupervisionContent() {
 
         <div className="sum-box">
           <div><span style={{ fontSize: '10px', color: '#64748b' }}>إجمالي المشاريع: </span><strong style={{ fontSize: '12px' }}>{filtered.length}</strong></div>
-          <div><span style={{ fontSize: '10px', color: '#64748b' }}>إجمالي المستحق: </span><strong style={{ fontSize: '12px' }}>{filtered.reduce((sum, p) => sum + calculateSupervisionStats(p, invoices).totalDue, 0).toFixed(3)} د.ك</strong></div>
-          <div><span style={{ fontSize: '10px', color: '#64748b' }}>إجمالي المحصل الفعلي: </span><strong style={{ fontSize: '12px', color: '#059669' }}>{filtered.reduce((sum, p) => sum + calculateSupervisionStats(p, invoices).collectedAmount, 0).toFixed(3)} د.ك</strong></div>
-          <div><span style={{ fontSize: '10px', color: '#64748b' }}>إجمالي المطالبات المتبقية: </span><strong style={{ fontSize: '12px', color: '#dc2626' }}>{filtered.reduce((sum, p) => sum + calculateSupervisionStats(p, invoices).remaining, 0).toFixed(3)} د.ك</strong></div>
+          <div><span style={{ fontSize: '10px', color: '#64748b' }}>إجمالي المستحق: </span><strong style={{ fontSize: '12px' }}>{filtered.reduce((sum, p) => sum + calculateSupervisionStats(p, billingInvoices).totalDue, 0).toFixed(3)} د.ك</strong></div>
+          <div><span style={{ fontSize: '10px', color: '#64748b' }}>إجمالي المحصل الفعلي: </span><strong style={{ fontSize: '12px', color: '#059669' }}>{filtered.reduce((sum, p) => sum + calculateSupervisionStats(p, billingInvoices).collectedAmount, 0).toFixed(3)} د.ك</strong></div>
+          <div><span style={{ fontSize: '10px', color: '#64748b' }}>إجمالي المطالبات المتبقية: </span><strong style={{ fontSize: '12px', color: '#dc2626' }}>{filtered.reduce((sum, p) => sum + calculateSupervisionStats(p, billingInvoices).remaining, 0).toFixed(3)} د.ك</strong></div>
         </div>
 
         <table className="rep-table">
@@ -556,7 +556,7 @@ function SupervisionContent() {
           </thead>
           <tbody>
             {filtered.map(p => {
-              const stats = calculateSupervisionStats(p, invoices);
+              const stats = calculateSupervisionStats(p, billingInvoices);
               const client = getClient(p.client_id);
               return (
                 <tr key={p.id}>

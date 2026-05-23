@@ -21,7 +21,7 @@ export default function ContractsPage() {
 
   const contracts = data?.contracts || [];
   const clients = data?.clients || [];
-  const invoices = data?.invoices || [];
+  const billingInvoices = data?.billingInvoices || [];
 
   const [view, setView] = useState('list');
   const [selected, setSelected] = useState(null);
@@ -41,7 +41,7 @@ export default function ContractsPage() {
         (p.contract_no || '').toLowerCase().includes(search.toLowerCase());
       const matchesClient = clientFilter === 'all' || p.client_id === clientFilter;
 
-      const stats = calculateSupervisionStats(p, invoices);
+      const stats = calculateSupervisionStats(p, billingInvoices);
       const matchesStatus = statusFilter === 'all' ||
         (statusFilter === 'active' && !stats.isExpired) ||
         (statusFilter === 'expired' && stats.isExpired) ||
@@ -50,7 +50,7 @@ export default function ContractsPage() {
 
       return matchesSearch && matchesClient && matchesStatus;
     });
-  }, [contracts, search, clients, clientFilter, statusFilter, invoices]);
+  }, [contracts, search, clients, clientFilter, statusFilter, billingInvoices]);
 
   const handleToggleInstallmentPay = async (installmentId, isPaid) => {
     if (!selected) return;
@@ -63,7 +63,7 @@ export default function ContractsPage() {
     });
 
     const newCollected = updatedInstallments
-      .filter(inst => inst.is_paid || invoices.some(inv => inv.link_type === 'contract' && inv.link_installment_id === inst.id && inv.status === 'مدفوعة'))
+      .filter(inst => inst.is_paid || billingInvoices.some(inv => inv.link_type === 'contract' && inv.link_installment_id === inst.id && inv.status === 'مدفوعة'))
       .reduce((acc, inst) => acc + parseFloat(inst.amount || 0), 0);
 
     const newTotal = updatedInstallments
@@ -97,7 +97,7 @@ export default function ContractsPage() {
       installments,
       contract_value: totalValue,
       collected_amount: installments.filter(inst => {
-        const isPaidViaInvoice = invoices.some(inv => 
+        const isPaidViaInvoice = billingInvoices.some(inv => 
           inv.link_type === 'contract' && 
           inv.link_installment_id === inst.id && 
           inv.status === 'مدفوعة'
@@ -181,7 +181,7 @@ export default function ContractsPage() {
   };
 
   if (view === 'detail' && selected) {
-    const stats = calculateSupervisionStats(selected, invoices);
+    const stats = calculateSupervisionStats(selected, billingInvoices);
     const client = getClient(selected.client_id);
     return (
       <div className="page">
@@ -297,7 +297,7 @@ export default function ContractsPage() {
             ) : (
               (selected.installments || []).map((inst, idx) => {
                 // Check if paid via linked paid invoice
-                const linkedInvoice = invoices.find(inv => 
+                const linkedInvoice = billingInvoices.find(inv => 
                   inv.link_type === 'contract' && 
                   inv.link_installment_id === inst.id && 
                   inv.status === 'مدفوعة'
@@ -616,7 +616,7 @@ export default function ContractsPage() {
 
       <div className="list-group">
         {filtered.map(p => {
-          const stats = calculateSupervisionStats(p, invoices);
+          const stats = calculateSupervisionStats(p, billingInvoices);
           const client = getClient(p.client_id);
           return (
             <Card key={p.id} style={{ marginBottom: '16px', borderRight: stats.remaining > 0 ? '5px solid #dc2626' : '5px solid #059669' }} onClick={() => { setSelected(p); setView('detail'); }}>
@@ -638,7 +638,7 @@ export default function ContractsPage() {
                   <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12px', color: '#64748b' }}>
                     <TrendingUp size={14} /> 
                     <span style={{ fontWeight: 800 }}>
-                      {(p.installments || []).filter(inst => inst.is_paid || invoices.some(inv => inv.link_type === 'contract' && inv.link_installment_id === inst.id && inv.status === 'مدفوعة')).length}/{(p.installments || []).length} دفعات مسددة
+                      {(p.installments || []).filter(inst => inst.is_paid || billingInvoices.some(inv => inv.link_type === 'contract' && inv.link_installment_id === inst.id && inv.status === 'مدفوعة')).length}/{(p.installments || []).length} دفعات مسددة
                     </span>
                   </div>
                   
@@ -677,9 +677,9 @@ export default function ContractsPage() {
 
         <div className="sum-box">
           <div><span style={{ fontSize: '10px', color: '#64748b' }}>إجمالي العقود: </span><strong style={{ fontSize: '12px' }}>{filtered.length}</strong></div>
-          <div><span style={{ fontSize: '10px', color: '#64748b' }}>إجمالي القيمة: </span><strong style={{ fontSize: '12px' }}>{filtered.reduce((sum, p) => sum + calculateSupervisionStats(p, invoices).totalDue, 0).toFixed(3)} د.ك</strong></div>
-          <div><span style={{ fontSize: '10px', color: '#64748b' }}>إجمالي المحصل: </span><strong style={{ fontSize: '12px', color: '#059669' }}>{filtered.reduce((sum, p) => sum + calculateSupervisionStats(p, invoices).collectedAmount, 0).toFixed(3)} د.ك</strong></div>
-          <div><span style={{ fontSize: '10px', color: '#64748b' }}>إجمالي المطالبات المتبقية: </span><strong style={{ fontSize: '12px', color: '#dc2626' }}>{filtered.reduce((sum, p) => sum + calculateSupervisionStats(p, invoices).remaining, 0).toFixed(3)} د.ك</strong></div>
+          <div><span style={{ fontSize: '10px', color: '#64748b' }}>إجمالي القيمة: </span><strong style={{ fontSize: '12px' }}>{filtered.reduce((sum, p) => sum + calculateSupervisionStats(p, billingInvoices).totalDue, 0).toFixed(3)} د.ك</strong></div>
+          <div><span style={{ fontSize: '10px', color: '#64748b' }}>إجمالي المحصل: </span><strong style={{ fontSize: '12px', color: '#059669' }}>{filtered.reduce((sum, p) => sum + calculateSupervisionStats(p, billingInvoices).collectedAmount, 0).toFixed(3)} د.ك</strong></div>
+          <div><span style={{ fontSize: '10px', color: '#64748b' }}>إجمالي المطالبات المتبقية: </span><strong style={{ fontSize: '12px', color: '#dc2626' }}>{filtered.reduce((sum, p) => sum + calculateSupervisionStats(p, billingInvoices).remaining, 0).toFixed(3)} د.ك</strong></div>
         </div>
 
         <table className="rep-table">
@@ -697,7 +697,7 @@ export default function ContractsPage() {
           </thead>
           <tbody>
             {filtered.map(p => {
-              const stats = calculateSupervisionStats(p, invoices);
+              const stats = calculateSupervisionStats(p, billingInvoices);
               const client = getClient(p.client_id);
               return (
                 <tr key={p.id}>

@@ -94,13 +94,19 @@ export function useBillingController() {
     }
   };
 
+  const supervision = (data?.supervision || []).filter(Boolean);
+  const contracts = (data?.contracts || []).filter(Boolean);
+
   const openNew = () => {
     setForm({
       invoice_no: generateNextNo(),
       date: new Date().toISOString().split('T')[0],
       items: [{ description: '', amount: '' }],
       remarks: '',
-      status: 'معلقة'
+      status: 'معلقة',
+      link_type: '',
+      link_id: '',
+      link_installment_id: ''
     });
     setTempFiles([]);
     setSelected(null);
@@ -108,7 +114,12 @@ export function useBillingController() {
   };
 
   const openEdit = (inv) => {
-    setForm({ ...inv });
+    setForm({
+      link_type: '',
+      link_id: '',
+      link_installment_id: '',
+      ...inv
+    });
     setTempFiles([]);
     setSelected(inv);
     setView('form');
@@ -122,7 +133,7 @@ export function useBillingController() {
   };
 
   return {
-    state: { view, selected, search, form, billingInvoices, clients, filtered, tempFiles, loadingFile, isLoading, canEdit },
+    state: { view, selected, search, form, billingInvoices, clients, supervision, contracts, filtered, tempFiles, loadingFile, isLoading, canEdit },
     actions: { setView, setSelected, setSearch, setForm, setTempFiles, handleSave, openNew, openEdit, handleDelete }
   };
 }

@@ -60,6 +60,7 @@ export default function Dashboard() {
   const clients = data?.clients || [];
   const tasks = data?.tasks || [];
   const invoices = data?.invoices || [];
+  const billingInvoices = data?.billingInvoices || [];
 
   const selectedClient = useMemo(() => clients.find(c => c?.id === selectedClientId) || null, [clients, selectedClientId]);
   const fTasks = useMemo(() => (selectedClientId === 'all' ? tasks : tasks.filter(t => t?.client_id === selectedClientId)).filter(Boolean), [tasks, selectedClientId]);
@@ -68,12 +69,12 @@ export default function Dashboard() {
   const fContracts = useMemo(() => (selectedClientId === 'all' ? data?.contracts || [] : (data?.contracts || []).filter(c => c?.client_id === selectedClientId)).filter(Boolean), [data?.contracts, selectedClientId]);
 
   const supervisionStats = useMemo(() => {
-    return fSupervision.map(s => calculateSupervisionStats(s, invoices));
-  }, [fSupervision, invoices]);
+    return fSupervision.map(s => calculateSupervisionStats(s, billingInvoices));
+  }, [fSupervision, billingInvoices]);
 
   const contractsStats = useMemo(() => {
-    return fContracts.map(c => calculateSupervisionStats(c, invoices));
-  }, [fContracts, invoices]);
+    return fContracts.map(c => calculateSupervisionStats(c, billingInvoices));
+  }, [fContracts, billingInvoices]);
 
   const stats = {
     tasks: {
