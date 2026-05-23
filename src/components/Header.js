@@ -1,15 +1,13 @@
 'use client';
 
-import { Bell, X, LogOut, Moon, Sun, RefreshCw, Wifi, WifiOff } from 'lucide-react';
+import { Bell, X, LogOut, RefreshCw, Wifi, WifiOff } from 'lucide-react';
 import { useData } from '@/hooks/useData';
 import { useAuth } from '@/hooks/useAuth';
-import { useTheme } from './AppWrapper';
 import { useState } from 'react';
 
 export default function Header() {
   const { notifications, isConnected, isSyncing } = useData();
   const { user } = useAuth();
-  const { theme, toggleTheme } = useTheme();
   const [showNotifs, setShowNotifs] = useState(false);
 
   const unreadCount = (notifications || []).filter(n => !n.read).length;
@@ -29,9 +27,6 @@ export default function Header() {
       <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
         <button onClick={() => window.location.reload()} style={{ background: '#fee2e2', border: '1px solid #fecaca', width: '38px', height: '38px', borderRadius: '8px', cursor: 'pointer', color: '#ef4444', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <LogOut size={18} />
-        </button>
-        <button onClick={toggleTheme} style={{ background: '#f8fafc', border: '1px solid #e2e8f0', width: '38px', height: '38px', borderRadius: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          {theme === 'dark' ? <Sun size={18} color="#facc15" /> : <Moon size={18} color="#64748b" />}
         </button>
       </div>
 

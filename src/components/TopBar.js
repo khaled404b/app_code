@@ -1,14 +1,12 @@
 'use client';
 
-import { RefreshCw, Wifi, WifiOff, Moon, Sun, LogOut } from 'lucide-react';
+import { RefreshCw, Wifi, WifiOff, LogOut } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
-import { useTheme } from '@/components/AppWrapper';
 import { useData } from '@/hooks/useData';
 
 export default function TopBar() {
   const { isConnected, isSyncing } = useData();
   const { logout, user } = useAuth();
-  const { theme, toggleTheme } = useTheme();
 
   return (
     <div style={{ 
@@ -41,9 +39,6 @@ export default function TopBar() {
 
       {/* LEFT: CONTROLS & PROFILE */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-         <button onClick={toggleTheme} style={{ background: 'var(--surface-2)', border: '1px solid var(--border)', width: '34px', height: '34px', borderRadius: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text)' }}>
-           {theme === 'dark' ? <Sun size={16} color="#facc15" /> : <Moon size={16} color="#64748b" />}
-         </button>
          <button onClick={() => logout()} style={{ background: 'var(--red-light)', border: '1px solid var(--border)', width: '34px', height: '34px', borderRadius: '8px', cursor: 'pointer', color: 'var(--red)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
            <LogOut size={16} />
          </button>
