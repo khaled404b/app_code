@@ -16,7 +16,7 @@ import { calculateSupervisionStats } from '@/utils/supervisionCalc';
 import { Badge, Card, PageHeader, SearchBar } from '@/components/ui';
 
 function SupervisionContent() {
-  const { data, isLoading, updateData, addNotification } = useData();
+  const { data, isLoading, updateData, addNotification, getAttachment } = useData();
   const { canEdit } = useAuth();
 
   const supervision = data?.supervision || [];
@@ -280,7 +280,21 @@ function SupervisionContent() {
 
         {canEdit && (
           <div style={{ display: 'flex', gap: '10px', marginTop: '24px' }}>
-            <button onClick={() => { setForm(selected); setView('form'); }} className="btn">تعديل البيانات</button>
+            <button onClick={async () => { 
+              setForm(selected); 
+              setTempFiles([]);
+              setView('form'); 
+              if (selected.has_file) {
+                try {
+                  const stored = await getAttachment(selected.id);
+                  if (stored) {
+                    setTempFiles(parseAttachment(stored));
+                  }
+                } catch (e) {
+                  console.error("Error loading attachments:", e);
+                }
+              }
+            }} className="btn">تعديل البيانات</button>
             <button onClick={() => { if (confirm('هل أنت متأكد من حذف مشروع الإشراف هذا نهائياً؟')) updateData('supervision', 'delete', null, selected.id); setView('list'); }} className="btn btn-danger" style={{ width: 'auto' }}>حذف المشروع</button>
           </div>
         )}

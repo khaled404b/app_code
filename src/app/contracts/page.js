@@ -16,7 +16,7 @@ import { calculateSupervisionStats } from '@/utils/supervisionCalc';
 import { Badge, Card, PageHeader, SearchBar } from '@/components/ui';
 
 export default function ContractsPage() {
-  const { data, isLoading, updateData, addNotification } = useData();
+  const { data, isLoading, updateData, addNotification, getAttachment } = useData();
   const { canEdit } = useAuth();
 
   const contracts = data?.contracts || [];
@@ -307,7 +307,21 @@ export default function ContractsPage() {
 
         {canEdit && (
           <div style={{ display: 'flex', gap: '10px', marginTop: '24px' }}>
-            <button onClick={() => { setForm(selected); setView('form'); }} className="btn">تعديل العقد</button>
+            <button onClick={async () => { 
+              setForm(selected); 
+              setTempFiles([]);
+              setView('form'); 
+              if (selected.has_file) {
+                try {
+                  const stored = await getAttachment(selected.id);
+                  if (stored) {
+                    setTempFiles(parseAttachment(stored));
+                  }
+                } catch (e) {
+                  console.error("Error loading attachments:", e);
+                }
+              }
+            }} className="btn">تعديل العقد</button>
             <button onClick={() => { if (confirm('هل أنت متأكد من حذف هذا العقد نهائياً؟')) updateData('contracts', 'delete', null, selected.id); setView('list'); }} className="btn btn-danger" style={{ width: 'auto' }}>حذف العقد</button>
           </div>
         )}

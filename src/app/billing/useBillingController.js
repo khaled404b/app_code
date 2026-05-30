@@ -5,9 +5,10 @@ import { useAuth } from '@/hooks/useAuth';
 import { v4 as uuidv4 } from 'uuid';
 import { ref, update, set } from 'firebase/database';
 import { db } from '@/lib/firebase';
+import { parseAttachment } from '@/lib/fileHelper';
 
 export function useBillingController() {
-  const { data, isLoading, updateData } = useData();
+  const { data, isLoading, updateData, getAttachment } = useData();
   const { user, canEdit } = useAuth();
   
   const searchParams = useSearchParams();
@@ -130,7 +131,7 @@ export function useBillingController() {
     setView('form');
   };
 
-  const openEdit = (inv) => {
+  const openEdit = async (inv) => {
     setForm({
       link_type: '',
       link_id: '',
@@ -140,6 +141,16 @@ export function useBillingController() {
     setTempFiles([]);
     setSelected(inv);
     setView('form');
+    if (inv.has_file) {
+      try {
+        const stored = await getAttachment(inv.id);
+        if (stored) {
+          setTempFiles(parseAttachment(stored));
+        }
+      } catch (e) {
+        console.error("Error loading attachments for edit:", e);
+      }
+    }
   };
 
   const handleDelete = async (id) => {

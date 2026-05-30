@@ -18,7 +18,7 @@ import { InvoiceForm } from '@/components/invoices/InvoiceForm';
 import { StatementView } from '@/components/invoices/StatementView';
 
 function InvoicesContent() {
-  const { data, isLoading, updateData } = useData();
+  const { data, isLoading, updateData, getAttachment } = useData();
   const { canEdit, user } = useAuth();
   
   const invoices = (data && data.invoices) || [];
@@ -220,7 +220,7 @@ function InvoicesContent() {
 
   if (view === 'detail' && selected) return (
     <div className="page">
-      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '24px' }}><button onClick={() => setView('list')} className="icon-btn"><ArrowRight size={20} /></button><h1 className="page-title">التفاصيل</h1>{canEdit && <button onClick={() => { setForm({...selected}); setView('form'); }} className="btn btn-ghost btn-sm" style={{ marginRight: 'auto', width: 'auto' }}>تعديل</button>}</div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '24px' }}><button onClick={() => setView('list')} className="icon-btn"><ArrowRight size={20} /></button><h1 className="page-title">التفاصيل</h1>{canEdit && <button onClick={async () => { setForm({...selected}); setTempFiles([]); setView('form'); if (selected.has_file) { try { const stored = await getAttachment(selected.id); if (stored) { setTempFiles(parseAttachment(stored)); } } catch (e) { console.error("Error loading attachments for edit:", e); } } }} className="btn btn-ghost btn-sm" style={{ marginRight: 'auto', width: 'auto' }}>تعديل</button>}</div>
       <div style={{ background: STATUS_CFG.INVOICES[selected.status]?.color, borderRadius: '20px', padding: '24px', marginBottom: '20px', color: 'white' }}><div style={{ fontSize: '12px', opacity: 0.8 }}>{selected.invoice_no}</div><div style={{ fontSize: '32px', fontWeight: 900, marginTop: '8px' }}>{(parseFloat(selected.amount) || 0).toFixed(3)} د.ك</div></div>
       <Card>
         <div className="detail-row"><User size={18} color="#94a3b8" /><span className="detail-label">العميل</span><span className="detail-value">{clientName(selected.client_id)}</span></div>

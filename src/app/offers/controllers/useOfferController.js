@@ -105,7 +105,7 @@ export function useOfferController() {
     setView('form'); 
   };
   
-  const openEdit = (offer) => { 
+  const openEdit = async (offer) => { 
     setForm({ ...offer }); 
     setTempFiles([]);
     if (!services.includes(offer.work_type)) {
@@ -115,6 +115,16 @@ export function useOfferController() {
       setCustomWorkType('');
     }
     setView('form'); 
+    if (offer.has_file) {
+      try {
+        const stored = await getAttachment(offer.id);
+        if (stored) {
+          setTempFiles(parseAttachment(stored));
+        }
+      } catch (e) {
+        console.error("Error loading attachments for edit:", e);
+      }
+    }
   };
 
   const goBack = () => {

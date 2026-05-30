@@ -4,6 +4,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { v4 as uuidv4 } from 'uuid';
 import { update, ref as dbRef } from 'firebase/database';
 import { db } from '@/lib/firebase';
+import { parseAttachment } from '@/lib/fileHelper';
 
 export function useDeliveryController() {
   const { data, isLoading, updateData, getAttachment } = useData();
@@ -99,10 +100,20 @@ export function useDeliveryController() {
     setView('form'); 
   };
   
-  const openEdit = (delivery) => { 
+  const openEdit = async (delivery) => { 
     setForm({ ...delivery }); 
     setTempFiles([]);
     setView('form'); 
+    if (delivery.has_file) {
+      try {
+        const stored = await getAttachment(delivery.id);
+        if (stored) {
+          setTempFiles(parseAttachment(stored));
+        }
+      } catch (e) {
+        console.error("Error loading attachments for edit:", e);
+      }
+    }
   };
 
   const goBack = () => {

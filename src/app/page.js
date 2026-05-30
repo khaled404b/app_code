@@ -4,7 +4,7 @@ import { useState, useMemo, memo } from 'react';
 import { useData } from '@/hooks/useData';
 import { 
   Briefcase, FileText, ArrowRight, Eye, Send, Link as LinkIcon, 
-  MapPin, Loader2, X, TrendingUp, DollarSign
+  MapPin, Loader2, X, TrendingUp, DollarSign, AlertTriangle
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { calculateSupervisionStats } from '@/utils/supervisionCalc';
@@ -51,7 +51,7 @@ const RowItem = memo(({ label, value, color, onClick }) => (
 ));
 
 export default function Dashboard() {
-  const { data, isLoading } = useData();
+  const { data, isLoading, isError } = useData();
   const router = useRouter();
   const [selectedClientId, setSelectedClientId] = useState('all');
   const [showWhatsApp, setShowWhatsApp] = useState(false);
@@ -125,6 +125,48 @@ export default function Dashboard() {
   return (
     <div style={{ background: 'var(--bg)', minHeight: '100vh', padding: '20px' }}>
       <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
+        {isError && (
+          <div style={{ 
+            background: '#fef2f2', 
+            border: '1px solid #fca5a5', 
+            borderRadius: '16px', 
+            padding: '20px', 
+            marginBottom: '25px', 
+            display: 'flex', 
+            gap: '15px', 
+            alignItems: 'flex-start',
+            direction: 'rtl'
+          }}>
+            <AlertTriangle color="#dc2626" size={24} style={{ flexShrink: 0, marginTop: '2px' }} />
+            <div>
+              <h4 style={{ margin: 0, color: '#991b1b', fontSize: '15px', fontWeight: 900 }}>⚠️ تنبيه: فشل الاتصال بقاعدة البيانات (Firebase Realtime Database)</h4>
+              <p style={{ margin: '8px 0 0 0', color: '#7f1d1d', fontSize: '13px', lineHeight: 1.6, fontWeight: 700 }}>
+                تظهر قاعدة البيانات خطأ في الصلاحيات (Permission denied). هذا يعني عادةً أن الصلاحيات التجريبية لقاعدة البيانات (Firebase Rules) قد انتهت.
+                الرجاء تحديث القواعد في لوحة تحكم Firebase لتتمكن من رفع وعرض الملفات وحفظ التغييرات بشكل صحيح.
+              </p>
+              <div style={{ marginTop: '12px', background: '#fff', padding: '10px 15px', borderRadius: '8px', border: '1px solid #fecaca', fontSize: '12px', fontFamily: 'monospace', color: '#dc2626', direction: 'ltr', textAlign: 'left' }}>
+                {isError.message || String(isError)}
+              </div>
+              <div style={{ marginTop: '12px', fontSize: '13px', fontWeight: 800, color: '#991b1b' }}>
+                💡 خطوات حل المشكلة في لوحة تحكم Firebase:
+                <ol style={{ margin: '5px 0 0 0', paddingRight: '20px', fontWeight: 700, lineHeight: 1.6 }}>
+                  <li>اذهب إلى <a href="https://console.firebase.google.com/" target="_blank" rel="noreferrer" style={{ color: '#2563eb', textDecoration: 'underline' }}>Firebase Console</a> وافتح مشروعك.</li>
+                  <li>اختر <strong>Realtime Database</strong> من القائمة الجانبية.</li>
+                  <li>انتقل إلى تبويب <strong>Rules</strong> في الأعلى.</li>
+                  <li>قم بتغيير القواعد لتصبح عامة (مؤقتاً للتشغيل المباشر):
+                    <pre style={{ direction: 'ltr', textAlign: 'left', background: '#f8fafc', padding: '10px', borderRadius: '6px', border: '1px solid #e2e8f0', marginTop: '5px', fontSize: '11px', overflowX: 'auto' }}>{`{
+  "rules": {
+    ".read": true,
+    ".write": true
+  }
+}`}</pre>
+                  </li>
+                  <li>اضغط على زر <strong>Publish</strong> في الأعلى لحفظ التغييرات وتفعيلها.</li>
+                </ol>
+              </div>
+            </div>
+          </div>
+        )}
         
         {/* --- Greetings & Filter --- */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px' }}>
