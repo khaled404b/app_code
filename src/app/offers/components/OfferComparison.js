@@ -13,16 +13,20 @@ export function OfferComparison({ state, actions }) {
     setIsExporting(true);
 
     try {
-      // Fetch all attachments
-      const results = {};
-      for (const o of comparisonOffers) {
-        if (o.has_file) {
+      // Fetch attachments IN TABLE ORDER — use an ordered array, not a plain object
+      // so the PDF pages always follow the same rank as the displayed table rows
+      const orderedResults = await Promise.all(
+        comparisonOffers.map(async (o) => {
+          if (!o.has_file) return { offer: o, data: null };
           try {
             const data = o.attachment_data || await getAttachment(o.id);
-            if (data) results[o.id] = data;
-          } catch (e) { console.error('Error fetching attachment', e); }
-        }
-      }
+            return { offer: o, data: data || null };
+          } catch (e) {
+            console.error('Error fetching attachment for', o.company_name, e);
+            return { offer: o, data: null };
+          }
+        })
+      );
 
       const userFileName = prompt('أدخل اسم الملف:', `مقارنة-عروض-${getClientName(compClient)}`);
       if (!userFileName) { setIsExporting(false); return; }
@@ -45,14 +49,13 @@ export function OfferComparison({ state, actions }) {
 
       element.style.display = 'none';
 
-      // Step 3: Load table PDF and embed attachments directly as A4 pages using pdf-lib
+      // Step 3: Load table PDF and embed attachments in exact table row order
       const finalDoc = await PDFDocument.load(mainPdfBytes);
       const A4_W = 595.28;
       const A4_H = 841.89;
 
-      for (const o of comparisonOffers) {
-        if (!results[o.id]) continue;
-        const attachData = results[o.id];
+      for (const { offer: o, data: attachData } of orderedResults) {
+        if (!attachData) continue;
 
         // PDF attachments: copy pages directly
         if (typeof attachData === 'string' && attachData.startsWith('data:application/pdf')) {
