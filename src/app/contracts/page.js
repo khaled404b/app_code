@@ -400,7 +400,7 @@ export default function ContractsPage() {
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                   {(form.installments || []).map((inst, index) => (
                     <div key={inst.id} style={{ display: 'flex', gap: '10px', alignItems: 'flex-end', background: 'var(--surface)', padding: '12px', borderRadius: '12px', border: '1px solid var(--border)', flexWrap: 'wrap' }}>
-                      <div style={{ flex: '2 1 200px' }} className="form-group" style={{ marginBottom: 0 }}>
+                      <div className="form-group" style={{ flex: '2 1 200px', marginBottom: 0 }}>
                         <label className="form-label" style={{ fontSize: '11px' }}>اسم البند / الدفعة</label>
                         <input 
                           className="form-input" 
@@ -414,7 +414,7 @@ export default function ContractsPage() {
                           placeholder="مثال: عند توقيع العقد" 
                         />
                       </div>
-                      <div style={{ flex: '1 1 100px' }} className="form-group" style={{ marginBottom: 0 }}>
+                      <div className="form-group" style={{ flex: '1 1 100px', marginBottom: 0 }}>
                         <label className="form-label" style={{ fontSize: '11px' }}>قيمة الدفعة (د.ك)</label>
                         <input 
                           type="number" 
@@ -430,7 +430,7 @@ export default function ContractsPage() {
                           placeholder="د.ك" 
                         />
                       </div>
-                      <div style={{ flex: '1.2 1 130px' }} className="form-group" style={{ marginBottom: 0 }}>
+                      <div className="form-group" style={{ flex: '1.2 1 130px', marginBottom: 0 }}>
                         <label className="form-label" style={{ fontSize: '11px' }}>تاريخ الاستحقاق</label>
                         <input 
                           type="date" 

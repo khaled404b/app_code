@@ -10,13 +10,13 @@ const getStatusColor = (status) => {
 };
 
 export function OfferList({ state, actions }) {
-  const { filteredOffers, search, canEdit, offers } = state;
-  const { setSearch, openDetail, openNew, openComparison, getClientName } = actions;
+  const { filteredOffers, search, canEdit, offers, clients, filterClient, filterStatus, filterWorkType, uniqueWorkTypes, uniqueStatuses } = state;
+  const { setSearch, openDetail, openNew, openComparison, getClientName, setFilterClient, setFilterStatus, setFilterWorkType } = actions;
 
   return (
     <div className="page">
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-        <h1 className="page-title">سجل العروض <span style={{ color: '#94a3b8', fontSize: '20px' }}>({offers.length})</span></h1>
+        <h1 className="page-title">سجل العروض <span style={{ color: '#94a3b8', fontSize: '20px' }}>({filteredOffers.length})</span></h1>
         <div style={{ display: 'flex', gap: '8px' }}>
           <button className="btn btn-outline btn-sm" style={{ width: 'auto' }} onClick={openComparison}>
             <BarChart2 size={16} style={{ marginLeft: '4px' }} /> مقارنة العروض
@@ -25,7 +25,7 @@ export function OfferList({ state, actions }) {
         </div>
       </div>
       
-      <div className="search-wrap" style={{ marginBottom: '16px' }}>
+      <div className="search-wrap" style={{ marginBottom: '12px' }}>
         <Search size={17} color="#94a3b8" />
         <input 
           className="search-input" 
@@ -33,6 +33,21 @@ export function OfferList({ state, actions }) {
           value={search} 
           onChange={e => setSearch(e.target.value)} 
         />
+      </div>
+
+      <div style={{ display: 'flex', gap: '10px', marginBottom: '20px', overflowX: 'auto', paddingBottom: '5px' }}>
+        <select className="form-select btn-sm" style={{ width: 'auto', flexShrink: 0 }} value={filterClient} onChange={e => setFilterClient(e.target.value)}>
+          <option value="all">كل العملاء</option>
+          {clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+        </select>
+        <select className="form-select btn-sm" style={{ width: 'auto', flexShrink: 0 }} value={filterStatus} onChange={e => setFilterStatus(e.target.value)}>
+          <option value="all">كل الحالات</option>
+          {uniqueStatuses.map(s => <option key={s} value={s}>{s}</option>)}
+        </select>
+        <select className="form-select btn-sm" style={{ width: 'auto', flexShrink: 0 }} value={filterWorkType} onChange={e => setFilterWorkType(e.target.value)}>
+          <option value="all">كل أنواع العمل</option>
+          {uniqueWorkTypes.map(t => <option key={t} value={t}>{t}</option>)}
+        </select>
       </div>
       
       <div className="list-group">

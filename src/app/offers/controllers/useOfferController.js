@@ -16,6 +16,11 @@ export function useOfferController() {
   const [form, setForm] = useState({});
   const [tempFiles, setTempFiles] = useState([]); // Array of base64 strings
   
+  // List Filters
+  const [filterClient, setFilterClient] = useState('all');
+  const [filterStatus, setFilterStatus] = useState('all');
+  const [filterWorkType, setFilterWorkType] = useState('all');
+  
   // Filters for Comparison
   const [compClient, setCompClient] = useState('all');
   const [compPlot, setCompPlot] = useState('all');
@@ -36,15 +41,38 @@ export function useOfferController() {
 
   // Filter Logic for List
   const filteredOffers = useMemo(() => {
-    if (!search) return offers;
-    const lowerSearch = search.toLowerCase();
-    return offers.filter(o => 
-      o.company_name?.toLowerCase().includes(lowerSearch) || 
-      o.request_code?.toLowerCase().includes(lowerSearch) ||
-      getClientName(o.client_id).toLowerCase().includes(lowerSearch) ||
-      String(o.plot_no || '').toLowerCase().includes(lowerSearch)
-    );
-  }, [offers, search, clients]);
+    return offers.filter(o => {
+      // Search filter
+      if (search) {
+        const lowerSearch = search.toLowerCase();
+        const matchesSearch = 
+          o.company_name?.toLowerCase().includes(lowerSearch) || 
+          o.request_code?.toLowerCase().includes(lowerSearch) ||
+          getClientName(o.client_id).toLowerCase().includes(lowerSearch) ||
+          String(o.plot_no || '').toLowerCase().includes(lowerSearch);
+        if (!matchesSearch) return false;
+      }
+      // Client filter
+      if (filterClient !== 'all' && o.client_id !== filterClient) return false;
+      // Status filter
+      if (filterStatus !== 'all' && o.status !== filterStatus) return false;
+      // Work type filter
+      if (filterWorkType !== 'all' && o.work_type !== filterWorkType) return false;
+      return true;
+    });
+  }, [offers, search, clients, filterClient, filterStatus, filterWorkType]);
+
+  // Unique work types from existing offers for the filter dropdown
+  const uniqueWorkTypes = useMemo(() => {
+    const types = new Set(offers.map(o => o.work_type).filter(Boolean));
+    return [...types];
+  }, [offers]);
+
+  // Unique statuses from existing offers
+  const uniqueStatuses = useMemo(() => {
+    const statuses = new Set(offers.map(o => o.status).filter(Boolean));
+    return [...statuses];
+  }, [offers]);
 
   // Comparison Logic
   const comparisonOffers = useMemo(() => {
@@ -227,12 +255,14 @@ export function useOfferController() {
     state: { 
       isLoading, canEdit, view, selected, form, search, 
       offers, clients, services, filteredOffers, comparisonOffers, comparisonStats,
-      compClient, compPlot, compWorkType, tempFiles, customWorkType
+      compClient, compPlot, compWorkType, tempFiles, customWorkType,
+      filterClient, filterStatus, filterWorkType, uniqueWorkTypes, uniqueStatuses
     },
     actions: { 
       setSearch, setView, openDetail, openNew, openEdit, goBack, openComparison, 
       handleSave, handleDelete, markAsSelected, setCompClient, setCompPlot, setCompWorkType, 
-      setForm, setTempFiles, getClientName, fetchAndShowFile, setCustomWorkType, getAttachment
+      setForm, setTempFiles, getClientName, fetchAndShowFile, setCustomWorkType, getAttachment,
+      setFilterClient, setFilterStatus, setFilterWorkType
     }
   };
 }
