@@ -58,6 +58,7 @@ export function OfferDetail({ state, actions }) {
 
       <Card padded style={{ marginBottom: '16px' }}>
         <div className="section-label" style={{ marginTop: 0 }}>تفاصيل إضافية</div>
+        <div className="detail-row"><FileText size={16} /><span className="detail-label">رقم العرض</span><span className="detail-value">{selected.offer_number || '—'}</span></div>
         <div className="detail-row"><Calendar size={16} /><span className="detail-label">تاريخ الاستلام</span><span className="detail-value">{selected.receive_date}</span></div>
         <div className="detail-row" style={{ border: 0 }}><Calendar size={16} /><span className="detail-label">صلاحية العرض حتى</span><span className="detail-value">{selected.validity_date || '—'}</span></div>
       </Card>
