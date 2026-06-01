@@ -1,7 +1,7 @@
 import { Search, ChevronLeft, BarChart2 } from 'lucide-react';
 
 const getStatusColor = (status) => {
-  switch(status) {
+  switch (status) {
     case 'مختار': return '#059669'; // Green
     case 'مستبعد': return '#dc2626'; // Red
     case 'قيد الدراسة': return '#d97706'; // Orange
@@ -24,14 +24,14 @@ export function OfferList({ state, actions }) {
           {canEdit && <button className="btn btn-sm" style={{ width: 'auto' }} onClick={openNew}>+ عرض جديد</button>}
         </div>
       </div>
-      
+
       <div className="search-wrap" style={{ marginBottom: '12px' }}>
         <Search size={17} color="#94a3b8" />
-        <input 
-          className="search-input" 
-          placeholder="بحث عن عرض، شركة أو عميل..." 
-          value={search} 
-          onChange={e => setSearch(e.target.value)} 
+        <input
+          className="search-input"
+          placeholder="بحث عن عرض، شركة أو عميل..."
+          value={search}
+          onChange={e => setSearch(e.target.value)}
         />
       </div>
 
@@ -49,7 +49,7 @@ export function OfferList({ state, actions }) {
           {uniqueWorkTypes.map(t => <option key={t} value={t}>{t}</option>)}
         </select>
       </div>
-      
+
       <div className="list-group">
         {filteredOffers.map(o => (
           <div key={o.id} className="list-row" onClick={() => openDetail(o)}>

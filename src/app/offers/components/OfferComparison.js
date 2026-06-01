@@ -190,7 +190,6 @@ export function OfferComparison({ state, actions }) {
                 <th style={{ padding: '12px', textAlign: 'center' }}>صلاحية العرض</th>
                 <th style={{ padding: '12px', textAlign: 'center' }}>مختار ✔️</th>
                 <th style={{ padding: '12px', textAlign: 'center' }}>الفرق عن الأقل</th>
-                <th style={{ padding: '12px', textAlign: 'center' }}>رقم العرض</th>
                 <th style={{ padding: '12px', textAlign: 'right' }}>ملاحظات</th>
               </tr>
             </thead>
@@ -251,7 +250,6 @@ export function OfferComparison({ state, actions }) {
                 <th style={{ border: '1px solid #000', padding: '8px' }}>م</th>
                 <th style={{ border: '1px solid #000', padding: '8px' }}>اسم الشركة</th>
                 <th style={{ border: '1px solid #000', padding: '8px' }}>القسيمة</th>
-                <th style={{ border: '1px solid #000', padding: '8px' }}>رقم العرض</th>
                 <th style={{ border: '1px solid #000', padding: '8px' }}>قيمة العرض</th>
                 <th style={{ border: '1px solid #000', padding: '8px' }}>صلاحية العرض</th>
                 <th style={{ border: '1px solid #000', padding: '8px' }}>الفرق عن الأقل</th>
