@@ -100,7 +100,10 @@ export function OfferForm({ state, actions }) {
 
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
-
+            <div className="form-group">
+              <label className="form-label">رقم العرض</label>
+              <input className="form-input" value={form.offer_number || ''} onChange={e => setForm(p => ({ ...p, offer_number: e.target.value }))} />
+            </div>
             <div className="form-group">
               <label className="form-label">قيمة العرض (د.ك)</label>
               <input type="number" step="0.001" className="form-input" required value={form.price || ''} onChange={e => setForm(p => ({ ...p, price: e.target.value }))} />
