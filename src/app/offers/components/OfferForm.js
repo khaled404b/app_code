@@ -94,7 +94,7 @@ export function OfferForm({ state, actions }) {
 
           <div className="section-label">بيانات العرض</div>
           <div className="form-group">
-            <label className="form-label">اسم الشركة (مقدمة العرض)</label>
+            <label className="form-label">اسم الشركسسة (مقدمة العرض)</label>
             <input className="form-input" required value={form.company_name || ''} onChange={e => setForm(p => ({ ...p, company_name: e.target.value }))} />
           </div>
 
