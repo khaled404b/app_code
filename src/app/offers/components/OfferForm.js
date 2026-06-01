@@ -15,7 +15,7 @@ export function OfferForm({ state, actions }) {
         <button onClick={goBack} className="icon-btn"><ArrowRight size={20} /></button>
         <h1 className="page-title">{selected ? 'تعديل عرض' : 'تسجيل عرض جديد'}</h1>
       </div>
-      
+
       <form onSubmit={handleSave}>
         <div className="card card-padded">
           <div className="section-label" style={{ marginTop: 0 }}>بيانات الطلب</div>
@@ -40,15 +40,15 @@ export function OfferForm({ state, actions }) {
             {(() => {
               const selectedClient = clients.find(c => c.id === form.client_id);
               const plots = selectedClient?.plots || [];
-              
+
               if (plots.length > 1) {
                 return (
                   <div className="form-group">
                     <label className="form-label">اختر القسيمة</label>
-                    <select 
-                      className="form-select" 
-                      required 
-                      value={form.plot_no || ''} 
+                    <select
+                      className="form-select"
+                      required
+                      value={form.plot_no || ''}
                       onChange={e => setForm(p => ({ ...p, plot_no: e.target.value }))}
                     >
                       <option value="">اختر القسيمة...</option>
@@ -73,7 +73,7 @@ export function OfferForm({ state, actions }) {
               return null;
             })()}
           </div>
-          
+
           <div className="form-group">
             <label className="form-label">نوع العمل</label>
             <select className="form-select" required value={form.work_type || ''} onChange={e => setForm(p => ({ ...p, work_type: e.target.value }))}>
@@ -81,14 +81,14 @@ export function OfferForm({ state, actions }) {
               <option value="آخر...">+ أخرى (كتابة يدوية)</option>
             </select>
             {form.work_type === 'آخر...' && (
-               <input 
-                 className="form-input" 
-                 style={{ marginTop: '8px' }} 
-                 placeholder="اكتب نوع العمل هنا..." 
-                 required
-                 value={state.customWorkType || ''} 
-                 onChange={e => actions.setCustomWorkType(e.target.value)} 
-               />
+              <input
+                className="form-input"
+                style={{ marginTop: '8px' }}
+                placeholder="اكتب نوع العمل هنا..."
+                required
+                value={state.customWorkType || ''}
+                onChange={e => actions.setCustomWorkType(e.target.value)}
+              />
             )}
           </div>
 
@@ -98,11 +98,9 @@ export function OfferForm({ state, actions }) {
             <input className="form-input" required value={form.company_name || ''} onChange={e => setForm(p => ({ ...p, company_name: e.target.value }))} />
           </div>
 
+
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
-            <div className="form-group">
-              <label className="form-label">رقم العرض</label>
-              <input className="form-input" value={form.offer_number || ''} onChange={e => setForm(p => ({ ...p, offer_number: e.target.value }))} />
-            </div>
+
             <div className="form-group">
               <label className="form-label">قيمة العرض (د.ك)</label>
               <input type="number" step="0.001" className="form-input" required value={form.price || ''} onChange={e => setForm(p => ({ ...p, price: e.target.value }))} />
@@ -160,20 +158,20 @@ export function OfferForm({ state, actions }) {
             }
             setUploading(false);
           }} />
-          
+
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '10px' }}>
             {state.tempFiles?.map((f, i) => (
               <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'white', padding: '8px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
-                <span style={{ fontSize: '12px', color: '#64748b' }}>مرفق #{i+1} ({f.startsWith('[') ? 'مستند متعدد الصفحات' : 'صورة/ملف'})</span>
+                <span style={{ fontSize: '12px', color: '#64748b' }}>مرفق #{i + 1} ({f.startsWith('[') ? 'مستند متعدد الصفحات' : 'صورة/ملف'})</span>
                 <button type="button" onClick={() => {
                   const newFiles = state.tempFiles.filter((_, idx) => idx !== i);
                   actions.setTempFiles(newFiles);
                   if (newFiles.length === 0 && !form.has_file) setForm(p => ({ ...p, has_file: false }));
-                }} style={{ color: '#dc2626', background: 'none', border: 'none', cursor: 'pointer' }}><X size={14}/></button>
+                }} style={{ color: '#dc2626', background: 'none', border: 'none', cursor: 'pointer' }}><X size={14} /></button>
               </div>
             ))}
             <button type="button" className="btn btn-outline btn-sm" onClick={() => fileInputRef.current.click()} disabled={uploading}>
-              {uploading ? <Loader2 size={16} className="animate-spin" /> : <Plus size={16} style={{ marginLeft: '6px' }} />} 
+              {uploading ? <Loader2 size={16} className="animate-spin" /> : <Plus size={16} style={{ marginLeft: '6px' }} />}
               إضافة مرفقات عرض السعر
             </button>
           </div>
@@ -182,7 +180,7 @@ export function OfferForm({ state, actions }) {
             <div style={{ marginTop: '10px', fontSize: '12px', color: '#059669', fontWeight: 'bold' }}>✓ يوجد مرفقات سابقة (سيتم الاحتفاظ بها ما لم ترفع ملفات جديدة)</div>
           )}
         </div>
-        
+
         <button type="submit" className="btn" style={{ marginTop: '20px' }}>حفظ العرض</button>
       </form>
     </div>
