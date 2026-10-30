@@ -1,5 +1,6 @@
 import './globals.css';
 import { AuthProvider } from '@/hooks/useAuth';
+import { DataProvider } from '@/hooks/useData';
 import AppWrapper from '@/components/AppWrapper';
 
 export const metadata = {
@@ -29,9 +30,11 @@ export default function RootLayout({ children }) {
       </head>
       <body>
         <AuthProvider>
-          <AppWrapper>
-            {children}
-          </AppWrapper>
+          <DataProvider>
+            <AppWrapper>
+              {children}
+            </AppWrapper>
+          </DataProvider>
         </AuthProvider>
       </body>
     </html>
