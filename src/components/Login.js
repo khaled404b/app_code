@@ -21,7 +21,7 @@ export default function Login() {
     setLoading(false);
   };
 
-  const userColors = { 'م.فواز': '#2563eb', 'أ.خالد': '#7c3aed', 'د.محمد': '#059669', 'م.احمد': '#d97706' };
+  const userColors = { 'م.فواز': '#2563eb', 'م.خالد': '#7c3aed', 'د.محمد': '#059669', 'م.احمد': '#d97706' };
   const activeColor = userColors[name] || '#2563eb';
 
   return (

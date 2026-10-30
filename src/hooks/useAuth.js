@@ -4,7 +4,7 @@ import { createContext, useContext, useState, useEffect } from 'react';
 
 const USERS = {
   'م.فواز': { password: '123', color: '#2563eb' },
-  'أ.خالد':   { password: '123', color: '#7c3aed' },
+  'م.خالد':   { password: '123', color: '#7c3aed' },
   'د.محمد': { password: '123', color: '#059669' },
   'م.احمد': { password: '123', color: '#d97706' },
 };
