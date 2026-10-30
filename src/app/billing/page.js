@@ -13,14 +13,14 @@ import { parseAttachment } from '@/lib/fileHelper';
 
 export default function BillingPage() {
   const { state, actions } = useBillingController();
-  const { 
-    view, selected, search, form, filtered, 
-    tempFiles, loadingFile, isLoading, canEdit, clients 
+  const {
+    view, selected, search, form, filtered,
+    tempFiles, loadingFile, isLoading, canEdit, clients
   } = state;
-  
-  const { 
-    setView, setSelected, setSearch, setForm, 
-    setTempFiles, handleSave, openNew, openEdit, handleDelete 
+
+  const {
+    setView, setSelected, setSearch, setForm,
+    setTempFiles, handleSave, openNew, openEdit, handleDelete
   } = actions;
 
   const [isExporting, setIsExporting] = useState(false);
@@ -62,7 +62,7 @@ export default function BillingPage() {
       if (snap.exists()) {
         setForm(prev => ({ ...prev, stamp_image: snap.val() }));
       }
-    } catch (_) {}
+    } catch (_) { }
   };
 
   // Safe Print Handler
@@ -81,14 +81,14 @@ export default function BillingPage() {
     setIsExporting(true);
     const full = await fetchWithAttachments(inv);
     setSelected(full);
-    
+
     // Wait for state update and images to load
     setTimeout(async () => {
       try {
         const html2pdf = (await import('html2pdf.js')).default;
         const element = document.getElementById('billing-invoice-print');
         if (!element) throw new Error('قالب الطباعة غير موجود');
-        
+
         const opt = {
           margin: 0,
           filename: `Invoice-${inv.invoice_no || 'Draft'}.pdf`,
@@ -122,7 +122,7 @@ export default function BillingPage() {
         setLoadingAttachment(false);
         return;
       }
-      
+
       const files = parseAttachment(attachSnap.val());
       if (files.length === 0) {
         alert('صيغة المرفقات غير مدعومة');
@@ -146,7 +146,7 @@ export default function BillingPage() {
           <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:2px solid #0f172a; padding-bottom:12px; margin-bottom:16px;">
             <img src="${logoUrl}" style="height:50px; object-fit:contain;" onerror="this.style.display='none'" />
             <div style="text-align:right;">
-              <div style="font-size:11px; color:#64748b;">Attachment ${i+1} of ${files.length}</div>
+              <div style="font-size:11px; color:#64748b;">Attachment ${i + 1} of ${files.length}</div>
               <div style="font-size:18px; font-weight:900; letter-spacing:1px;">${inv.invoice_no || '—'}</div>
               <div style="font-size:11px; color:#64748b;">${inv.client_name || ''} ${inv.plot_no ? '| Plot: ' + inv.plot_no : ''}</div>
             </div>
@@ -157,11 +157,11 @@ export default function BillingPage() {
           ${stampHtml ? `<div style="display:flex; justify-content:flex-end; margin-top:16px; padding-top:12px; border-top:1px solid #e2e8f0;">${stampHtml}</div>` : ''}
         </div>`
       ).join('');
-      
+
       const html = `<!DOCTYPE html><html dir="ltr"><head><meta charset="UTF-8"><title>Attachments - ${inv.invoice_no}</title>
         <style>body{margin:0; background:#f1f5f9; display:flex; flex-direction:column; align-items:center; padding:30px; font-family:Arial,sans-serif;}</style>
         </head><body>${imgTags}</body></html>`;
-      
+
       const blob = new Blob([html], { type: 'text/html' });
       const url = URL.createObjectURL(blob);
       window.open(url, '_blank');
@@ -182,16 +182,16 @@ export default function BillingPage() {
     <div className="page" style={{ paddingBottom: '100px' }}>
       {view === 'list' && (
         <>
-          <PageHeader 
-            title="فواتير المكتب (Billing)" 
-            actions={canEdit && <button className="btn btn-sm" style={{ width: 'auto' }} onClick={openNew}>+ فاتورة جديدة</button>} 
+          <PageHeader
+            title="فواتير المكتب (Billing)"
+            actions={canEdit && <button className="btn btn-sm" style={{ width: 'auto' }} onClick={openNew}>+ فاتورة جديدة</button>}
           />
           <SearchBar value={search} onChange={setSearch} placeholder="بحث برقم الفاتورة، اسم العميل..." />
-          <BillingList 
-            billingInvoices={filtered} 
-            onEdit={handleEdit} 
-            onDelete={handleDelete} 
-            onPrint={handleSelectForView} 
+          <BillingList
+            billingInvoices={filtered}
+            onEdit={handleEdit}
+            onDelete={handleDelete}
+            onPrint={handleSelectForView}
           />
         </>
       )}
@@ -213,12 +213,12 @@ export default function BillingPage() {
               </button>
             </div>
           </div>
-          
-          <div style={{ 
-            background: '#fff', 
-            borderRadius: '16px', 
-            border: '1px solid #e2e8f0', 
-            overflow: 'hidden', 
+
+          <div style={{
+            background: '#fff',
+            borderRadius: '16px',
+            border: '1px solid #e2e8f0',
+            overflow: 'hidden',
             boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)',
             maxWidth: '900px',
             margin: '0 auto'
@@ -235,14 +235,14 @@ export default function BillingPage() {
             <h1 className="page-title">{selected ? 'تعديل الفاتورة' : 'إنشاء فاتورة جديدة'}</h1>
           </div>
           <form onSubmit={handleSave}>
-            <BillingForm 
-              form={form} 
-              setForm={setForm} 
-              clients={clients} 
-              handleSave={handleSave} 
-              tempFiles={tempFiles} 
-              setTempFiles={setTempFiles} 
-              loadingFile={loadingFile} 
+            <BillingForm
+              form={form}
+              setForm={setForm}
+              clients={clients}
+              handleSave={handleSave}
+              tempFiles={tempFiles}
+              setTempFiles={setTempFiles}
+              loadingFile={loadingFile}
             />
           </form>
         </>
