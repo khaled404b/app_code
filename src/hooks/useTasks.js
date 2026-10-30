@@ -2,26 +2,40 @@ import { useState, useMemo, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { STATUS_CFG } from '@/constants/config';
 
-export const useTasks = (tasks, clients) => {
+const INITIAL_FILTERS = {
+  status: 'الكل',
+  client: 'الكل',
+  dateFrom: '',
+  dateTo: '',
+  search: '',
+  sort: 'priority'
+};
+
+export const useTasks = (tasks = [], clients = []) => {
   const searchParams = useSearchParams();
-  const [filters, setFilters] = useState({ 
-    status: 'الكل', 
-    client: 'الكل', 
-    dateFrom: '', 
-    dateTo: '', 
-    search: '', 
-    sort: 'priority' 
-  });
+  const [filters, setFilters] = useState(INITIAL_FILTERS);
+  const [showFilters, setShowFilters] = useState(false);
 
   useEffect(() => {
+    if (!searchParams) return;
     const s = searchParams.get('status');
     const c = searchParams.get('client');
     if (s || c) {
-      setFilters(prev => ({ ...prev, status: s || prev.status, client: c || prev.client }));
+      setFilters(prev => ({
+        ...prev,
+        status: s && s !== 'all' ? s : prev.status,
+        client: c && c !== 'all' ? c : prev.client
+      }));
     }
   }, [searchParams]);
 
-  const setF = (k, v) => setFilters(p => ({ ...p, [k]: v }));
+  const setF = (k, v) => {
+    if (k === 'reset') {
+      setFilters(INITIAL_FILTERS);
+    } else {
+      setFilters(p => ({ ...p, [k]: v }));
+    }
+  };
 
   const filteredTasks = useMemo(() => {
     if (!tasks) return [];
@@ -32,12 +46,30 @@ export const useTasks = (tasks, clients) => {
       
       if (filters.search) {
         const q = filters.search.toLowerCase();
-        if (!(t.title || '').toLowerCase().includes(q) && !cn.toLowerCase().includes(q)) return false;
+        const matches = 
+          (t.title || '').toLowerCase().includes(q) ||
+          cn.toLowerCase().includes(q) ||
+          (t.service_type || '').toLowerCase().includes(q) ||
+          (t.assignee || '').toLowerCase().includes(q) ||
+          (t.description || '').toLowerCase().includes(q);
+        if (!matches) return false;
       }
-      if (filters.status !== 'الكل' && t.status !== filters.status) return false;
-      if (filters.client !== 'الكل' && t.client_id !== filters.client) return false;
-      if (filters.dateFrom && t.start_date < filters.dateFrom) return false;
-      if (filters.dateTo && t.start_date > filters.dateTo) return false;
+
+      if (filters.status !== 'الكل' && filters.status !== 'all' && t.status !== filters.status) {
+        return false;
+      }
+
+      if (filters.client !== 'الكل' && filters.client !== 'all' && t.client_id !== filters.client) {
+        return false;
+      }
+
+      if (filters.dateFrom && t.start_date && t.start_date < filters.dateFrom) {
+        return false;
+      }
+      if (filters.dateTo && t.start_date && t.start_date > filters.dateTo) {
+        return false;
+      }
+
       return true;
     });
 
@@ -47,15 +79,32 @@ export const useTasks = (tasks, clients) => {
         const p2 = STATUS_CFG.TASKS[b.status]?.priority || 99;
         if (p1 !== p2) return p1 - p2;
         return (b.start_date || '').localeCompare(a.start_date || '');
+      } else if (filters.sort === 'desc') {
+        return (b.start_date || '').localeCompare(a.start_date || '');
       } else {
-        const d1 = a.start_date || '';
-        const d2 = b.start_date || '';
-        return filters.sort === 'desc' ? d2.localeCompare(d1) : d1.localeCompare(d2);
+        return (a.start_date || '').localeCompare(b.start_date || '');
       }
     });
 
     return list;
   }, [tasks, clients, filters]);
 
-  return { filters, setF, filteredTasks, setFilters };
+  // Overall task stats & filtered task stats
+  const stats = useMemo(() => {
+    const total = filteredTasks.length;
+    const done = filteredTasks.filter(t => t.status === 'منجزة').length;
+    const active = filteredTasks.filter(t => t.status === 'جارية').length;
+    const late = filteredTasks.filter(t => t.status === 'متأخرة').length;
+    const pending = filteredTasks.filter(t => t.status === 'معلقة' || t.status === 'لم تبدأ').length;
+    return {
+      total,
+      done,
+      active,
+      late,
+      pending,
+      percent: total > 0 ? Math.round((done / total) * 100) : 0
+    };
+  }, [filteredTasks]);
+
+  return { filters, setF, filteredTasks, setFilters, showFilters, setShowFilters, stats };
 };

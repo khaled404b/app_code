@@ -1,12 +1,14 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { useData } from '@/hooks/useData';
 import { useAuth } from '@/hooks/useAuth';
 import {
   Plus, ArrowRight, User, Calendar,
   DollarSign, Clock, AlertCircle, CheckCircle,
-  Building2, Hash, TrendingUp, Download, Phone
+  Building2, Hash, TrendingUp, Download, Phone,
+  SlidersHorizontal, ChevronDown, RotateCcw
 } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 import { ref, get, set } from 'firebase/database';
@@ -27,11 +29,24 @@ function SupervisionContent() {
   const [selected, setSelected] = useState(null);
   const [form, setForm] = useState({});
   const [search, setSearch] = useState('');
+  const searchParams = useSearchParams();
   const [statusFilter, setStatusFilter] = useState('all');
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo] = useState('');
+  const [sortBy, setSortBy] = useState('date_desc');
+  const [showFilters, setShowFilters] = useState(false);
   const [clientFilter, setClientFilter] = useState('all');
   const [isExporting, setIsExporting] = useState(false);
   const [tempFiles, setTempFiles] = useState([]); // Array of base64 strings
   const [loadingFile, setLoadingFile] = useState(false);
+
+  useEffect(() => {
+    if (!searchParams) return;
+    const s = searchParams.get('status');
+    const c = searchParams.get('client');
+    if (s) setStatusFilter(s);
+    if (c) setClientFilter(c);
+  }, [searchParams]);
 
   const filtered = useMemo(() => {
     return supervision.filter(p => {
@@ -48,9 +63,20 @@ function SupervisionContent() {
         (statusFilter === 'due' && stats.remaining > 0) ||
         (statusFilter === 'paid' && stats.remaining <= 0);
 
+      if (dateFrom && p.start_date && p.start_date < dateFrom) return false;
+      if (dateTo && p.start_date && p.start_date > dateTo) return false;
+
       return matchesSearch && matchesClient && matchesStatus;
     });
-  }, [supervision, search, clients, clientFilter, statusFilter, invoices]);
+    }).sort((a, b) => {
+      const statsA = calculateSupervisionStats(a, invoices);
+      const statsB = calculateSupervisionStats(b, invoices);
+      if (sortBy === 'remaining_desc') return statsB.remaining - statsA.remaining;
+      if (sortBy === 'value_desc') return statsB.totalDue - statsA.totalDue;
+      if (sortBy === 'date_asc') return (a.start_date || '').localeCompare(b.start_date || '');
+      return (b.start_date || '').localeCompare(a.start_date || '');
+    });
+  }, [supervision, search, clients, clientFilter, statusFilter, dateFrom, dateTo, sortBy, invoices]);
 
   const handleQuickPayment = async () => {
     if (!selected) return;
@@ -457,21 +483,99 @@ function SupervisionContent() {
         }
       />
 
-      <SearchBar value={search} onChange={setSearch} placeholder="بحث عن مشروع إشراف، عميل، أو عقد..." />
-
-      <div style={{ display: 'flex', gap: '10px', marginBottom: '20px', overflowX: 'auto', paddingBottom: '5px' }}>
-        <select className="form-select btn-sm" style={{ width: 'auto', flexShrink: 0 }} value={statusFilter} onChange={e => setStatusFilter(e.target.value)}>
-          <option value="all">كل الحالات</option>
-          <option value="active">نشط حالياً</option>
-          <option value="expired">منتهي</option>
-          <option value="due">لم يسدد (عليه مستحقات)</option>
-          <option value="paid">مسدد بالكامل</option>
-        </select>
-        <select className="form-select btn-sm" style={{ width: 'auto', flexShrink: 0 }} value={clientFilter} onChange={e => setClientFilter(e.target.value)}>
-          <option value="all">كل العملاء</option>
-          {clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-        </select>
+      {/* Status Filter Pills */}
+      <div className="pills-row" style={{ marginBottom: '12px' }}>
+        {[
+          { id: 'all', label: 'كل الحالات' },
+          { id: 'due', label: 'عليه مستحقات ⚠️' },
+          { id: 'active', label: 'نشط حالياً' },
+          { id: 'paid', label: 'مسدد بالكامل' },
+          { id: 'expired', label: 'منتهي' }
+        ].map(s => (
+          <button
+            key={s.id}
+            className={`pill ${statusFilter === s.id ? 'active' : ''}`}
+            onClick={() => setStatusFilter(s.id)}
+          >
+            {s.label}
+          </button>
+        ))}
       </div>
+
+      {/* Search Bar & Filter Toggle */}
+      <div style={{ display: 'flex', gap: '8px', marginBottom: '14px', alignItems: 'center' }}>
+        <div style={{ flex: 1 }}>
+          <SearchBar value={search} onChange={setSearch} placeholder="بحث عن مشروع إشراف، عميل، أو عقد..." />
+        </div>
+        <button
+          onClick={() => setShowFilters(!showFilters)}
+          style={{
+            display: 'flex', alignItems: 'center', gap: '6px',
+            background: showFilters ? 'var(--blue-light)' : 'var(--surface)',
+            border: `1.5px solid ${showFilters ? 'var(--blue)' : 'var(--border)'}`,
+            color: showFilters ? 'var(--blue)' : 'var(--text-2)',
+            padding: '12px 14px', borderRadius: '14px', cursor: 'pointer',
+            fontWeight: 800, fontSize: '13px', whiteSpace: 'nowrap'
+          }}
+        >
+          <SlidersHorizontal size={16} />
+          فلاتر
+          <ChevronDown size={14} style={{ transform: showFilters ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
+        </button>
+      </div>
+
+      {/* Expandable Advanced Filters */}
+      {showFilters && (
+        <Card padded style={{ marginBottom: '16px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px', marginBottom: '12px' }}>
+            <div className="form-group" style={{ marginBottom: 0 }}>
+              <label className="form-label">العميل</label>
+              <select className="form-select" value={clientFilter} onChange={e => setClientFilter(e.target.value)}>
+                <option value="all">📊 جميع العملاء</option>
+                {clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+              </select>
+            </div>
+            <div className="form-group" style={{ marginBottom: 0 }}>
+              <label className="form-label">ترتيب المشاريع</label>
+              <select className="form-select" value={sortBy} onChange={e => setSortBy(e.target.value)}>
+                <option value="date_desc">التاريخ: الأحدث أولاً</option>
+                <option value="date_asc">التاريخ: الأقدم أولاً</option>
+                <option value="remaining_desc">المطالبات: الأكثر أولاً</option>
+                <option value="value_desc">قيمة العقد: الأعلى أولاً</option>
+              </select>
+            </div>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '14px' }}>
+            <div>
+              <label className="form-label">من تاريخ</label>
+              <input type="date" className="form-input" value={dateFrom} onChange={e => setDateFrom(e.target.value)} />
+            </div>
+            <div>
+              <label className="form-label">إلى تاريخ</label>
+              <input type="date" className="form-input" value={dateTo} onChange={e => setDateTo(e.target.value)} />
+            </div>
+          </div>
+          <button
+            onClick={() => {
+              setStatusFilter('all');
+              setClientFilter('all');
+              setDateFrom('');
+              setDateTo('');
+              setSearch('');
+              setSortBy('date_desc');
+            }}
+            style={{
+              width: '100%', padding: '10px', borderRadius: '10px',
+              background: 'var(--surface-2)', border: '1px solid var(--border)',
+              color: 'var(--red)', fontWeight: 800, fontSize: '13px', cursor: 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px'
+            }}
+          >
+            <RotateCcw size={14} /> إعادة ضبط الفلاتر
+          </button>
+        </Card>
+      )}
+
 
       <div className="list-group">
         {filtered.map(p => {

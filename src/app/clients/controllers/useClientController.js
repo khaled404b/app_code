@@ -8,6 +8,10 @@ export function useClientController() {
   const { canEdit } = useAuth();
   
   const [search, setSearch] = useState('');
+  const [clientTypeFilter, setClientTypeFilter] = useState('الكل');
+  const [plotFilter, setPlotFilter] = useState('all');
+  const [sortBy, setSortBy] = useState('name_asc');
+  const [showFilters, setShowFilters] = useState(false);
   const [view, setView] = useState('list'); // 'list', 'detail', 'form'
   const [selected, setSelected] = useState(null);
   const [form, setForm] = useState({});
@@ -17,13 +21,54 @@ export function useClientController() {
 
   // Filter Logic
   const filteredClients = useMemo(() => {
-    if (!search) return clients;
-    const lowerSearch = search.toLowerCase();
-    return clients.filter(c => 
-      c.name?.toLowerCase().includes(lowerSearch) || 
-      c.phone?.includes(search)
-    );
-  }, [clients, search]);
+    return clients.filter(c => {
+      if (!c) return false;
+
+      // Text search
+      if (search) {
+        const lowerSearch = search.toLowerCase();
+        const matches = 
+          c.name?.toLowerCase().includes(lowerSearch) || 
+          c.phone?.includes(search) ||
+          c.location?.toLowerCase().includes(lowerSearch) ||
+          (c.plots || []).some(p => String(p.number || p).toLowerCase().includes(lowerSearch));
+        if (!matches) return false;
+      }
+
+      // Type filter
+      if (clientTypeFilter !== 'الكل' && (c.type || 'طبيعي') !== clientTypeFilter) {
+        return false;
+      }
+
+      // Plot filter
+      const plotCount = (c.plots || []).length;
+      if (plotFilter === 'with_plots' && plotCount === 0) return false;
+      if (plotFilter === 'no_plots' && plotCount > 0) return false;
+
+      return true;
+    }).sort((a, b) => {
+      if (sortBy === 'plots_desc') {
+        return ((b.plots || []).length) - ((a.plots || []).length);
+      }
+      return (a.name || '').localeCompare(b.name || '', 'ar');
+    });
+  }, [clients, search, clientTypeFilter, plotFilter, sortBy]);
+
+  // Statistics for the filtered subset
+  const stats = useMemo(() => {
+    const total = filteredClients.length;
+    let normal = 0;
+    let commission = 0;
+    let totalPlots = 0;
+
+    filteredClients.forEach(c => {
+      if (c.type === 'نسبة') commission++;
+      else normal++;
+      totalPlots += (c.plots || []).length;
+    });
+
+    return { total, normal, commission, totalPlots };
+  }, [filteredClients]);
 
   // Actions
   const openDetail = (client) => { 
@@ -86,7 +131,14 @@ export function useClientController() {
   };
 
   return {
-    state: { isLoading, canEdit, view, selected, form, newPlot, search, clients, filteredClients },
-    actions: { setSearch, openDetail, openNew, openEdit, goBack, handleSave, handleDelete, addPlot, removePlot, setForm, setNewPlot }
+    state: { 
+      isLoading, canEdit, view, selected, form, newPlot, search, clients, 
+      filteredClients, clientTypeFilter, plotFilter, sortBy, showFilters, stats 
+    },
+    actions: { 
+      setSearch, setClientTypeFilter, setPlotFilter, setSortBy, setShowFilters,
+      openDetail, openNew, openEdit, goBack, handleSave, handleDelete, 
+      addPlot, removePlot, setForm, setNewPlot 
+    }
   };
 }

@@ -26,6 +26,22 @@ function InvoicesContent() {
   const services = (data && data.settings && data.settings.services) || SERVICES_DEFAULT;
 
   const { filters, setF, filteredInvoices: filtered, setFilters } = useInvoices(invoices, clients);
+
+  const invoiceStats = useMemo(() => {
+    let totalExpenses = 0;
+    let totalDeposits = 0;
+    filtered.forEach(i => {
+      const amt = parseFloat(i.amount) || 0;
+      if (i.type === 'deposit') totalDeposits += amt;
+      else totalExpenses += amt;
+    });
+    return {
+      count: filtered.length,
+      totalExpenses,
+      totalDeposits,
+      balance: totalDeposits - totalExpenses
+    };
+  }, [filtered]);
   
   const [showFilters, setShowFilters] = useState(false);
   const [view, setView] = useState('list');
@@ -285,6 +301,31 @@ function InvoicesContent() {
         {canEdit && invoices.length > 0 && <button className="icon-btn" style={{ color: '#dc2626' }} onClick={handleClearAll} title="مسح الكل"><Trash2 size={20} /></button>}
         {canEdit && <button className="btn btn-sm" style={{ width: 'auto' }} onClick={() => { setForm({ invoice_no: generateNextNo('expense'), client_id: clients[0]?.id || '', status: 'معلقة', type: 'expense', issue_date: new Date().toISOString().split('T')[0] }); setSelected(null); setView('form'); }}>+ جديد</button>}
       </>} />
+      {/* Quick Invoices Summary Stats */}
+      <div style={{ 
+        display: 'grid', 
+        gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', 
+        gap: '10px', 
+        marginBottom: '16px' 
+      }}>
+        <div style={{ background: 'var(--surface)', padding: '12px 14px', borderRadius: '12px', border: '1px solid var(--border)' }}>
+          <div style={{ fontSize: '11px', color: 'var(--text-3)', fontWeight: 800 }}>الفواتير المعروضة</div>
+          <div style={{ fontSize: '18px', fontWeight: 900, color: 'var(--text)', marginTop: '2px' }}>{invoiceStats.count}</div>
+        </div>
+        <div style={{ background: 'var(--surface)', padding: '12px 14px', borderRadius: '12px', border: '1px solid var(--border)' }}>
+          <div style={{ fontSize: '11px', color: 'var(--red)', fontWeight: 800 }}>إجمالي المصروفات</div>
+          <div style={{ fontSize: '18px', fontWeight: 900, color: 'var(--red)', marginTop: '2px' }}>{invoiceStats.totalExpenses.toFixed(3)} <small style={{ fontSize: '10px' }}>د.ك</small></div>
+        </div>
+        <div style={{ background: 'var(--surface)', padding: '12px 14px', borderRadius: '12px', border: '1px solid var(--border)' }}>
+          <div style={{ fontSize: '11px', color: 'var(--green)', fontWeight: 800 }}>إجمالي العهد المقبوضة</div>
+          <div style={{ fontSize: '18px', fontWeight: 900, color: 'var(--green)', marginTop: '2px' }}>{invoiceStats.totalDeposits.toFixed(3)} <small style={{ fontSize: '10px' }}>د.ك</small></div>
+        </div>
+        <div style={{ background: 'var(--surface)', padding: '12px 14px', borderRadius: '12px', border: '1px solid var(--border)' }}>
+          <div style={{ fontSize: '11px', color: invoiceStats.balance >= 0 ? 'var(--blue)' : 'var(--orange)', fontWeight: 800 }}>الرصيد المتبقي</div>
+          <div style={{ fontSize: '18px', fontWeight: 900, color: invoiceStats.balance >= 0 ? 'var(--blue)' : 'var(--orange)', marginTop: '2px' }}>{invoiceStats.balance.toFixed(3)} <small style={{ fontSize: '10px' }}>د.ك</small></div>
+        </div>
+      </div>
+
       <SearchBar value={filters.search} onChange={v => setF('search', v)} placeholder="بحث شامل..." />
       <FilterSection {...{ filters, setF, clients, showFilters, setShowFilters, initialFilters: { status: 'الكل', client: 'الكل', dateFrom: '', dateTo: '', amountMin: '', amountMax: '', plot: '', search: '', sort: 'desc' } }} />
       <div className="list-group">

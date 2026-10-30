@@ -3,17 +3,18 @@
 import { useState, useMemo, memo, useEffect, useRef } from 'react';
 import { useData } from '@/hooks/useData';
 import { useAuth } from '@/hooks/useAuth';
+import { useTasks } from '@/hooks/useTasks';
 import { 
   Briefcase, FileText, ArrowRight, Eye, Send, Link as LinkIcon, 
   MapPin, Loader2, X, Plus, Trash2, Paperclip, Search, 
   Download, History, MessageSquare, PlusCircle, Clock, User, CheckCircle2,
-  FileCheck, Info, AlertCircle, PauseCircle, PlayCircle
+  FileCheck, Info, AlertCircle, PauseCircle, PlayCircle,
+  SlidersHorizontal, ChevronDown, RotateCcw
 } from 'lucide-react';
 import { ref as fRef, set as fSet, get as fGet } from 'firebase/database';
 import { db as fDb } from '@/lib/firebase';
 import { processAttachment } from '@/lib/fileHelper';
 
-// Version: 1.0.7 - Restored Missing Elements
 const generateId = () => {
   if (typeof window !== 'undefined' && window.crypto && window.crypto.randomUUID) {
     return window.crypto.randomUUID();
@@ -27,7 +28,6 @@ export default function TasksPage() {
   
   const [view, setView] = useState('list');
   const [selected, setSelected] = useState(null);
-  const [search, setSearch] = useState('');
   const [form, setForm] = useState({});
   const [tempFiles, setTempFiles] = useState([]);
   const [loadingFile, setLoadingFile] = useState(false);
@@ -44,19 +44,7 @@ export default function TasksPage() {
   const getClientName = (id) => clients.find(c => c.id === id)?.name || '—';
   const getClientPlots = (id) => clients.find(c => c.id === id)?.plots || [];
 
-  const filteredTasks = useMemo(() => {
-    return tasks.filter(t => 
-      t.title?.toLowerCase().includes(search.toLowerCase()) || 
-      getClientName(t.client_id)?.toLowerCase().includes(search.toLowerCase())
-    );
-  }, [tasks, search, clients]);
-
-  const stats = useMemo(() => {
-    const total = filteredTasks.length;
-    const done = filteredTasks.filter(t => t.status === 'منجزة').length;
-    const active = filteredTasks.filter(t => t.status === 'جارية').length;
-    return { total, done, active, percent: total > 0 ? Math.round((done/total)*100) : 0 };
-  }, [filteredTasks]);
+  const { filters, setF, filteredTasks, showFilters, setShowFilters, stats } = useTasks(tasks, clients);
 
   useEffect(() => {
     if (selected && selected.id) {
@@ -71,19 +59,44 @@ export default function TasksPage() {
     if (e) e.preventDefault();
     if (!form.title) return alert('يرجى إدخال عنوان المهمة');
     const taskId = selected ? selected.id : generateId();
-    const finalTask = { ...form, id: taskId, updates: selected ? (selected.updates || []) : [], created_by: selected ? (selected.created_by || '—') : (user?.name || '—'), created_at: selected ? (selected.created_at || new Date().toISOString()) : new Date().toISOString(), has_file: tempFiles.length > 0 || existingFiles.length > 0 || false };
+    const finalTask = { 
+      ...form, 
+      id: taskId, 
+      updates: selected ? (selected.updates || []) : [], 
+      created_by: selected ? (selected.created_by || '—') : (user?.name || '—'), 
+      created_at: selected ? (selected.created_at || new Date().toISOString()) : new Date().toISOString(), 
+      has_file: tempFiles.length > 0 || existingFiles.length > 0 || false 
+    };
     try {
-      if (selected) await updateData('tasks', 'update', finalTask, selected.id);
-      else { await updateData('tasks', 'add', finalTask); if (addNotification) await addNotification('task', 'عمل جديد', `تم إضافة عمل: ${finalTask.title}`); }
-      if (tempFiles.length > 0) { const allFiles = [...existingFiles, ...tempFiles]; await fSet(fRef(fDb, `attachments/${taskId}`), JSON.stringify(allFiles)); }
-      setView('list'); setSelected(null); setTempFiles([]); setForm({});
-    } catch (err) { alert('فشل الحفظ'); }
+      if (selected) {
+        await updateData('tasks', 'update', finalTask, selected.id);
+      } else { 
+        await updateData('tasks', 'add', finalTask); 
+        if (addNotification) await addNotification('task', 'عمل جديد', `تم إضافة عمل: ${finalTask.title}`); 
+      }
+      if (tempFiles.length > 0) { 
+        const allFiles = [...existingFiles, ...tempFiles]; 
+        await fSet(fRef(fDb, `attachments/${taskId}`), JSON.stringify(allFiles)); 
+      }
+      setView('list'); 
+      setSelected(null); 
+      setTempFiles([]); 
+      setForm({});
+    } catch (err) { 
+      alert('فشل الحفظ'); 
+    }
   };
 
   const handleStatusQuickChange = async (newStatus) => {
     if (!selected) return;
     const updatedTask = { ...selected, status: newStatus };
-    try { await updateData('tasks', 'update', updatedTask, selected.id); setSelected(updatedTask); if (addNotification) await addNotification('task', 'تحديث حالة', `تغيرت حالة "${selected.title}" إلى ${newStatus}`); } catch (err) { alert('فشل تغيير الحالة'); }
+    try { 
+      await updateData('tasks', 'update', updatedTask, selected.id); 
+      setSelected(updatedTask); 
+      if (addNotification) await addNotification('task', 'تحديث حالة', `تغيرت حالة "${selected.title}" إلى ${newStatus}`); 
+    } catch (err) { 
+      alert('فشل تغيير الحالة'); 
+    }
   };
 
   const handleExportPDF = async () => {
@@ -164,8 +177,11 @@ export default function TasksPage() {
       <div style={{ maxWidth: '800px', margin: '0 auto' }}>
         
         {/* APP HEADER */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '25px' }}>
-           <div><h1 style={{ fontSize: '24px', fontWeight: 950, color: 'var(--text)', margin: 0 }}>متابعة الأعمال</h1><p style={{ fontSize: '13px', color: 'var(--text-3)', fontWeight: 700 }}>نظام إدارة المشاريع</p></div>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+           <div>
+             <h1 style={{ fontSize: '24px', fontWeight: 950, color: 'var(--text)', margin: 0 }}>متابعة الأعمال</h1>
+             <p style={{ fontSize: '13px', color: 'var(--text-3)', fontWeight: 700, marginTop: '2px' }}>نظام إدارة المشاريع</p>
+           </div>
            {view === 'list' && (
              <div style={{ display: 'flex', gap: '10px' }}>
                 <button onClick={handleExportPDF} disabled={isExporting} style={{ background: 'var(--surface)', border: '1px solid var(--border)', padding: '10px 15px', borderRadius: '12px', fontWeight: 800, color: 'var(--text)', display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', opacity: isExporting ? 0.5 : 1 }}>
@@ -180,33 +196,170 @@ export default function TasksPage() {
         {/* LIST VIEW */}
         {view === 'list' && (
           <>
-            <div style={{ display: 'flex', gap: '10px', marginBottom: '20px', alignItems: 'center' }}>
-              <div style={{ position: 'relative', flex: 1 }}>
-                <input style={{ width: '100%', padding: '15px 45px 15px 15px', borderRadius: '12px', border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text)', outline: 'none', fontWeight: 700 }} placeholder="ابحث..." value={search} onChange={e => setSearch(e.target.value)} />
-                <Search size={20} color="var(--text-3)" style={{ position: 'absolute', right: '15px', top: '50%', transform: 'translateY(-50%)' }} />
+            {/* Quick Stats Grid */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '10px', marginBottom: '16px' }}>
+              <div style={{ background: 'var(--surface)', padding: '12px', borderRadius: '12px', border: '1px solid var(--border)', textAlign: 'center' }}>
+                <div style={{ fontSize: '11px', color: 'var(--text-3)', fontWeight: 800 }}>الكل</div>
+                <div style={{ fontSize: '18px', fontWeight: 900, color: 'var(--text)' }}>{stats.total}</div>
               </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'var(--surface)', padding: '10px 15px', borderRadius: '12px', border: '1px solid var(--border)', whiteSpace: 'nowrap' }}>
-                 <input type="checkbox" checked={includeFiles} onChange={e => setIncludeFiles(e.target.checked)} style={{ width: '18px', height: '18px', cursor: 'pointer' }} />
-                 <span style={{ fontSize: '11px', fontWeight: 800 }}>المرفقات بالتقرير</span>
+              <div style={{ background: 'var(--surface)', padding: '12px', borderRadius: '12px', border: '1px solid var(--border)', textAlign: 'center' }}>
+                <div style={{ fontSize: '11px', color: 'var(--blue)', fontWeight: 800 }}>جارية</div>
+                <div style={{ fontSize: '18px', fontWeight: 900, color: 'var(--blue)' }}>{stats.active}</div>
+              </div>
+              <div style={{ background: 'var(--surface)', padding: '12px', borderRadius: '12px', border: '1px solid var(--border)', textAlign: 'center' }}>
+                <div style={{ fontSize: '11px', color: 'var(--red)', fontWeight: 800 }}>متأخرة</div>
+                <div style={{ fontSize: '18px', fontWeight: 900, color: 'var(--red)' }}>{stats.late}</div>
+              </div>
+              <div style={{ background: 'var(--surface)', padding: '12px', borderRadius: '12px', border: '1px solid var(--border)', textAlign: 'center' }}>
+                <div style={{ fontSize: '11px', color: 'var(--green)', fontWeight: 800 }}>منجزة ({stats.percent}%)</div>
+                <div style={{ fontSize: '18px', fontWeight: 900, color: 'var(--green)' }}>{stats.done}</div>
               </div>
             </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              {filteredTasks.map(task => (
-                <div key={task.id} onClick={() => { setSelected(task); setView('detail'); }} style={{ background: 'var(--surface)', padding: '20px', borderRadius: '16px', border: '1px solid var(--border)', cursor: 'pointer', boxShadow: 'var(--shadow)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <div style={{ display: 'flex', gap: '15px', alignItems: 'center' }}>
-                    <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: 'var(--surface-2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Briefcase size={20} color="var(--blue)" /></div>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                      <h3 style={{ fontSize: '15px', fontWeight: 900, color: 'var(--text)', margin: 0, ...bidiStyle }}>{task.title}</h3>
-                      <p style={{ fontSize: '12px', color: 'var(--text-3)', fontWeight: 700, ...bidiStyle }}>{getClientName(task.client_id)}</p>
-                    </div>
-                  </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                     <div style={{ padding: '4px 10px', borderRadius: '20px', fontSize: '10px', fontWeight: 900, background: task.status === 'منجزة' ? 'var(--green-light)' : task.status === 'متأخرة' ? 'var(--red-light)' : 'var(--blue-light)', color: task.status === 'منجزة' ? 'var(--green)' : task.status === 'متأخرة' ? 'var(--red)' : 'var(--blue)' }}>{task.status || 'جارية'}</div>
-                     <ArrowRight size={18} color="var(--text-3)" />
-                  </div>
-                </div>
+
+            {/* Status Pills */}
+            <div className="pills-row" style={{ marginBottom: '12px' }}>
+              {['الكل', 'جارية', 'متأخرة', 'معلقة', 'منجزة'].map(s => (
+                <button
+                  key={s}
+                  className={`pill ${filters.status === s ? 'active' : ''}`}
+                  onClick={() => setF('status', s)}
+                >
+                  {s}
+                </button>
               ))}
             </div>
+
+            {/* Search Bar & Advanced Filters Toggle */}
+            <div style={{ display: 'flex', gap: '8px', marginBottom: '14px', alignItems: 'center' }}>
+              <div style={{ position: 'relative', flex: 1 }}>
+                <input 
+                  style={{ width: '100%', padding: '12px 42px 12px 14px', borderRadius: '12px', border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text)', outline: 'none', fontWeight: 700 }} 
+                  placeholder="ابحث بالعنوان، العميل، الخدمة..." 
+                  value={filters.search} 
+                  onChange={e => setF('search', e.target.value)} 
+                />
+                <Search size={18} color="var(--text-3)" style={{ position: 'absolute', right: '14px', top: '50%', transform: 'translateY(-50%)' }} />
+              </div>
+
+              <button
+                onClick={() => setShowFilters(!showFilters)}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: '6px',
+                  background: showFilters ? 'var(--blue-light)' : 'var(--surface)',
+                  border: `1.5px solid ${showFilters ? 'var(--blue)' : 'var(--border)'}`,
+                  color: showFilters ? 'var(--blue)' : 'var(--text-2)',
+                  padding: '12px 14px', borderRadius: '12px', cursor: 'pointer',
+                  fontWeight: 800, fontSize: '13px', whiteSpace: 'nowrap'
+                }}
+              >
+                <SlidersHorizontal size={16} />
+                فلاتر
+                <ChevronDown size={14} style={{ transform: showFilters ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
+              </button>
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'var(--surface)', padding: '10px 12px', borderRadius: '12px', border: '1px solid var(--border)', whiteSpace: 'nowrap' }}>
+                 <input type="checkbox" checked={includeFiles} onChange={e => setIncludeFiles(e.target.checked)} style={{ width: '16px', height: '16px', cursor: 'pointer' }} />
+                 <span style={{ fontSize: '11px', fontWeight: 800 }}>مرفقات بالتقرير</span>
+              </div>
+            </div>
+
+            {/* Expandable Advanced Filters Panel */}
+            {showFilters && (
+              <div style={{ background: 'var(--surface)', padding: '18px', borderRadius: '16px', border: '1px solid var(--border)', marginBottom: '16px', boxShadow: 'var(--shadow)' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px', marginBottom: '12px' }}>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '12px', fontWeight: 800, color: 'var(--text-3)', marginBottom: '6px' }}>العميل</label>
+                    <select 
+                      style={{ width: '100%', padding: '10px', borderRadius: '10px', border: '1px solid var(--border)', background: 'var(--surface-2)', color: 'var(--text)', fontWeight: 700 }}
+                      value={filters.client} 
+                      onChange={e => setF('client', e.target.value)}
+                    >
+                      <option value="الكل">📊 جميع العملاء</option>
+                      {clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label style={{ display: 'block', fontSize: '12px', fontWeight: 800, color: 'var(--text-3)', marginBottom: '6px' }}>ترتيب الأعمال</label>
+                    <select 
+                      style={{ width: '100%', padding: '10px', borderRadius: '10px', border: '1px solid var(--border)', background: 'var(--surface-2)', color: 'var(--text)', fontWeight: 700 }}
+                      value={filters.sort} 
+                      onChange={e => setF('sort', e.target.value)}
+                    >
+                      <option value="priority">حسب الأولوية والحالة</option>
+                      <option value="desc">تاريخ البداية: الأحدث أولاً</option>
+                      <option value="asc">تاريخ البداية: الأقدم أولاً</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '14px' }}>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '12px', fontWeight: 800, color: 'var(--text-3)', marginBottom: '6px' }}>من تاريخ</label>
+                    <input 
+                      type="date" 
+                      style={{ width: '100%', padding: '10px', borderRadius: '10px', border: '1px solid var(--border)', background: 'var(--surface-2)', color: 'var(--text)', fontWeight: 700 }}
+                      value={filters.dateFrom} 
+                      onChange={e => setF('dateFrom', e.target.value)} 
+                    />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '12px', fontWeight: 800, color: 'var(--text-3)', marginBottom: '6px' }}>إلى تاريخ</label>
+                    <input 
+                      type="date" 
+                      style={{ width: '100%', padding: '10px', borderRadius: '10px', border: '1px solid var(--border)', background: 'var(--surface-2)', color: 'var(--text)', fontWeight: 700 }}
+                      value={filters.dateTo} 
+                      onChange={e => setF('dateTo', e.target.value)} 
+                    />
+                  </div>
+                </div>
+
+                <button 
+                  onClick={() => setF('reset')} 
+                  style={{
+                    width: '100%', padding: '10px', borderRadius: '10px',
+                    background: 'var(--surface-2)', border: '1px solid var(--border)',
+                    color: 'var(--red)', fontWeight: 800, fontSize: '13px', cursor: 'pointer',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px'
+                  }}
+                >
+                  <RotateCcw size={14} /> إعادة ضبط الفلاتر
+                </button>
+              </div>
+            )}
+
+            {/* Task Cards List */}
+            {filteredTasks.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '60px 20px', background: 'var(--surface)', borderRadius: '16px', border: '1px solid var(--border)' }}>
+                <Briefcase size={36} color="var(--text-3)" style={{ margin: '0 auto 10px' }} />
+                <h3 style={{ fontSize: '16px', fontWeight: 900, color: 'var(--text-2)' }}>لا توجد أعمال مطابقة للفلاتر الحالية</h3>
+                <p style={{ fontSize: '13px', color: 'var(--text-3)' }}>جرّب تغيير حالة العمل أو إزالة الفلاتر</p>
+              </div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                {filteredTasks.map(task => (
+                  <div key={task.id} onClick={() => { setSelected(task); setView('detail'); }} style={{ background: 'var(--surface)', padding: '20px', borderRadius: '16px', border: '1px solid var(--border)', cursor: 'pointer', boxShadow: 'var(--shadow)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div style={{ display: 'flex', gap: '15px', alignItems: 'center' }}>
+                      <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: 'var(--surface-2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <Briefcase size={20} color="var(--blue)" />
+                      </div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                        <h3 style={{ fontSize: '15px', fontWeight: 900, color: 'var(--text)', margin: 0, ...bidiStyle }}>{task.title}</h3>
+                        <p style={{ fontSize: '12px', color: 'var(--text-3)', fontWeight: 700, margin: 0, ...bidiStyle }}>
+                          {getClientName(task.client_id)} {task.plot_number ? `| قسيمة: ${task.plot_number}` : ''}
+                        </p>
+                      </div>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                       <div style={{ padding: '4px 10px', borderRadius: '20px', fontSize: '10px', fontWeight: 900, background: task.status === 'منجزة' ? 'var(--green-light)' : task.status === 'متأخرة' ? 'var(--red-light)' : 'var(--blue-light)', color: task.status === 'منجزة' ? 'var(--green)' : task.status === 'متأخرة' ? 'var(--red)' : 'var(--blue)' }}>
+                         {task.status || 'جارية'}
+                       </div>
+                       <ArrowRight size={18} color="var(--text-3)" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </>
         )}
 
@@ -219,7 +372,10 @@ export default function TasksPage() {
                      <h2 style={{ fontSize: '22px', fontWeight: 950, color: 'var(--text)', margin: 0, ...bidiStyle }}>{selected.title}</h2>
                      <p style={{ fontWeight: 800, color: 'var(--blue)', marginTop: '4px', ...bidiStyle }}>{getClientName(selected.client_id)} {selected.plot_number ? `| قسيمة: ${selected.plot_number}` : ''}</p>
                    </div>
-                   <div style={{ display: 'flex', gap: '10px' }}><button onClick={() => { setForm(selected); setView('form'); }} style={{ background: 'var(--surface-2)', border: '1px solid var(--border)', padding: '8px 12px', borderRadius: '10px', fontWeight: 800, cursor: 'pointer', color: 'var(--text)' }}>تعديل</button><button onClick={() => handleDelete(selected.id)} style={{ background: 'var(--red-light)', color: 'var(--red)', border: 'none', padding: '8px 12px', borderRadius: '10px', fontWeight: 800, cursor: 'pointer' }}><Trash2 size={16} /></button></div>
+                   <div style={{ display: 'flex', gap: '10px' }}>
+                     <button onClick={() => { setForm(selected); setView('form'); }} style={{ background: 'var(--surface-2)', border: '1px solid var(--border)', padding: '8px 12px', borderRadius: '10px', fontWeight: 800, cursor: 'pointer', color: 'var(--text)' }}>تعديل</button>
+                     <button onClick={() => handleDelete(selected.id)} style={{ background: 'var(--red-light)', color: 'var(--red)', border: 'none', padding: '8px 12px', borderRadius: '10px', fontWeight: 800, cursor: 'pointer' }}><Trash2 size={16} /></button>
+                   </div>
                 </div>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '10px', marginBottom: '25px' }}>
                    {[{ label: 'منجزة', color: 'var(--green)', icon: CheckCircle2 }, { label: 'جارية', color: 'var(--blue)', icon: PlayCircle }, { label: 'متأخرة', color: 'var(--red)', icon: AlertCircle }, { label: 'معلقة', color: 'var(--orange)', icon: PauseCircle }].map(s => (

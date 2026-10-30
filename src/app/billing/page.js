@@ -1,12 +1,15 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useBillingController } from './useBillingController';
 import BillingList from './BillingList';
 import BillingForm from './BillingForm';
 import BillingPrint from './BillingPrint';
-import { PageHeader, SearchBar } from '@/components/ui';
-import { Plus, Printer, Download, ArrowRight, Loader2, FileText, Paperclip } from 'lucide-react';
+import { PageHeader, SearchBar, Card } from '@/components/ui';
+import { 
+  Plus, Printer, Download, ArrowRight, Loader2, 
+  FileText, Paperclip, SlidersHorizontal, ChevronDown, RotateCcw 
+} from 'lucide-react';
 import { ref, get } from 'firebase/database';
 import { db } from '@/lib/firebase';
 import { parseAttachment } from '@/lib/fileHelper';
@@ -15,12 +18,14 @@ export default function BillingPage() {
   const { state, actions } = useBillingController();
   const {
     view, selected, search, form, filtered,
-    tempFiles, loadingFile, isLoading, canEdit, clients
+    tempFiles, loadingFile, isLoading, canEdit, clients,
+    filters, showFilters, stats
   } = state;
 
   const {
     setView, setSelected, setSearch, setForm,
-    setTempFiles, handleSave, openNew, openEdit, handleDelete
+    setTempFiles, handleSave, openNew, openEdit, handleDelete,
+    setF, setShowFilters
   } = actions;
 
   const [isExporting, setIsExporting] = useState(false);
@@ -54,9 +59,7 @@ export default function BillingPage() {
 
   // Open edit form — also load stamp so user can see/replace it
   const handleEdit = async (inv) => {
-    // Open form right away with what we have
     openEdit(inv);
-    // Then load stamp in background and inject into form
     try {
       const snap = await get(ref(db, `stamps/${inv.id}`));
       if (snap.exists()) {
@@ -82,7 +85,6 @@ export default function BillingPage() {
     const full = await fetchWithAttachments(inv);
     setSelected(full);
 
-    // Wait for state update and images to load
     setTimeout(async () => {
       try {
         const html2pdf = (await import('html2pdf.js')).default;
@@ -99,19 +101,18 @@ export default function BillingPage() {
 
         await html2pdf().from(element).set(opt).save();
       } catch (err) {
-        console.error(err);
+        console.error('PDF export error:', err);
         alert('فشل تصدير PDF: ' + err.message);
+      } finally {
+        setIsExporting(false);
       }
-      setIsExporting(false);
-    }, 800);
+    }, 500);
   };
 
-  // Safe Attachment Viewer
   const showAttachment = async (inv) => {
     if (!inv || !inv.id) return;
     setLoadingAttachment(true);
     try {
-      // Fetch attachments and stamp in parallel
       const [attachSnap, stampSnap] = await Promise.all([
         get(ref(db, `attachments/${inv.id}`)),
         get(ref(db, `stamps/${inv.id}`))
@@ -140,33 +141,50 @@ export default function BillingPage() {
            </div>`
         : '';
 
-      const imgTags = files.map((src, i) => `
-        <div style="background:white; border-radius:8px; padding:20px; box-shadow:0 2px 12px rgba(0,0,0,0.12); max-width:860px; width:100%; margin-bottom:30px;">
-          <!-- Header: Logo + Invoice Info -->
-          <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:2px solid #0f172a; padding-bottom:12px; margin-bottom:16px;">
-            <img src="${logoUrl}" style="height:50px; object-fit:contain;" onerror="this.style.display='none'" />
-            <div style="text-align:right;">
-              <div style="font-size:11px; color:#64748b;">Attachment ${i + 1} of ${files.length}</div>
-              <div style="font-size:18px; font-weight:900; letter-spacing:1px;">${inv.invoice_no || '—'}</div>
-              <div style="font-size:11px; color:#64748b;">${inv.client_name || ''} ${inv.plot_no ? '| Plot: ' + inv.plot_no : ''}</div>
+      const content = `
+        <!DOCTYPE html>
+        <html dir="rtl" lang="ar">
+        <head>
+          <meta charset="utf-8">
+          <title>مرفقات الفاتورة ${inv.invoice_no || ''}</title>
+          <style>
+            body { font-family: system-ui, -apple-system, sans-serif; padding: 20px; background: #f8fafc; color: #1e293b; }
+            .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #e2e8f0; padding-bottom: 15px; margin-bottom: 20px; }
+            .file-card { background: white; border-radius: 12px; padding: 15px; margin-bottom: 15px; border: 1px solid #cbd5e1; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+            img.preview { max-width: 100%; height: auto; border-radius: 8px; margin-top: 10px; }
+            iframe { width: 100%; height: 600px; border: 1px solid #e2e8f0; border-radius: 8px; margin-top: 10px; }
+            .btn { background: #0284c7; color: white; padding: 6px 12px; border-radius: 6px; text-decoration: none; font-size: 13px; font-weight: bold; display: inline-block; }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <div>
+              <h2 style="margin:0;">مرفقات الفاتورة: ${inv.invoice_no || ''}</h2>
+              <p style="margin:4px 0 0 0; color:#64748b; font-size:14px;">العميل: ${inv.client_name || '—'}</p>
             </div>
+            ${stampHtml}
           </div>
-          <!-- Attachment Image -->
-          <img src="${src}" style="width:100%; display:block; border-radius:4px; border:1px solid #e2e8f0;" />
-          <!-- Footer: Signature -->
-          ${stampHtml ? `<div style="display:flex; justify-content:flex-end; margin-top:16px; padding-top:12px; border-top:1px solid #e2e8f0;">${stampHtml}</div>` : ''}
-        </div>`
-      ).join('');
+          <div class="files">
+            ${files.map((f, i) => `
+              <div class="file-card">
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                  <strong>ملف #${i + 1}</strong>
+                  <a href="${f}" download="attachment-${inv.invoice_no || 'file'}-${i + 1}" class="btn">تحميل الملف</a>
+                </div>
+                ${f.startsWith('data:image/') ? `<img src="${f}" class="preview" />` : ''}
+                ${f.startsWith('data:application/pdf') ? `<iframe src="${f}"></iframe>` : ''}
+              </div>
+            `).join('')}
+          </div>
+        </body>
+        </html>
+      `;
 
-      const html = `<!DOCTYPE html><html dir="ltr"><head><meta charset="UTF-8"><title>Attachments - ${inv.invoice_no}</title>
-        <style>body{margin:0; background:#f1f5f9; display:flex; flex-direction:column; align-items:center; padding:30px; font-family:Arial,sans-serif;}</style>
-        </head><body>${imgTags}</body></html>`;
-
-      const blob = new Blob([html], { type: 'text/html' });
+      const blob = new Blob([content], { type: 'text/html' });
       const url = URL.createObjectURL(blob);
       window.open(url, '_blank');
-      setTimeout(() => URL.revokeObjectURL(url), 10000);
     } catch (err) {
+      console.error(err);
       alert('خطأ في جلب الملف');
     }
     setLoadingAttachment(false);
@@ -186,7 +204,132 @@ export default function BillingPage() {
             title="فواتير المكتب (Billing)"
             actions={canEdit && <button className="btn btn-sm" style={{ width: 'auto' }} onClick={openNew}>+ فاتورة جديدة</button>}
           />
-          <SearchBar value={search} onChange={setSearch} placeholder="بحث برقم الفاتورة، اسم العميل..." />
+
+          {/* Quick Stats Summary */}
+          <div style={{ 
+            display: 'grid', 
+            gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', 
+            gap: '10px', 
+            marginBottom: '16px' 
+          }}>
+            <div style={{ background: 'var(--surface)', padding: '12px 14px', borderRadius: '12px', border: '1px solid var(--border)' }}>
+              <div style={{ fontSize: '11px', color: 'var(--text-3)', fontWeight: 800 }}>الفواتير المعروضة</div>
+              <div style={{ fontSize: '18px', fontWeight: 900, color: 'var(--text)', marginTop: '2px' }}>{stats.totalCount}</div>
+            </div>
+            <div style={{ background: 'var(--surface)', padding: '12px 14px', borderRadius: '12px', border: '1px solid var(--border)' }}>
+              <div style={{ fontSize: '11px', color: 'var(--text-3)', fontWeight: 800 }}>إجمالي المبالغ</div>
+              <div style={{ fontSize: '18px', fontWeight: 900, color: 'var(--blue)', marginTop: '2px' }}>{stats.totalAmount.toFixed(3)} <small style={{ fontSize: '10px' }}>د.ك</small></div>
+            </div>
+            <div style={{ background: 'var(--surface)', padding: '12px 14px', borderRadius: '12px', border: '1px solid var(--border)' }}>
+              <div style={{ fontSize: '11px', color: 'var(--green)', fontWeight: 800 }}>المدفوع ({stats.paidCount})</div>
+              <div style={{ fontSize: '18px', fontWeight: 900, color: 'var(--green)', marginTop: '2px' }}>{stats.paidAmount.toFixed(3)} <small style={{ fontSize: '10px' }}>د.ك</small></div>
+            </div>
+            <div style={{ background: 'var(--surface)', padding: '12px 14px', borderRadius: '12px', border: '1px solid var(--border)' }}>
+              <div style={{ fontSize: '11px', color: 'var(--orange)', fontWeight: 800 }}>المعلق ({stats.pendingCount})</div>
+              <div style={{ fontSize: '18px', fontWeight: 900, color: 'var(--orange)', marginTop: '2px' }}>{stats.pendingAmount.toFixed(3)} <small style={{ fontSize: '10px' }}>د.ك</small></div>
+            </div>
+          </div>
+
+          {/* Status Pills */}
+          <div className="pills-row">
+            {['الكل', 'معلقة', 'مدفوعة', 'ملغاة'].map(s => (
+              <button 
+                key={s} 
+                className={`pill ${filters.status === s ? 'active' : ''}`}
+                onClick={() => setF('status', s)}
+              >
+                {s}
+              </button>
+            ))}
+          </div>
+
+          {/* Search Bar & Advanced Filter Toggle */}
+          <div style={{ display: 'flex', gap: '8px', marginBottom: '12px', alignItems: 'center' }}>
+            <div style={{ flex: 1 }}>
+              <SearchBar value={search} onChange={setSearch} placeholder="بحث برقم الفاتورة، اسم العميل، البيان..." />
+            </div>
+            <button
+              onClick={() => setShowFilters(!showFilters)}
+              style={{
+                display: 'flex', alignItems: 'center', gap: '6px',
+                background: showFilters ? 'var(--blue-light)' : 'var(--surface)',
+                border: `1.5px solid ${showFilters ? 'var(--blue)' : 'var(--border)'}`,
+                color: showFilters ? 'var(--blue)' : 'var(--text-2)',
+                padding: '12px 14px', borderRadius: '14px', cursor: 'pointer',
+                fontWeight: 800, fontSize: '13px', whiteSpace: 'nowrap'
+              }}
+            >
+              <SlidersHorizontal size={16} />
+              فلاتر
+              <ChevronDown size={14} style={{ transform: showFilters ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
+            </button>
+          </div>
+
+          {/* Expandable Advanced Filters */}
+          {showFilters && (
+            <Card padded style={{ marginBottom: '16px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px', marginBottom: '14px' }}>
+                <div className="form-group" style={{ marginBottom: 0 }}>
+                  <label className="form-label">العميل</label>
+                  <select className="form-select" value={filters.client} onChange={e => setF('client', e.target.value)}>
+                    <option value="الكل">📊 جميع العملاء</option>
+                    {clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                  </select>
+                </div>
+
+                <div className="form-group" style={{ marginBottom: 0 }}>
+                  <label className="form-label">ترتيب الفواتير</label>
+                  <select className="form-select" value={filters.sort} onChange={e => setF('sort', e.target.value)}>
+                    <option value="date_desc">التاريخ: الأحدث أولاً</option>
+                    <option value="date_asc">التاريخ: الأقدم أولاً</option>
+                    <option value="amount_desc">المبلغ: الأعلى أولاً</option>
+                    <option value="amount_asc">المبلغ: الأقل أولاً</option>
+                  </select>
+                </div>
+
+                <div className="form-group" style={{ marginBottom: 0 }}>
+                  <label className="form-label">المرفقات</label>
+                  <select className="form-select" value={filters.hasAttachment} onChange={e => setF('hasAttachment', e.target.value)}>
+                    <option value="all">الكل</option>
+                    <option value="yes">تحتوي مرفق 📎</option>
+                    <option value="no">بدون مرفق</option>
+                  </select>
+                </div>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '12px', marginBottom: '14px' }}>
+                <div>
+                  <label className="form-label">من تاريخ</label>
+                  <input type="date" className="form-input" value={filters.dateFrom} onChange={e => setF('dateFrom', e.target.value)} />
+                </div>
+                <div>
+                  <label className="form-label">إلى تاريخ</label>
+                  <input type="date" className="form-input" value={filters.dateTo} onChange={e => setF('dateTo', e.target.value)} />
+                </div>
+                <div>
+                  <label className="form-label">المبلغ الأدنى</label>
+                  <input type="number" placeholder="0.000" className="form-input" value={filters.amountMin} onChange={e => setF('amountMin', e.target.value)} />
+                </div>
+                <div>
+                  <label className="form-label">المبلغ الأقصى</label>
+                  <input type="number" placeholder="999.999" className="form-input" value={filters.amountMax} onChange={e => setF('amountMax', e.target.value)} />
+                </div>
+              </div>
+
+              <button 
+                onClick={() => setF('reset')} 
+                style={{
+                  width: '100%', padding: '10px', borderRadius: '10px',
+                  background: 'var(--surface-2)', border: '1px solid var(--border)',
+                  color: 'var(--red)', fontWeight: 800, fontSize: '13px', cursor: 'pointer',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px'
+                }}
+              >
+                <RotateCcw size={14} /> إعادة ضبط الفلاتر
+              </button>
+            </Card>
+          )}
+
           <BillingList
             billingInvoices={filtered}
             onEdit={handleEdit}
@@ -246,12 +389,6 @@ export default function BillingPage() {
             />
           </form>
         </>
-      )}
-
-      {view === 'print' && selected && (
-        <div className="print-only">
-          <BillingPrint invoice={selected} />
-        </div>
       )}
     </div>
   );
